@@ -3,26 +3,28 @@
 import type { Bundle, Immunization, Patient } from '@medplum/fhirtypes'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import {
-  type FhirBundle,
-  FhirBundleProcessor,
+  type FHIRBundle,
+  FHIRBundleProcessor,
   FhirValidationError,
   InvalidBundleReferenceError,
   JWSError,
   JWSProcessor,
   QRCodeError,
   QRCodeGenerator,
-  SmartHealthCard,
   type SmartHealthCardConfig,
   type SmartHealthCardConfigParams,
   SmartHealthCardError,
+  SmartHealthCardIssuer,
   type SmartHealthCardJWT,
+  SmartHealthCardReader,
+  type SmartHealthCardReaderConfigParams,
   type VerifiableCredential,
-  type VerifiableCredentialOptions,
+  type VerifiableCredentialParams,
   VerifiableCredentialProcessor,
 } from '../src/index'
 
 // Test data fixtures
-const createValidFhirBundle = (): FhirBundle => ({
+const createValidFHIRBundle = (): FHIRBundle => ({
   resourceType: 'Bundle',
   type: 'collection',
   entry: [
@@ -64,16 +66,16 @@ const createInvalidBundle = (): Bundle => ({
 })
 
 describe('SMART Health Cards Library', () => {
-  describe('FhirBundleProcessor', () => {
-    let processor: FhirBundleProcessor
+  describe('FHIRBundleProcessor', () => {
+    let processor: FHIRBundleProcessor
 
     beforeEach(() => {
-      processor = new FhirBundleProcessor()
+      processor = new FHIRBundleProcessor()
     })
 
     describe('process()', () => {
       it('should process a valid FHIR Bundle', () => {
-        const bundle = createValidFhirBundle()
+        const bundle = createValidFHIRBundle()
         const result = processor.process(bundle)
 
         expect(result).toBeDefined()
@@ -82,7 +84,7 @@ describe('SMART Health Cards Library', () => {
       })
 
       it('should set default Bundle.type to "collection"', () => {
-        const bundle = createValidFhirBundle()
+        const bundle = createValidFHIRBundle()
         delete (bundle as unknown as Record<string, unknown>).type
 
         const result = processor.process(bundle)
@@ -90,7 +92,7 @@ describe('SMART Health Cards Library', () => {
       })
 
       it('should preserve existing Bundle.type if specified', () => {
-        const bundle = createValidFhirBundle()
+        const bundle = createValidFHIRBundle()
         bundle.type = 'batch'
 
         const result = processor.process(bundle)
@@ -98,7 +100,7 @@ describe('SMART Health Cards Library', () => {
       })
 
       it('should not modify the original bundle', () => {
-        const bundle = createValidFhirBundle()
+        const bundle = createValidFHIRBundle()
         const originalType = bundle.type
 
         processor.process(bundle)
@@ -124,7 +126,7 @@ describe('SMART Health Cards Library', () => {
 
     describe('validate()', () => {
       it('should validate a correct FHIR Bundle', () => {
-        const bundle = createValidFhirBundle()
+        const bundle = createValidFHIRBundle()
         expect(processor.validate(bundle)).toBe(true)
       })
 
@@ -143,7 +145,7 @@ describe('SMART Health Cards Library', () => {
       })
 
       it('should throw FhirValidationError for invalid Bundle.type', () => {
-        const bundle = createValidFhirBundle()
+        const bundle = createValidFHIRBundle()
         ;(bundle as any).type = 'invalid-type'
         expect(() => processor.validate(bundle)).toThrow(FhirValidationError)
         expect(() => processor.validate(bundle)).toThrow('Invalid bundle.type: invalid-type')
@@ -159,14 +161,14 @@ describe('SMART Health Cards Library', () => {
           'transaction-response',
         ]
         for (const t of acceptedTypes) {
-          const b = createValidFhirBundle()
+          const b = createValidFHIRBundle()
           ;(b as any).type = t
           expect(processor.validate(b)).toBe(true)
         }
       })
 
       it('should throw FhirValidationError for non-array entry', () => {
-        const bundle = createValidFhirBundle()
+        const bundle = createValidFHIRBundle()
         bundle.entry = 'not-an-array' as any // @ts-ignore
 
         expect(() => processor.validate(bundle)).toThrow(FhirValidationError)
@@ -174,7 +176,7 @@ describe('SMART Health Cards Library', () => {
       })
 
       it('should throw FhirValidationError for entry without resource', () => {
-        const bundle = createValidFhirBundle()
+        const bundle = createValidFHIRBundle()
         bundle.entry = [{ fullUrl: 'test' }] as any // @ts-ignore
 
         expect(() => processor.validate(bundle)).toThrow(FhirValidationError)
@@ -182,7 +184,7 @@ describe('SMART Health Cards Library', () => {
       })
 
       it('should throw FhirValidationError for resource without resourceType', () => {
-        const bundle = createValidFhirBundle()
+        const bundle = createValidFHIRBundle()
         bundle.entry = [{ resource: { id: '123' } }] as any // @ts-ignore
 
         expect(() => processor.validate(bundle)).toThrow(FhirValidationError)
@@ -195,11 +197,11 @@ describe('SMART Health Cards Library', () => {
 
   describe('VerifiableCredentialProcessor', () => {
     let processor: VerifiableCredentialProcessor
-    let validBundle: FhirBundle
+    let validBundle: FHIRBundle
 
     beforeEach(() => {
       processor = new VerifiableCredentialProcessor()
-      validBundle = createValidFhirBundle()
+      validBundle = createValidFHIRBundle()
     })
 
     describe('create()', () => {
@@ -218,7 +220,7 @@ describe('SMART Health Cards Library', () => {
       })
 
       it('should use custom FHIR version when provided', () => {
-        const options: VerifiableCredentialOptions = { fhirVersion: '4.3.0' }
+        const options: VerifiableCredentialParams = { fhirVersion: '4.3.0' }
         const vc = processor.create(validBundle, options)
 
         expect(vc.vc.credentialSubject.fhirVersion).toBe('4.3.0')
@@ -239,7 +241,7 @@ describe('SMART Health Cards Library', () => {
       })
 
       it('should include additional types when provided', () => {
-        const options: VerifiableCredentialOptions = {
+        const options: VerifiableCredentialParams = {
           includeAdditionalTypes: [
             'https://smarthealth.cards#covid19',
             'https://example.org/vaccination',
@@ -391,7 +393,7 @@ describe('SMART Health Cards Library', () => {
 
   describe('JWSProcessor', () => {
     let processor: JWSProcessor
-    let validBundle: FhirBundle
+    let validBundle: FHIRBundle
     let vcProcessor: VerifiableCredentialProcessor
     let validVC: VerifiableCredential
     let validJWTPayload: SmartHealthCardJWT
@@ -410,7 +412,7 @@ EQqQipjEJazEpNXKUbJ4GV0zYi4qZqIOC5tBTyAYas7JJ9RW6mFuNysgJA==
 
     beforeEach(async () => {
       processor = new JWSProcessor()
-      validBundle = createValidFhirBundle()
+      validBundle = createValidFHIRBundle()
       vcProcessor = new VerifiableCredentialProcessor()
       validVC = vcProcessor.create(validBundle)
 
@@ -664,9 +666,11 @@ EQqQipjEJazEpNXKUbJ4GV0zYi4qZqIOC5tBTyAYas7JJ9RW6mFuNysgJA==
   })
 
   describe('SmartHealthCard', () => {
-    let smartHealthCard: SmartHealthCard
-    let validBundle: FhirBundle
-    let config: SmartHealthCardConfig
+    let issuer: SmartHealthCardIssuer
+    let reader: SmartHealthCardReader
+    let validBundle: FHIRBundle
+    let issuerConfig: SmartHealthCardConfig
+    let readerConfig: SmartHealthCardReaderConfigParams
 
     // Test key pairs for ES256 (these are for testing only - never use in production)
     const testPrivateKeyPKCS8 = `-----BEGIN PRIVATE KEY-----
@@ -681,8 +685,8 @@ EQqQipjEJazEpNXKUbJ4GV0zYi4qZqIOC5tBTyAYas7JJ9RW6mFuNysgJA==
 -----END PUBLIC KEY-----`
 
     beforeEach(() => {
-      validBundle = createValidFhirBundle()
-      config = {
+      validBundle = createValidFHIRBundle()
+      issuerConfig = {
         issuer: 'https://example.com/issuer',
         privateKey: testPrivateKeyPKCS8,
         publicKey: testPublicKeySPKI,
@@ -690,22 +694,29 @@ EQqQipjEJazEpNXKUbJ4GV0zYi4qZqIOC5tBTyAYas7JJ9RW6mFuNysgJA==
         enableQROptimization: false,
         strictReferences: true,
       }
-      smartHealthCard = new SmartHealthCard(config)
+      readerConfig = {
+        publicKey: testPublicKeySPKI,
+        enableQROptimization: false,
+        strictReferences: true,
+      }
+      issuer = new SmartHealthCardIssuer(issuerConfig)
+      reader = new SmartHealthCardReader(readerConfig)
     })
 
-    describe('create()', () => {
-      it('should create a complete SMART Health Card from FHIR Bundle', async () => {
-        const healthCard = await smartHealthCard.create(validBundle)
+    describe('issue()', () => {
+      it('should issue a complete SMART Health Card from FHIR Bundle', async () => {
+        const healthCard = await issuer.issue(validBundle)
+        const jws = healthCard.asJWS()
 
-        expect(healthCard).toBeDefined()
-        expect(typeof healthCard).toBe('string')
+        expect(jws).toBeDefined()
+        expect(typeof jws).toBe('string')
 
         // Should be a valid JWS format (3 parts separated by dots)
-        const parts = healthCard.split('.')
+        const parts = jws.split('.')
         expect(parts).toHaveLength(3)
       })
 
-      it('should create SMART Health Card with CryptoKey objects', async () => {
+      it('should issue SMART Health Card with CryptoKey objects', async () => {
         const { importPKCS8, importSPKI } = await import('jose')
 
         const privateKeyCrypto = await importPKCS8(testPrivateKeyPKCS8, 'ES256')
@@ -719,36 +730,44 @@ EQqQipjEJazEpNXKUbJ4GV0zYi4qZqIOC5tBTyAYas7JJ9RW6mFuNysgJA==
           enableQROptimization: false,
           strictReferences: true,
         }
-        const cardWithCryptoKeys = new SmartHealthCard(configWithCryptoKeys)
+        const issuerWithCryptoKeys = new SmartHealthCardIssuer(configWithCryptoKeys)
+        const readerWithCryptoKeys = new SmartHealthCardReader({
+          publicKey: publicKeyCrypto,
+          enableQROptimization: false,
+          strictReferences: true,
+        })
 
-        const healthCard = await cardWithCryptoKeys.create(validBundle)
+        const healthCard = await issuerWithCryptoKeys.issue(validBundle)
+        const jws = healthCard.asJWS()
 
-        expect(healthCard).toBeDefined()
-        expect(typeof healthCard).toBe('string')
+        expect(jws).toBeDefined()
+        expect(typeof jws).toBe('string')
 
         // Should be a valid JWS format (3 parts separated by dots)
-        const parts = healthCard.split('.')
+        const parts = jws.split('.')
         expect(parts).toHaveLength(3)
 
         // Should be verifiable
-        const verifiedVC = await cardWithCryptoKeys.verify(healthCard)
-        expect(verifiedVC).toBeDefined()
-        expect(verifiedVC.vc.credentialSubject.fhirBundle).toEqual(validBundle)
+        const verifiedHealthCard = await readerWithCryptoKeys.fromJWS(jws)
+        const verifiedBundle = await verifiedHealthCard.asBundle()
+        expect(verifiedBundle).toBeDefined()
+        expect(verifiedBundle).toEqual(validBundle)
       })
 
-      it('should create health card with expiration when configured', async () => {
+      it('should issue health card with expiration when configured', async () => {
         const configWithExpiration: SmartHealthCardConfig = {
-          ...config,
+          ...issuerConfig,
           expirationTime: 3600, // 1 hour
         }
-        const cardWithExpiration = new SmartHealthCard(configWithExpiration)
+        const issuerWithExpiration = new SmartHealthCardIssuer(configWithExpiration)
 
-        const healthCard = await cardWithExpiration.create(validBundle)
-        expect(healthCard).toBeDefined()
+        const healthCard = await issuerWithExpiration.issue(validBundle)
+        const jws = healthCard.asJWS()
+        expect(jws).toBeDefined()
 
         // Check header and payload
         const jwsProcessor = new JWSProcessor()
-        const verified = await jwsProcessor.verify(healthCard, testPublicKeySPKI)
+        const verified = await jwsProcessor.verify(jws, testPublicKeySPKI)
         expect(verified.exp).toBeDefined()
         expect((verified.exp as number) > verified.nbf).toBe(true)
       })
@@ -756,33 +775,33 @@ EQqQipjEJazEpNXKUbJ4GV0zYi4qZqIOC5tBTyAYas7JJ9RW6mFuNysgJA==
       it('should throw error for invalid FHIR Bundle', async () => {
         const invalidBundle = createInvalidBundle()
 
-        await expect(smartHealthCard.create(invalidBundle)).rejects.toThrow(FhirValidationError)
-        await expect(smartHealthCard.create(invalidBundle)).rejects.toThrow(
+        await expect(issuer.issue(invalidBundle)).rejects.toThrow(FhirValidationError)
+        await expect(issuer.issue(invalidBundle)).rejects.toThrow(
           'Invalid bundle: must be a FHIR Bundle resource'
         )
       })
 
       it('should throw error for null bundle', async () => {
-        await expect(smartHealthCard.create(null as unknown as Bundle)).rejects.toThrow(
-          SmartHealthCardError
-        )
+        await expect(issuer.issue(null as unknown as Bundle)).rejects.toThrow(SmartHealthCardError)
       })
 
       it('should include correct issuer in JWT payload', async () => {
-        const healthCard = await smartHealthCard.create(validBundle)
+        const healthCard = await issuer.issue(validBundle)
+        const jws = healthCard.asJWS()
 
         const jwsProcessor = new JWSProcessor()
-        const verified = await jwsProcessor.verify(healthCard, testPublicKeySPKI)
-        expect(verified.iss).toBe(config.issuer)
+        const verified = await jwsProcessor.verify(jws, testPublicKeySPKI)
+        expect(verified.iss).toBe(issuerConfig.issuer)
         expect(verified.nbf).toBeDefined()
         expect(verified.vc).toBeDefined()
       })
 
       it('should create verifiable credential with correct structure', async () => {
-        const healthCard = await smartHealthCard.create(validBundle)
+        const healthCard = await issuer.issue(validBundle)
+        const jws = healthCard.asJWS()
 
         const jwsProcessor = new JWSProcessor()
-        const verified = await jwsProcessor.verify(healthCard, testPublicKeySPKI)
+        const verified = await jwsProcessor.verify(jws, testPublicKeySPKI)
         // Check VC structure
         expect(verified.vc.type).toContain('https://smarthealth.cards#health-card')
         expect(verified.vc.credentialSubject).toBeDefined()
@@ -790,198 +809,213 @@ EQqQipjEJazEpNXKUbJ4GV0zYi4qZqIOC5tBTyAYas7JJ9RW6mFuNysgJA==
       })
     })
 
-    describe('verify()', () => {
+    describe('verification with SmartHealthCardReader', () => {
       it('should verify a valid SMART Health Card', async () => {
-        const healthCard = await smartHealthCard.create(validBundle)
-        const verifiedVC = await smartHealthCard.verify(healthCard)
+        const healthCard = await issuer.issue(validBundle)
+        const verifiedHealthCard = await reader.fromJWS(healthCard.asJWS())
+        const verifiedBundle = await verifiedHealthCard.asBundle()
 
-        expect(verifiedVC).toBeDefined()
-        expect(verifiedVC.vc).toBeDefined()
-        expect(verifiedVC.vc.credentialSubject.fhirBundle).toEqual(validBundle)
+        expect(verifiedBundle).toBeDefined()
+        expect(verifiedBundle).toEqual(validBundle)
       })
 
       it('should throw error for invalid JWS', async () => {
-        await expect(smartHealthCard.verify('invalid.jws.signature')).rejects.toThrow(JWSError)
-        await expect(smartHealthCard.verify('invalid.jws.signature')).rejects.toThrow(
-          'JWS verification failed'
-        )
+        await expect(reader.fromJWS('invalid.jws.signature')).rejects.toThrow(SmartHealthCardError)
       })
 
       it('should throw error for tampered health card', async () => {
-        const healthCard = await smartHealthCard.create(validBundle)
+        const healthCard = await issuer.issue(validBundle)
+        const jws = healthCard.asJWS()
 
         // Tamper with the health card by changing a character
-        const tamperedCard = `${healthCard.slice(0, -5)}XXXXX`
+        const tamperedCard = `${jws.slice(0, -5)}XXXXX`
 
-        await expect(smartHealthCard.verify(tamperedCard)).rejects.toThrow(SmartHealthCardError)
+        await expect(reader.fromJWS(tamperedCard)).rejects.toThrow(SmartHealthCardError)
       })
 
-      it('should validate round-trip: create then verify', async () => {
-        const healthCard = await smartHealthCard.create(validBundle)
-        const verifiedVC = await smartHealthCard.verify(healthCard)
+      it('should validate round-trip: issue then verify', async () => {
+        const healthCard = await issuer.issue(validBundle)
+        const verifiedHealthCard = await reader.fromJWS(healthCard.asJWS())
+        const verifiedBundle = await verifiedHealthCard.asBundle()
 
-        // The verified VC should match the original bundle
-        expect(verifiedVC.vc.credentialSubject.fhirBundle).toEqual(validBundle)
-        expect(verifiedVC.vc.credentialSubject.fhirVersion).toBe('4.0.1')
-      })
-    })
-
-    describe('getBundle()', () => {
-      it('should return the same bundle as verify().vc.credentialSubject.fhirBundle', async () => {
-        const healthCard = await smartHealthCard.create(validBundle)
-
-        const bundleFromGetBundle = await smartHealthCard.getBundle(healthCard)
-        const verifiedVC = await smartHealthCard.verify(healthCard)
-        const bundleFromVerify = verifiedVC.vc.credentialSubject.fhirBundle
-
-        expect(bundleFromGetBundle).toEqual(bundleFromVerify)
+        // The verified bundle should match the original
+        expect(verifiedBundle).toEqual(validBundle)
+        expect(verifiedBundle.resourceType).toBe('Bundle')
       })
     })
 
-    describe('getBundleFromFile()', () => {
-      it('should return the same bundle as verifyFile().vc.credentialSubject.fhirBundle', async () => {
-        const fileContent = await smartHealthCard.createFile(validBundle)
+    describe('SmartHealthCard object methods', () => {
+      it('should return the original bundle with asBundle()', async () => {
+        const healthCard = await issuer.issue(validBundle)
+        const bundleFromCard = await healthCard.asBundle()
 
-        const bundleFromGetBundleFromFile = await smartHealthCard.getBundleFromFile(fileContent)
-        const verifiedVC = await smartHealthCard.verifyFile(fileContent)
-        const bundleFromVerify = verifiedVC.vc.credentialSubject.fhirBundle
-
-        expect(bundleFromGetBundleFromFile).toEqual(bundleFromVerify)
+        expect(bundleFromCard).toEqual(validBundle)
       })
 
-      it('should work with string file content', async () => {
-        const fileContent = await smartHealthCard.createFile(validBundle)
-        const bundleFromFile = await smartHealthCard.getBundleFromFile(fileContent)
+      it('should return the original bundle with getOriginalBundle()', async () => {
+        const healthCard = await issuer.issue(validBundle)
+        const originalBundle = healthCard.getOriginalBundle()
 
-        expect(bundleFromFile).toEqual(validBundle)
-        expect(bundleFromFile.resourceType).toBe('Bundle')
-        expect(bundleFromFile.entry).toHaveLength(2)
+        expect(originalBundle).toEqual(validBundle)
       })
 
-      it('should work with Blob file content', async () => {
-        const fileBlob = await smartHealthCard.createFileBlob(validBundle)
-        const bundleFromFile = await smartHealthCard.getBundleFromFile(fileBlob)
+      it('should return JWS string with asJWS()', async () => {
+        const healthCard = await issuer.issue(validBundle)
+        const jws = healthCard.asJWS()
 
-        expect(bundleFromFile).toEqual(validBundle)
-        expect(bundleFromFile.resourceType).toBe('Bundle')
-        expect(bundleFromFile.entry).toHaveLength(2)
+        expect(typeof jws).toBe('string')
+        expect(jws.split('.')).toHaveLength(3)
       })
 
-      it('should throw error for invalid file content', async () => {
-        await expect(smartHealthCard.getBundleFromFile('invalid-content')).rejects.toThrow(
-          SmartHealthCardError
-        )
-        await expect(smartHealthCard.getBundleFromFile('invalid-content')).rejects.toThrow(
-          'Invalid file format - expected JSON with verifiableCredential array'
-        )
+      it('should return optimized bundle when asBundle() is called with optimizeForQR=true', async () => {
+        const healthCard = await issuer.issue(validBundle)
+        const optimizedBundle = await healthCard.asBundle(true, true)
+
+        expect(optimizedBundle).toBeDefined()
+        expect(optimizedBundle.resourceType).toBe('Bundle')
+
+        // Check that QR optimization was applied - fullUrls should use resource scheme
+        if (optimizedBundle.entry) {
+          optimizedBundle.entry.forEach((entry, index) => {
+            expect(entry.fullUrl).toBe(`resource:${index}`)
+          })
+        }
+
+        // Resources should not have id fields (removed in QR optimization)
+        optimizedBundle.entry?.forEach(entry => {
+          expect(entry.resource).not.toHaveProperty('id')
+        })
+      })
+
+      it('should return original bundle when asBundle() is called with optimizeForQR=false', async () => {
+        const healthCard = await issuer.issue(validBundle)
+        const originalBundle = await healthCard.asBundle(false)
+
+        expect(originalBundle).toBeDefined()
+        expect(originalBundle).toEqual(validBundle)
+      })
+    })
+
+    describe('file operations with new API', () => {
+      it('should create file content and read back correctly', async () => {
+        const healthCard = await issuer.issue(validBundle)
+        const fileContent = await healthCard.asFileContent()
+
+        const verifiedHealthCard = await reader.fromFileContent(fileContent)
+        const verifiedBundle = await verifiedHealthCard.asBundle()
+
+        expect(verifiedBundle).toEqual(validBundle)
+        expect(verifiedBundle.resourceType).toBe('Bundle')
+        expect(verifiedBundle.entry).toHaveLength(2)
+      })
+
+      it('should create file blob and read back correctly', async () => {
+        const healthCard = await issuer.issue(validBundle)
+        const fileBlob = await healthCard.asFileBlob()
+
+        expect(fileBlob).toBeInstanceOf(Blob)
+        expect(fileBlob.type).toBe('application/smart-health-card')
+
+        const verifiedHealthCard = await reader.fromFileContent(fileBlob)
+        const verifiedBundle = await verifiedHealthCard.asBundle()
+
+        expect(verifiedBundle).toEqual(validBundle)
+        expect(verifiedBundle.resourceType).toBe('Bundle')
+        expect(verifiedBundle.entry).toHaveLength(2)
       })
 
       it('should handle round-trip file operations', async () => {
-        // Create file
-        const fileBlob = await smartHealthCard.createFileBlob(validBundle)
+        // Create health card and file
+        const healthCard = await issuer.issue(validBundle)
+        const fileBlob = await healthCard.asFileBlob()
 
-        // Extract bundle from file
-        const extractedBundle = await smartHealthCard.getBundleFromFile(fileBlob)
+        // Read back from file
+        const verifiedHealthCard = await reader.fromFileContent(fileBlob)
+        const extractedBundle = await verifiedHealthCard.asBundle()
 
         // Data should match original
         expect(extractedBundle).toEqual(validBundle)
       })
     })
 
-    describe('file operations', () => {
-      it('should create SMART Health Card file content', async () => {
-        const fileContent = await smartHealthCard.createFile(validBundle)
+    describe('SmartHealthCard output formats', () => {
+      it('should create file content in correct format', async () => {
+        const healthCard = await issuer.issue(validBundle)
+        const fileContent = await healthCard.asFileContent()
 
         expect(fileContent).toBeDefined()
         expect(typeof fileContent).toBe('string')
 
-        // Should be a valid JWS format
-        const parts = fileContent.split('.')
-        expect(parts).toHaveLength(3)
+        // Should be valid JSON with verifiableCredential array
+        const parsed = JSON.parse(fileContent)
+        expect(parsed).toHaveProperty('verifiableCredential')
+        expect(Array.isArray(parsed.verifiableCredential)).toBe(true)
+        expect(parsed.verifiableCredential).toHaveLength(1)
+
+        // The JWS should be valid
+        const jws = parsed.verifiableCredential[0]
+        expect(typeof jws).toBe('string')
+        expect(jws.split('.')).toHaveLength(3)
       })
 
       it('should create downloadable file blob', async () => {
-        const blob = await smartHealthCard.createFileBlob(validBundle)
+        const healthCard = await issuer.issue(validBundle)
+        const blob = await healthCard.asFileBlob()
 
         expect(blob).toBeInstanceOf(Blob)
         expect(blob.type).toBe('application/smart-health-card')
         expect(blob.size).toBeGreaterThan(0)
       })
 
-      it('should verify SMART Health Card from file content string', async () => {
-        const fileContent = await smartHealthCard.createFile(validBundle)
-        const verifiedVC = await smartHealthCard.verifyFile(fileContent)
+      it('should generate QR codes', async () => {
+        const healthCard = await issuer.issue(validBundle)
+        const qrCodes = await healthCard.asQR()
 
-        expect(verifiedVC).toBeDefined()
-        expect(verifiedVC.vc.credentialSubject.fhirBundle).toEqual(validBundle)
-      })
+        expect(Array.isArray(qrCodes)).toBe(true)
+        expect(qrCodes.length).toBeGreaterThan(0)
 
-      it('should verify SMART Health Card from Blob', async () => {
-        const blob = await smartHealthCard.createFileBlob(validBundle)
-        const verifiedVC = await smartHealthCard.verifyFile(blob)
-
-        expect(verifiedVC).toBeDefined()
-        expect(verifiedVC.vc.credentialSubject.fhirBundle).toEqual(validBundle)
-      })
-
-      it('should handle round-trip file operations', async () => {
-        // Create file
-        const blob = await smartHealthCard.createFileBlob(validBundle)
-
-        // Verify file
-        const verifiedVC = await smartHealthCard.verifyFile(blob)
-
-        // Data should match original
-        expect(verifiedVC.vc.credentialSubject.fhirBundle).toEqual(validBundle)
-      })
-
-      it('should throw error for invalid file content', async () => {
-        await expect(smartHealthCard.verifyFile('invalid-content')).rejects.toThrow(
-          SmartHealthCardError
-        )
-        await expect(smartHealthCard.verifyFile('invalid-content')).rejects.toThrow(
-          'Invalid file format - expected JSON with verifiableCredential array'
-        )
-      })
-
-      it('should throw error for invalid Blob content', async () => {
-        const invalidBlob = new Blob(['invalid-jws-content'], {
-          type: 'application/smart-health-card',
+        // Each QR code should be a data URL
+        qrCodes.forEach(qr => {
+          expect(typeof qr).toBe('string')
+          expect(qr).toMatch(/^data:image\/png;base64,/)
         })
-
-        await expect(smartHealthCard.verifyFile(invalidBlob)).rejects.toThrow(SmartHealthCardError)
       })
     })
 
     describe('end-to-end workflow', () => {
       it('should handle complete SMART Health Card workflow', async () => {
-        // Step 1: Create health card from FHIR bundle
-        const healthCard = await smartHealthCard.create(validBundle)
+        // Step 1: Issue health card from FHIR bundle
+        const healthCard = await issuer.issue(validBundle)
         expect(healthCard).toBeDefined()
 
-        // Step 2: Verify the health card
-        const verifiedVC = await smartHealthCard.verify(healthCard)
-        expect(verifiedVC).toBeDefined()
+        // Step 2: Get JWS representation
+        const jws = healthCard.asJWS()
+        expect(jws).toBeDefined()
+        expect(typeof jws).toBe('string')
 
-        // Step 3: Verify the data integrity
-        expect(verifiedVC.vc.credentialSubject.fhirBundle).toEqual(validBundle)
+        // Step 3: Verify the health card using reader
+        const verifiedHealthCard = await reader.fromJWS(jws)
+        expect(verifiedHealthCard).toBeDefined()
 
-        // Step 4: Verify it's a proper SMART Health Card structure
-        expect(verifiedVC.vc.type).toContain('https://smarthealth.cards#health-card')
+        // Step 4: Verify data integrity
+        const verifiedBundle = await verifiedHealthCard.asBundle()
+        expect(verifiedBundle).toEqual(validBundle)
       })
 
       it('should handle complete file-based workflow', async () => {
-        // Step 1: Create health card file blob
-        const blob = await smartHealthCard.createFileBlob(validBundle)
+        // Step 1: Issue health card and create file
+        const healthCard = await issuer.issue(validBundle)
+        const blob = await healthCard.asFileBlob()
         expect(blob).toBeInstanceOf(Blob)
         expect(blob.type).toBe('application/smart-health-card')
 
-        // Step 2: Verify the file
-        const verifiedVC = await smartHealthCard.verifyFile(blob)
-        expect(verifiedVC).toBeDefined()
+        // Step 2: Read and verify the file
+        const verifiedHealthCard = await reader.fromFileContent(blob)
+        expect(verifiedHealthCard).toBeDefined()
 
         // Step 3: Verify data integrity
-        expect(verifiedVC.vc.credentialSubject.fhirBundle).toEqual(validBundle)
+        const verifiedBundle = await verifiedHealthCard.asBundle()
+        expect(verifiedBundle).toEqual(validBundle)
       })
     })
   })
@@ -1006,7 +1040,7 @@ EQqQipjEJazEpNXKUbJ4GV0zYi4qZqIOC5tBTyAYas7JJ9RW6mFuNysgJA==
       qrGenerator = new QRCodeGenerator()
 
       // Create a valid JWS for testing
-      const smartHealthCard = new SmartHealthCard({
+      const issuer = new SmartHealthCardIssuer({
         issuer: 'https://example.com/issuer',
         privateKey: testPrivateKeyPKCS8,
         publicKey: testPublicKeySPKI,
@@ -1015,8 +1049,9 @@ EQqQipjEJazEpNXKUbJ4GV0zYi4qZqIOC5tBTyAYas7JJ9RW6mFuNysgJA==
         strictReferences: true,
       })
 
-      const validBundle = createValidFhirBundle()
-      validJWS = await smartHealthCard.create(validBundle)
+      const validBundle = createValidFHIRBundle()
+      const healthCard = await issuer.issue(validBundle)
+      validJWS = healthCard.asJWS()
     })
 
     describe('generateQR()', () => {
@@ -1529,18 +1564,16 @@ EQqQipjEJazEpNXKUbJ4GV0zYi4qZqIOC5tBTyAYas7JJ9RW6mFuNysgJA==
         expect(scannedJWS).toBe(validJWS)
 
         // Should be verifiable
-        const smartHealthCard = new SmartHealthCard({
-          issuer: 'https://example.com/issuer',
-          privateKey: testPrivateKeyPKCS8,
+        const reader = new SmartHealthCardReader({
           publicKey: testPublicKeySPKI,
-          expirationTime: null,
           enableQROptimization: false,
           strictReferences: true,
         })
 
-        const verifiedVC = await smartHealthCard.verify(scannedJWS)
-        expect(verifiedVC).toBeDefined()
-        expect(verifiedVC.vc.credentialSubject.fhirBundle).toEqual(createValidFhirBundle())
+        const verifiedHealthCard = await reader.fromJWS(scannedJWS)
+        expect(verifiedHealthCard).toBeDefined()
+        const verifiedBundle = await verifiedHealthCard.asBundle()
+        expect(verifiedBundle).toEqual(createValidFHIRBundle())
       })
 
       it('should handle chunked QR workflow', async () => {
@@ -1636,9 +1669,11 @@ EQqQipjEJazEpNXKUbJ4GV0zYi4qZqIOC5tBTyAYas7JJ9RW6mFuNysgJA==
   })
 
   describe('Compression Features', () => {
-    let smartHealthCard: SmartHealthCard
-    let validBundle: FhirBundle
-    let config: SmartHealthCardConfig
+    let issuer: SmartHealthCardIssuer
+    let reader: SmartHealthCardReader
+    let validBundle: FHIRBundle
+    let issuerConfig: SmartHealthCardConfig
+    let readerConfig: SmartHealthCardReaderConfigParams
 
     // Test key pairs for ES256 (these are for testing only - never use in production)
     const testPrivateKeyPKCS8 = `-----BEGIN PRIVATE KEY-----
@@ -1653,8 +1688,8 @@ EQqQipjEJazEpNXKUbJ4GV0zYi4qZqIOC5tBTyAYas7JJ9RW6mFuNysgJA==
 -----END PUBLIC KEY-----`
 
     beforeEach(() => {
-      validBundle = createValidFhirBundle()
-      config = {
+      validBundle = createValidFHIRBundle()
+      issuerConfig = {
         issuer: 'https://example.com/issuer',
         privateKey: testPrivateKeyPKCS8,
         publicKey: testPublicKeySPKI,
@@ -1662,45 +1697,57 @@ EQqQipjEJazEpNXKUbJ4GV0zYi4qZqIOC5tBTyAYas7JJ9RW6mFuNysgJA==
         enableQROptimization: false,
         strictReferences: true,
       }
-      smartHealthCard = new SmartHealthCard(config)
+      readerConfig = {
+        publicKey: testPublicKeySPKI,
+        enableQROptimization: false,
+        strictReferences: true,
+      }
+      issuer = new SmartHealthCardIssuer(issuerConfig)
+      reader = new SmartHealthCardReader(readerConfig)
     })
 
     it('should create compressed SMART Health Card', async () => {
-      const healthCard = await smartHealthCard.create(validBundle)
+      const healthCard = await issuer.issue(validBundle)
+      const jws = healthCard.asJWS()
 
-      expect(healthCard).toBeDefined()
-      expect(typeof healthCard).toBe('string')
+      expect(jws).toBeDefined()
+      expect(typeof jws).toBe('string')
 
       // Should be a valid JWS format (3 parts separated by dots)
-      const parts = healthCard.split('.')
+      const parts = jws.split('.')
       expect(parts).toHaveLength(3)
 
       // Check header to ensure compression flag is set
       const { decodeProtectedHeader } = await import('jose')
-      const header = decodeProtectedHeader(healthCard)
+      const header = decodeProtectedHeader(jws)
       expect(header.zip).toBe('DEF')
     })
 
     it('should verify compressed SMART Health Card', async () => {
-      const healthCard = await smartHealthCard.create(validBundle)
-      const verifiedVC = await smartHealthCard.verify(healthCard)
+      const healthCard = await issuer.issue(validBundle)
+      const verifiedHealthCard = await reader.fromJWS(healthCard.asJWS())
+      const verifiedBundle = await verifiedHealthCard.asBundle()
 
-      expect(verifiedVC).toBeDefined()
-      expect(verifiedVC.vc.credentialSubject.fhirBundle).toEqual(validBundle)
+      expect(verifiedBundle).toBeDefined()
+      expect(verifiedBundle).toEqual(validBundle)
     })
 
     it('should handle round-trip compression and decompression', async () => {
-      const healthCard = await smartHealthCard.create(validBundle)
-      const verifiedVC = await smartHealthCard.verify(healthCard)
+      const healthCard = await issuer.issue(validBundle)
+      const verifiedHealthCard = await reader.fromJWS(healthCard.asJWS())
+      const verifiedBundle = await verifiedHealthCard.asBundle()
 
       // Data should match original
-      expect(verifiedVC.vc.credentialSubject.fhirBundle).toEqual(validBundle)
+      expect(verifiedBundle).toEqual(validBundle)
     })
   })
 
   describe('File Format Features', () => {
-    let smartHealthCard: SmartHealthCard
-    let validBundle: FhirBundle
+    let issuer: SmartHealthCardIssuer
+    let reader: SmartHealthCardReader
+    let validBundle: FHIRBundle
+    let issuerConfig: SmartHealthCardConfig
+    let readerConfig: SmartHealthCardReaderConfigParams
 
     // Test key pairs for ES256 (these are for testing only - never use in production)
     const testPrivateKeyPKCS8 = `-----BEGIN PRIVATE KEY-----
@@ -1715,8 +1762,8 @@ EQqQipjEJazEpNXKUbJ4GV0zYi4qZqIOC5tBTyAYas7JJ9RW6mFuNysgJA==
 -----END PUBLIC KEY-----`
 
     beforeEach(() => {
-      validBundle = createValidFhirBundle()
-      const config: SmartHealthCardConfig = {
+      validBundle = createValidFHIRBundle()
+      issuerConfig = {
         issuer: 'https://example.com/issuer',
         privateKey: testPrivateKeyPKCS8,
         publicKey: testPublicKeySPKI,
@@ -1724,11 +1771,18 @@ EQqQipjEJazEpNXKUbJ4GV0zYi4qZqIOC5tBTyAYas7JJ9RW6mFuNysgJA==
         enableQROptimization: false,
         strictReferences: true,
       }
-      smartHealthCard = new SmartHealthCard(config)
+      readerConfig = {
+        publicKey: testPublicKeySPKI,
+        enableQROptimization: false,
+        strictReferences: true,
+      }
+      issuer = new SmartHealthCardIssuer(issuerConfig)
+      reader = new SmartHealthCardReader(readerConfig)
     })
 
     it('should create file with JSON wrapper format', async () => {
-      const fileContent = await smartHealthCard.createFile(validBundle)
+      const healthCard = await issuer.issue(validBundle)
+      const fileContent = await healthCard.asFileContent()
 
       expect(fileContent).toBeDefined()
       expect(typeof fileContent).toBe('string')
@@ -1746,11 +1800,13 @@ EQqQipjEJazEpNXKUbJ4GV0zYi4qZqIOC5tBTyAYas7JJ9RW6mFuNysgJA==
     })
 
     it('should verify file with JSON wrapper format', async () => {
-      const fileContent = await smartHealthCard.createFile(validBundle)
-      const verifiedVC = await smartHealthCard.verifyFile(fileContent)
+      const healthCard = await issuer.issue(validBundle)
+      const fileContent = await healthCard.asFileContent()
+      const verifiedHealthCard = await reader.fromFileContent(fileContent)
+      const verifiedBundle = await verifiedHealthCard.asBundle()
 
-      expect(verifiedVC).toBeDefined()
-      expect(verifiedVC.vc.credentialSubject.fhirBundle).toEqual(validBundle)
+      expect(verifiedBundle).toBeDefined()
+      expect(verifiedBundle).toEqual(validBundle)
     })
 
     it('should throw error for empty verifiableCredential array', async () => {
@@ -1758,7 +1814,7 @@ EQqQipjEJazEpNXKUbJ4GV0zYi4qZqIOC5tBTyAYas7JJ9RW6mFuNysgJA==
         verifiableCredential: [],
       })
 
-      await expect(smartHealthCard.verifyFile(invalidFileContent)).rejects.toThrow(
+      await expect(reader.fromFileContent(invalidFileContent)).rejects.toThrow(
         'File contains empty verifiableCredential array'
       )
     })
@@ -1768,23 +1824,23 @@ EQqQipjEJazEpNXKUbJ4GV0zYi4qZqIOC5tBTyAYas7JJ9RW6mFuNysgJA==
         somethingElse: ['jws'],
       })
 
-      await expect(smartHealthCard.verifyFile(invalidFileContent)).rejects.toThrow(
+      await expect(reader.fromFileContent(invalidFileContent)).rejects.toThrow(
         'File does not contain expected verifiableCredential array'
       )
     })
   })
 
   describe('QR Optimization Features', () => {
-    let fhirProcessor: FhirBundleProcessor
-    let validBundle: FhirBundle
+    let fhirProcessor: FHIRBundleProcessor
+    let validBundle: FHIRBundle
 
     beforeEach(() => {
-      fhirProcessor = new FhirBundleProcessor()
-      validBundle = createValidFhirBundle()
+      fhirProcessor = new FHIRBundleProcessor()
+      validBundle = createValidFHIRBundle()
     })
 
     describe('SMART Health Cards QR optimization requirements', () => {
-      let optimizedBundle: FhirBundle
+      let optimizedBundle: FHIRBundle
 
       beforeEach(() => {
         // Create a bundle with all the elements that should be removed
@@ -2129,18 +2185,25 @@ EQqQipjEJazEpNXKUbJ4GV0zYi4qZqIOC5tBTyAYas7JJ9RW6mFuNysgJA==
         // enableQROptimization and strictReferences are true by default
       }
 
-      const smartHealthCard = new SmartHealthCard(config)
-      const healthCard = await smartHealthCard.create(validBundle)
+      const issuer = new SmartHealthCardIssuer(config)
+      const reader = new SmartHealthCardReader({
+        publicKey: config.publicKey,
+        enableQROptimization: config.enableQROptimization,
+        strictReferences: config.strictReferences,
+      })
 
-      expect(healthCard).toBeDefined()
-      expect(typeof healthCard).toBe('string')
+      const healthCard = await issuer.issue(validBundle)
+      const jws = healthCard.asJWS()
+
+      expect(jws).toBeDefined()
+      expect(typeof jws).toBe('string')
 
       // Verify the optimized bundle can still be verified
-      const verifiedVC = await smartHealthCard.verify(healthCard)
-      expect(verifiedVC).toBeDefined()
+      const verifiedHealthCard = await reader.fromJWS(jws)
+      expect(verifiedHealthCard).toBeDefined()
 
       // Check that optimization was applied by looking at the bundle structure
-      const bundle = verifiedVC.vc.credentialSubject.fhirBundle
+      const bundle = await verifiedHealthCard.asBundle()
       if (bundle.entry) {
         bundle.entry.forEach((entry, index) => {
           if (entry.fullUrl) {
@@ -2167,12 +2230,18 @@ EQqQipjEJazEpNXKUbJ4GV0zYi4qZqIOC5tBTyAYas7JJ9RW6mFuNysgJA==
         strictReferences: true,
       }
 
-      const smartHealthCard = new SmartHealthCard(config)
-      const healthCard = await smartHealthCard.create(validBundle)
-      const verifiedVC = await smartHealthCard.verify(healthCard)
+      const issuer = new SmartHealthCardIssuer(config)
+      const reader = new SmartHealthCardReader({
+        publicKey: config.publicKey,
+        enableQROptimization: config.enableQROptimization,
+        strictReferences: config.strictReferences,
+      })
+
+      const healthCard = await issuer.issue(validBundle)
+      const verifiedHealthCard = await reader.fromJWS(healthCard.asJWS())
 
       // Essential data should be preserved
-      const optimizedBundle = verifiedVC.vc.credentialSubject.fhirBundle
+      const optimizedBundle = await verifiedHealthCard.asBundle()
       expect(optimizedBundle.resourceType).toBe('Bundle')
       expect(optimizedBundle.type).toBe('collection')
       expect(optimizedBundle.entry).toHaveLength(validBundle.entry?.length || 0)

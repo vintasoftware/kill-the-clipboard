@@ -15,21 +15,16 @@ const V22_MAX_JWS_BY_EC_LEVEL = {
 } as const
 
 // Re-export FHIR Bundle type for convenience
-export type FhirBundle = Bundle
+export type FHIRBundle = Bundle
 
 export interface VerifiableCredential {
   vc: {
     type: string[]
     credentialSubject: {
       fhirVersion: string
-      fhirBundle: FhirBundle
+      fhirBundle: FHIRBundle
     }
   }
-}
-
-export interface VerifiableCredentialOptions {
-  fhirVersion?: string
-  includeAdditionalTypes?: string[]
 }
 
 export interface SmartHealthCardJWT {
@@ -37,21 +32,6 @@ export interface SmartHealthCardJWT {
   nbf: number // Not before timestamp
   exp?: number // Optional expiration timestamp
   vc: VerifiableCredential['vc']
-  [key: string]: unknown // Index signature to match JWTPayload
-}
-
-export interface JwksKey {
-  kty: 'EC'
-  use: 'sig'
-  kid: string
-  x: string
-  y: string
-  crv: 'P-256'
-  alg: 'ES256'
-}
-
-export interface JwksResponse {
-  keys: JwksKey[]
 }
 
 // Error Classes
@@ -105,9 +85,23 @@ export interface SmartHealthCardConfigParams {
 
 export type SmartHealthCardConfig = Required<SmartHealthCardConfigParams>
 
-// Additional QR encoding options that can be passed to the qrcode library
-// This interface matches the expected qrcode library options
-export interface QREncodeOptions {
+// Reader configuration only needs public key for verification
+export interface SmartHealthCardReaderConfigParams {
+  publicKey: CryptoKey | Uint8Array | string
+  enableQROptimization?: boolean // Whether to optimize FHIR Bundle for QR codes, defaults to true
+  strictReferences?: boolean // If true, throw error for missing references; if false, map to reference:{index}, defaults to true
+}
+
+export type SmartHealthCardReaderConfig = Required<SmartHealthCardReaderConfigParams>
+
+export interface VerifiableCredentialParams {
+  fhirVersion?: string
+  includeAdditionalTypes?: string[]
+}
+
+// Additional QR encoding params that can be passed to the qrcode library
+// This interface matches the expected qrcode library params
+export interface QREncodeParams {
   errorCorrectionLevel?: 'L' | 'M' | 'Q' | 'H' // Error correction level
   version?: number // 1..40, QR code version
   maskPattern?: 0 | 1 | 2 | 3 | 4 | 5 | 6 | 7 // 0..7, mask number
@@ -123,15 +117,85 @@ export interface QREncodeOptions {
 export interface QRCodeConfigParams {
   maxSingleQRSize?: number // Maximum size for single QR code (auto-derived from errorCorrectionLevel if not provided)
   enableChunking?: boolean // Whether to support multi-chunk QR codes (deprecated per SMART Health Cards spec)
-  encodeOptions?: QREncodeOptions // Options to pass to QR encoding function
+  encodeOptions?: QREncodeParams // Params to pass to QR encoding function
 }
 
 export type QRCodeConfig = Required<QRCodeConfigParams>
 
 // Core Classes
+
+/**
+ * Represents an issued SMART Health Card with various output formats
+ * This is the main user-facing object that provides different ways to export the health card
+ */
 export class SmartHealthCard {
+  constructor(
+    private readonly jws: string,
+    private readonly originalBundle: FHIRBundle
+  ) {}
+
+  /**
+   * Returns the raw JWS string
+   */
+  asJWS(): string {
+    return this.jws
+  }
+
+  /**
+   * Returns the original FHIR Bundle (unoptimized)
+   */
+  getOriginalBundle(): FHIRBundle {
+    return this.originalBundle
+  }
+
+  /**
+   * Returns the health card as QR code data URLs
+   */
+  async asQR(config: QRCodeConfigParams = {}): Promise<string[]> {
+    const qrGenerator = new QRCodeGenerator(config)
+    return await qrGenerator.generateQR(this.jws)
+  }
+
+  /**
+   * Returns the FHIR Bundle from the health card
+   * @param optimizeForQR - Whether to apply QR code optimizations to the bundle
+   * @param strictReferences - Whether to enforce strict reference validation when optimizing
+   */
+  async asBundle(optimizeForQR?: boolean, strictReferences?: boolean): Promise<FHIRBundle> {
+    if (optimizeForQR) {
+      const fhirProcessor = new FHIRBundleProcessor()
+      return fhirProcessor.processForQR(this.originalBundle, strictReferences ?? true)
+    }
+    return this.originalBundle
+  }
+
+  /**
+   * Returns the health card as file content (JSON string with verifiableCredential array)
+   */
+  async asFileContent(): Promise<string> {
+    const fileContent = {
+      verifiableCredential: [this.jws],
+    }
+    return JSON.stringify(fileContent)
+  }
+
+  /**
+   * Returns the health card as a downloadable Blob
+   */
+  async asFileBlob(): Promise<Blob> {
+    const fileContent = await this.asFileContent()
+    return new Blob([fileContent], {
+      type: 'application/smart-health-card',
+    })
+  }
+}
+
+/**
+ * Issues new SMART Health Cards from FHIR Bundles
+ */
+export class SmartHealthCardIssuer {
   private config: SmartHealthCardConfig
-  private fhirProcessor: FhirBundleProcessor
+  private fhirProcessor: FHIRBundleProcessor
   private vcProcessor: VerifiableCredentialProcessor
   private jwsProcessor: JWSProcessor
 
@@ -143,18 +207,29 @@ export class SmartHealthCard {
       strictReferences: config.strictReferences ?? true,
     }
 
-    this.fhirProcessor = new FhirBundleProcessor()
+    this.fhirProcessor = new FHIRBundleProcessor()
     this.vcProcessor = new VerifiableCredentialProcessor()
     this.jwsProcessor = new JWSProcessor()
   }
 
   /**
-   * Creates a SMART Health Card from a FHIR Bundle
-   * Returns a compressed JWS ready for QR code generation
+   * Issues a new SMART Health Card from a FHIR Bundle
+   * Returns a SmartHealthCard object with various export methods
    */
-  async create(
-    fhirBundle: FhirBundle,
-    vcOptions: VerifiableCredentialOptions = {}
+  async issue(
+    fhirBundle: FHIRBundle,
+    vcOptions: VerifiableCredentialParams = {}
+  ): Promise<SmartHealthCard> {
+    const jws = await this.createJWS(fhirBundle, vcOptions)
+    return new SmartHealthCard(jws, fhirBundle)
+  }
+
+  /**
+   * Internal method to create JWS from FHIR Bundle
+   */
+  private async createJWS(
+    fhirBundle: FHIRBundle,
+    vcOptions: VerifiableCredentialParams = {}
   ): Promise<string> {
     try {
       // Step 1: Process and validate FHIR Bundle
@@ -163,7 +238,7 @@ export class SmartHealthCard {
         : this.fhirProcessor.process(fhirBundle)
       this.fhirProcessor.validate(processedBundle)
 
-      // Step 2: Create W3C Verifiable Credential
+      // Step 2: Create Verifiable Credential
       const vc = this.vcProcessor.create(processedBundle, vcOptions)
       this.vcProcessor.validate(vc)
 
@@ -200,48 +275,32 @@ export class SmartHealthCard {
       )
     }
   }
+}
 
-  /**
-   * Creates a SMART Health Card file content from a FHIR Bundle
-   * Returns the file content as a string suitable for .smart-health-card files
-   */
-  async createFile(
-    fhirBundle: FhirBundle,
-    vcOptions: VerifiableCredentialOptions = {}
-  ): Promise<string> {
-    // Generate the JWS
-    const jws = await this.create(fhirBundle, vcOptions)
+/**
+ * Reads and verifies SMART Health Cards from various sources
+ */
+export class SmartHealthCardReader {
+  private config: SmartHealthCardReaderConfig
+  private vcProcessor: VerifiableCredentialProcessor
+  private jwsProcessor: JWSProcessor
 
-    // Per SMART Health Cards spec, the file content should be a JSON wrapper
-    // with verifiableCredential array containing the JWS
-    const fileContent = {
-      verifiableCredential: [jws],
+  constructor(config: SmartHealthCardReaderConfigParams) {
+    this.config = {
+      ...config,
+      enableQROptimization: config.enableQROptimization ?? true,
+      strictReferences: config.strictReferences ?? true,
     }
 
-    return JSON.stringify(fileContent)
+    this.vcProcessor = new VerifiableCredentialProcessor()
+    this.jwsProcessor = new JWSProcessor()
   }
 
   /**
-   * Creates a downloadable Blob for SMART Health Card file (.smart-health-card)
-   * Web-compatible method for generating downloadable files
-   */
-  async createFileBlob(
-    fhirBundle: FhirBundle,
-    vcOptions: VerifiableCredentialOptions = {}
-  ): Promise<Blob> {
-    const fileContent = await this.createFile(fhirBundle, vcOptions)
-
-    // Create a Blob with the appropriate MIME type
-    return new Blob([fileContent], {
-      type: 'application/smart-health-card',
-    })
-  }
-
-  /**
-   * Verifies a SMART Health Card from file content
+   * Reads and verifies a SMART Health Card from file content
    * Accepts file content (string) or Blob from .smart-health-card files
    */
-  async verifyFile(fileContent: string | Blob): Promise<VerifiableCredential> {
+  async fromFileContent(fileContent: string | Blob): Promise<SmartHealthCard> {
     let contentString: string
 
     if (fileContent instanceof Blob) {
@@ -253,7 +312,6 @@ export class SmartHealthCard {
 
     // Parse the JWS content
     const contentToParse = contentString
-
     let jws: string
 
     try {
@@ -286,23 +344,26 @@ export class SmartHealthCard {
       )
     }
 
-    // Verify the JWS content
-    return await this.verify(jws)
+    // Verify and return SmartHealthCard object
+    return await this.fromJWS(jws)
   }
 
   /**
-   * Verifies a SMART Health Card JWS and returns the contained Verifiable Credential
+   * Reads and verifies a SMART Health Card JWS and returns a SmartHealthCard object
    */
-  async verify(jws: string): Promise<VerifiableCredential> {
+  async fromJWS(jws: string): Promise<SmartHealthCard> {
     try {
       // Step 1: Verify JWS signature and extract payload (decompression handled automatically)
       const payload = await this.jwsProcessor.verify(jws, this.config.publicKey)
 
-      // Step 2: Validate and return the VC
+      // Step 2: Validate the VC
       const vc: VerifiableCredential = { vc: payload.vc }
       this.vcProcessor.validate(vc)
 
-      return vc
+      // Step 3: Extract and return the original FHIR Bundle
+      const originalBundle = vc.vc.credentialSubject.fhirBundle
+
+      return new SmartHealthCard(jws, originalBundle)
     } catch (error) {
       if (error instanceof SmartHealthCardError) {
         throw error
@@ -314,37 +375,19 @@ export class SmartHealthCard {
       )
     }
   }
-
-  /**
-   * Verifies a SMART Health Card JWS and returns the contained FHIR Bundle
-   * Convenience method that extracts the FHIR Bundle from the verified credential
-   */
-  async getBundle(jws: string): Promise<FhirBundle> {
-    const verifiedCredential = await this.verify(jws)
-    return verifiedCredential.vc.credentialSubject.fhirBundle
-  }
-
-  /**
-   * Verifies a SMART Health Card file and returns the contained FHIR Bundle
-   * Convenience method that extracts the FHIR Bundle from the verified credential
-   */
-  async getBundleFromFile(fileContent: string | Blob): Promise<FhirBundle> {
-    const verifiedCredential = await this.verifyFile(fileContent)
-    return verifiedCredential.vc.credentialSubject.fhirBundle
-  }
 }
 
-export class FhirBundleProcessor {
+export class FHIRBundleProcessor {
   /**
    * Processes a FHIR Bundle according to SMART Health Cards specification
    */
-  process(bundle: FhirBundle): FhirBundle {
+  process(bundle: FHIRBundle): FHIRBundle {
     if (!bundle || bundle.resourceType !== 'Bundle') {
       throw new FhirValidationError('Invalid bundle: must be a FHIR Bundle resource')
     }
 
     // Create a deep copy to avoid modifying the original
-    const processedBundle: FhirBundle = JSON.parse(JSON.stringify(bundle))
+    const processedBundle: FHIRBundle = JSON.parse(JSON.stringify(bundle))
 
     // Ensure Bundle.type defaults to "collection" per SMART Health Cards spec
     // This is the only explicit field requirement mentioned in the spec
@@ -359,7 +402,7 @@ export class FhirBundleProcessor {
    * Processes a FHIR Bundle with QR code optimizations
    * Implements short resource-scheme URIs and removes unnecessary fields
    */
-  processForQR(bundle: FhirBundle, strict: boolean): FhirBundle {
+  processForQR(bundle: FHIRBundle, strict: boolean): FHIRBundle {
     // Start with standard processing
     const processedBundle = this.process(bundle)
 
@@ -373,8 +416,8 @@ export class FhirBundleProcessor {
    * - Removes unnecessary .id and .display fields
    * - Removes empty arrays and null values
    */
-  private optimizeForQR(bundle: FhirBundle, strict: boolean): FhirBundle {
-    const optimizedBundle: FhirBundle = JSON.parse(JSON.stringify(bundle))
+  private optimizeForQR(bundle: FHIRBundle, strict: boolean): FHIRBundle {
+    const optimizedBundle: FHIRBundle = JSON.parse(JSON.stringify(bundle))
 
     // Drop Bundle.id
     delete optimizedBundle.id
@@ -536,7 +579,7 @@ export class FhirBundleProcessor {
    * Validates a FHIR Bundle for basic compliance
    * More comprehensive validation can be added based on specific FHIR profiles
    */
-  validate(bundle: FhirBundle): boolean {
+  validate(bundle: FHIRBundle): boolean {
     try {
       // Basic structure validation
       if (!bundle) {
@@ -599,10 +642,10 @@ export class FhirBundleProcessor {
 
 export class VerifiableCredentialProcessor {
   /**
-   * Creates a W3C Verifiable Credential for SMART Health Cards
+   * Creates a Verifiable Credential for SMART Health Cards
    * Following the specification at https://spec.smarthealth.cards/
    */
-  create(fhirBundle: FhirBundle, options: VerifiableCredentialOptions = {}): VerifiableCredential {
+  create(fhirBundle: FHIRBundle, options: VerifiableCredentialParams = {}): VerifiableCredential {
     // Validate input bundle
     if (!fhirBundle || fhirBundle.resourceType !== 'Bundle') {
       throw new FhirValidationError('Invalid FHIR Bundle provided')
@@ -629,7 +672,7 @@ export class VerifiableCredentialProcessor {
   }
 
   /**
-   * Validates a W3C Verifiable Credential for SMART Health Cards compliance
+   * Validates a Verifiable Credential for SMART Health Cards compliance
    */
   validate(vc: VerifiableCredential): boolean {
     try {
@@ -689,7 +732,7 @@ export class VerifiableCredentialProcessor {
    */
   private validateCredentialSubject(credentialSubject: {
     fhirVersion: string
-    fhirBundle: FhirBundle
+    fhirBundle: FHIRBundle
   }): void {
     if (!credentialSubject) {
       throw new FhirValidationError('VC credentialSubject is required')
@@ -928,7 +971,7 @@ export class QRCodeGenerator {
    * Uses Version 22 QR code limits from SMART Health Cards QR Code FAQ
    */
   private deriveMaxSingleQRSize(
-    errorCorrectionLevel: Required<QREncodeOptions>['errorCorrectionLevel']
+    errorCorrectionLevel: Required<QREncodeParams>['errorCorrectionLevel']
   ): number {
     const ecLevel = errorCorrectionLevel
     return V22_MAX_JWS_BY_EC_LEVEL[ecLevel]
@@ -938,7 +981,7 @@ export class QRCodeGenerator {
    * Builds the final options object for encodeQR by merging defaults with user options
    * Defaults are aligned with SMART Health Cards specification recommendations
    */
-  private buildEncodeOptions(encodeOptions: QREncodeOptions = {}) {
+  private buildEncodeOptions(encodeOptions: QREncodeParams = {}) {
     // Default options aligned with SMART Health Cards specification
     // See: https://spec.smarthealth.cards/#health-cards-as-qr-codes
     const defaultOptions = {

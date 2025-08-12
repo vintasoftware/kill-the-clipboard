@@ -46,16 +46,21 @@ yarn add kill-the-clipboard
 ### Basic Usage
 
 ```typescript
-import { SmartHealthCard } from 'kill-the-clipboard';
+import { SmartHealthCardIssuer, SmartHealthCardReader } from 'kill-the-clipboard';
 
-// Configure with your issuer details and ES256 key pair
-const healthCard = new SmartHealthCard({
+// Configure issuer with your details and ES256 key pair
+const issuer = new SmartHealthCardIssuer({
   issuer: 'https://your-healthcare-org.com',
   privateKey: privateKeyPKCS8String, // ES256 private key in PKCS#8 format
   publicKey: publicKeySPKIString,     // ES256 public key in SPKI format
 });
 
-// Create SMART Health Card from FHIR Bundle
+// Configure reader for verification (only needs public key)
+const reader = new SmartHealthCardReader({
+  publicKey: publicKeySPKIString,     // ES256 public key in SPKI format
+});
+
+// Create FHIR Bundle
 const fhirBundle = {
   resourceType: 'Bundle',  
   type: 'collection',
@@ -89,36 +94,61 @@ const fhirBundle = {
   ],
 };
 
-// Generate signed SMART Health Card (JWS format)
-const signedHealthCard = await healthCard.create(fhirBundle);
-console.log('Health Card JWS:', signedHealthCard);
+// Issue a new SMART Health Card
+const healthCard = await issuer.issue(fhirBundle);
+console.log('Health Card JWS:', healthCard.asJWS());
 
-// Verify the health card and get the FHIR Bundle
-const verifiedBundle = await healthCard.getBundle(signedHealthCard);
+// Generate QR codes
+const qrCodes = await healthCard.asQR();
+console.log('QR code data URL:', qrCodes[0]);
+
+// Create downloadable .smart-health-card file
+const blob = await healthCard.asFileBlob();
+console.log('File blob created, type:', blob.type);
+
+// Verify and read the health card
+const verifiedHealthCard = await reader.fromJWS(healthCard.asJWS());
+const verifiedBundle = await verifiedHealthCard.asBundle();
 console.log('Verified FHIR Bundle:', verifiedBundle);
 
-// Or use the full verify method to get the complete verifiable credential
-const verifiedCredential = await healthCard.verify(signedHealthCard);
-console.log('Complete credential:', verifiedCredential);
-
-// Generate downloadable .smart-health-card file
-const blob = await healthCard.createFileBlob(fhirBundle);
-console.log('File blob created, type:', blob.type);
+// Read from file content
+const fileContent = await healthCard.asFileContent();
+const healthCardFromFile = await reader.fromFileContent(fileContent);
+console.log('Bundle from file:', await healthCardFromFile.asBundle());
 ```
 
 ### Advanced Usage
 
 ```typescript
 import { 
-  SmartHealthCard,
-  FhirBundleProcessor, 
+  SmartHealthCardIssuer,
+  SmartHealthCardReader,
+  FHIRBundleProcessor, 
   VerifiableCredentialProcessor,
   JWSProcessor,
   QRCodeGenerator 
 } from 'kill-the-clipboard';
 
+// High-level API with SmartHealthCard object
+const issuer = new SmartHealthCardIssuer(config);
+const healthCard = await issuer.issue(fhirBundle, {
+  includeAdditionalTypes: ['https://smarthealth.cards#covid19'],
+});
+
+// SmartHealthCard provides various output formats
+const qrCodes = await healthCard.asQR({
+  enableChunking: false,
+  encodeOptions: {
+    errorCorrectionLevel: 'L',
+    scale: 4,
+  },
+});
+
+const bundle = await healthCard.asBundle(true, true); // optimizeForQR, strictReferences
+const fileContent = await healthCard.asFileContent();
+
 // Use individual processors for more control
-const fhirProcessor = new FhirBundleProcessor();
+const fhirProcessor = new FHIRBundleProcessor();
 const vcProcessor = new VerifiableCredentialProcessor();
 const jwsProcessor = new JWSProcessor();
 
@@ -186,15 +216,20 @@ const decodedJWS = qrGenerator.decodeNumericToJWS(numericData);
 
 ```typescript
 import { 
-  SmartHealthCard, 
+  SmartHealthCardIssuer,
+  SmartHealthCardReader,
   SmartHealthCardError,
   FhirValidationError,
   JWSError,
   QRCodeError 
 } from 'kill-the-clipboard';
 
+const issuer = new SmartHealthCardIssuer(config);
+const reader = new SmartHealthCardReader({ publicKey: config.publicKey });
+
 try {
-  const jws = await healthCard.create(fhirBundle);
+  const healthCard = await issuer.issue(fhirBundle);
+  const qrCodes = await healthCard.asQR();
 } catch (error) {
   if (error instanceof FhirValidationError) {
     console.error('FHIR Bundle validation failed:', error.message);
@@ -208,21 +243,32 @@ try {
     console.error('Unexpected error:', error);
   }
 }
+
+try {
+  const verifiedCard = await reader.fromJWS(jws);
+  const bundle = await verifiedCard.asBundle();
+} catch (error) {
+  console.error('Verification failed:', error.message);
+}
 ```
 
 ### File Operations
 
 ```typescript
-import { SmartHealthCard } from 'kill-the-clipboard';
+import { SmartHealthCardIssuer, SmartHealthCardReader } from 'kill-the-clipboard';
 
-const healthCard = new SmartHealthCard(config);
+const issuer = new SmartHealthCardIssuer(config);
+const reader = new SmartHealthCardReader({ publicKey: config.publicKey });
+
+// Issue a health card
+const healthCard = await issuer.issue(fhirBundle);
 
 // Create SMART Health Card file content (JSON wrapper with verifiableCredential array)
-const fileContent = await healthCard.createFile(fhirBundle);
+const fileContent = await healthCard.asFileContent();
 console.log('File content:', fileContent); // JSON string with { verifiableCredential: [jws] }
 
 // Create downloadable Blob (web-compatible)
-const blob = await healthCard.createFileBlob(fhirBundle);
+const blob = await healthCard.asFileBlob();
 console.log('Blob type:', blob.type); // 'application/smart-health-card'
 
 // Trigger download in web browser (example implementation)
@@ -236,7 +282,8 @@ document.body.removeChild(a);
 URL.revokeObjectURL(url);
 
 // Verify health card from file content
-const verifiedFromFile = await healthCard.verifyFile(fileContent);
+const verifiedFromFile = await reader.fromFileContent(fileContent);
+console.log('Valid health card bundle:', await verifiedFromFile.asBundle());
 
 // Verify health card from Blob (e.g., from file input)
 const fileInput = document.querySelector('input[type="file"]');
@@ -244,12 +291,12 @@ fileInput.addEventListener('change', async (event) => {
   const file = event.target.files[0];
   if (file && file.name.endsWith('.smart-health-card')) {
     try {
-      const verified = await healthCard.verifyFile(file);
-      console.log('Valid health card:', verified.vc.credentialSubject.fhirBundle);
+      const verified = await reader.fromFileContent(file);
+      console.log('Valid health card:', await verified.asBundle());
       
-      // Or directly get the FHIR Bundle
-      const bundle = await healthCard.getBundleFromFile(file);
-      console.log('FHIR Bundle from file:', bundle);
+      // Or get QR codes from the verified health card
+      const qrCodes = await verified.asQR();
+      console.log('QR code data URL:', qrCodes[0]);
     } catch (error) {
       console.error('Invalid health card file:', error.message);
     }
@@ -274,7 +321,7 @@ const { publicKey, privateKey } = await crypto.webcrypto.subtle.generateKey(
 const privateKeyPKCS8 = await exportPKCS8(privateKey);
 const publicKeySPKI = await exportSPKI(publicKey);
 
-// Use these keys in SmartHealthCard config
+// Use these keys in SmartHealthCardIssuer config
 const config = {
   issuer: 'https://your-org.com',
   privateKey: privateKeyPKCS8,
@@ -284,14 +331,14 @@ const config = {
 
 ## API Reference
 
-### `SmartHealthCard`
+### `SmartHealthCardIssuer`
 
-Main class for creating and verifying SMART Health Cards.
+Issues new SMART Health Cards from FHIR Bundles.
 
 #### Constructor
 
 ```typescript
-new SmartHealthCard(config: SmartHealthCardConfigParams)
+new SmartHealthCardIssuer(config: SmartHealthCardConfigParams)
 ```
 
 **Configuration Parameters:**
@@ -308,27 +355,58 @@ interface SmartHealthCardConfigParams {
 
 #### Methods
 
-- `create(fhirBundle: FhirBundle, options?: VerifiableCredentialOptions): Promise<string>` - Creates a signed SMART Health Card JWS (supports additional VC types via `options.includeAdditionalTypes`)
-- `verify(jws: string): Promise<VerifiableCredential>` - Verifies and decodes a SMART Health Card
-- `getBundle(jws: string): Promise<FhirBundle>` - Verifies and returns the FHIR Bundle directly (convenience method)
-- `createFile(fhirBundle: FhirBundle, options?: VerifiableCredentialOptions): Promise<string>` - Creates file content for .smart-health-card files (supports additional VC types via `options.includeAdditionalTypes`)
-- `createFileBlob(fhirBundle: FhirBundle, options?: VerifiableCredentialOptions): Promise<Blob>` - Creates downloadable Blob (supports additional VC types via `options.includeAdditionalTypes`)
-- `verifyFile(fileContent: string | Blob): Promise<VerifiableCredential>` - Verifies from file content
-- `getBundleFromFile(fileContent: string | Blob): Promise<FhirBundle>` - Verifies file and returns FHIR Bundle directly (convenience method)
+- `issue(fhirBundle: FHIRBundle, options?: VerifiableCredentialParams): Promise<SmartHealthCard>` - Issues a new SMART Health Card object with various output formats (supports additional VC types via `options.includeAdditionalTypes`)
 
-### `FhirBundleProcessor`
+### `SmartHealthCard`
+
+Represents an issued SMART Health Card with various output formats. This is the main user-facing object returned by `SmartHealthCardIssuer.issue()`.
+
+#### Methods
+
+- `asQR(config?: QRCodeConfigParams): Promise<string[]>` - Generate QR code data URLs from the health card
+- `asBundle(optimizeForQR?: boolean, strictReferences?: boolean): Promise<FHIRBundle>` - Return the FHIR Bundle, optionally optimized for QR codes
+- `asFileContent(): Promise<string>` - Return JSON file content for .smart-health-card files
+- `asFileBlob(): Promise<Blob>` - Return downloadable Blob with correct MIME type
+- `asJWS(): string` - Return the raw JWS string
+- `getOriginalBundle(): FHIRBundle` - Return the original (unoptimized) FHIR Bundle
+
+### `SmartHealthCardReader`
+
+Reads and verifies SMART Health Cards from various sources.
+
+#### Constructor
+
+```typescript
+new SmartHealthCardReader(config: SmartHealthCardReaderConfigParams)
+```
+
+**Configuration Parameters:**
+```typescript
+interface SmartHealthCardReaderConfigParams {
+  publicKey: CryptoKey | Uint8Array | string // ES256 public key for verification
+  enableQROptimization?: boolean // Enable FHIR Bundle optimization for QR codes (default: true)
+  strictReferences?: boolean // Throw on missing references when optimizing for QR (default: true)
+}
+```
+
+#### Methods
+
+- `fromJWS(jws: string): Promise<SmartHealthCard>` - Read and verify a JWS string, return SmartHealthCard object
+- `fromFileContent(fileContent: string | Blob): Promise<SmartHealthCard>` - Read and verify file content, return SmartHealthCard object
+
+### `FHIRBundleProcessor`
 
 Processes and validates FHIR R4 Bundles according to SMART Health Cards specification.
 
-- `process(bundle: FhirBundle): FhirBundle` - Processes Bundle (sets default type="collection")
-- `processForQR(bundle: FhirBundle, strict: boolean): FhirBundle` - Processes Bundle with QR code optimizations (short resource-scheme URIs, removes unnecessary fields). When `strict` is true, missing `Reference.reference` targets throw `InvalidBundleReferenceError`; when false, original references are preserved when no target resource is found in bundle.
-- `validate(bundle: FhirBundle): boolean` - Validates Bundle structure
+- `process(bundle: FHIRBundle): FHIRBundle` - Processes Bundle (sets default type="collection")
+- `processForQR(bundle: FHIRBundle, strict: boolean): FHIRBundle` - Processes Bundle with QR code optimizations (short resource-scheme URIs, removes unnecessary fields). When `strict` is true, missing `Reference.reference` targets throw `InvalidBundleReferenceError`; when false, original references are preserved when no target resource is found in bundle.
+- `validate(bundle: FHIRBundle): boolean` - Validates Bundle structure
 
 ### `VerifiableCredentialProcessor`
 
-Creates and validates W3C Verifiable Credentials for SMART Health Cards.
+Creates and validates Verifiable Credentials for SMART Health Cards.
 
-- `create(fhirBundle: FhirBundle, options?): VerifiableCredential` - Creates W3C VC
+- `create(fhirBundle: FHIRBundle, options?): VerifiableCredential` - Creates VC
 - `validate(vc: VerifiableCredential): boolean` - Validates VC structure
 
 ### `JWSProcessor`
@@ -347,7 +425,7 @@ Generates and scans QR codes for SMART Health Cards with proper numeric encoding
 
 - `maxSingleQRSize?: number` - Maximum size for single QR code (auto-derived from errorCorrectionLevel if not provided: L=1195, M=927, Q=670, H=519 per [V22 QR limits](https://github.com/smart-on-fhir/health-cards/blob/main/FAQ/qr.md))
 - `enableChunking?: boolean` - Whether to support multi-chunk QR codes (deprecated per SMART Health Cards spec)
-- `encodeOptions?: QREncodeOptions` - Options passed to the QR encoder:
+- `encodeOptions?: QREncodeParams` - Options passed to the QR encoder:
   - `errorCorrectionLevel?: 'L' | 'M' | 'Q' | 'H'` - Error correction level (default: 'L')
   - `scale?: number` - QR code scale factor (default: 4)
   - `margin?: number` - Quiet zone size (default: 1)
