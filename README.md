@@ -331,116 +331,569 @@ const config = {
 
 ## API Reference
 
-### `SmartHealthCardIssuer`
+### High-Level API
+
+#### `SmartHealthCardIssuer`
 
 Issues new SMART Health Cards from FHIR Bundles.
 
-#### Constructor
+##### Constructor
 
 ```typescript
 new SmartHealthCardIssuer(config: SmartHealthCardConfigParams)
 ```
 
-**Configuration Parameters:**
+##### `config`
+Type: `SmartHealthCardConfigParams`
+
+Configuration object for the issuer.
+
+###### `issuer`
+Type: `String`  
+Required: Yes
+
+Issuer URL that identifies the organization issuing the health card.
+
+###### `privateKey`
+Type: `CryptoKey | Uint8Array | String`  
+Required: Yes
+
+ES256 private key for signing health cards. Can be a WebCrypto CryptoKey, raw bytes, or PEM-formatted string.
+
+###### `publicKey` 
+Type: `CryptoKey | Uint8Array | String`  
+Required: Yes
+
+ES256 public key corresponding to the private key. Used for key ID derivation per SMART Health Cards spec.
+
+###### `expirationTime`
+Type: `Number | null`  
+Default: `null`
+
+Optional expiration time in seconds from now. If null, health cards will not have an expiration.
+
+###### `enableQROptimization`
+Type: `Boolean`  
+Default: `true`
+
+Whether to optimize FHIR Bundle for QR codes by using short resource-scheme URIs and removing unnecessary fields.
+
+###### `strictReferences`
+Type: `Boolean`  
+Default: `true`
+
+If true, throws error for missing bundle references during optimization. If false, preserves original references when target resource is not found.
+
+##### Methods
+
+###### `issue(fhirBundle, [options])`
+
+Issues a new SMART Health Card from a FHIR Bundle.
+
 ```typescript
-interface SmartHealthCardConfigParams {
-  issuer: string // Issuer URL
-  privateKey: CryptoKey | Uint8Array | string // ES256 private key
-  publicKey: CryptoKey | Uint8Array | string // ES256 public key  
-  expirationTime?: number | null // Optional expiration in seconds from now (default: null)
-  enableQROptimization?: boolean // Enable FHIR Bundle optimization for QR codes (default: true)
-  strictReferences?: boolean // Throw on missing references when optimizing for QR (default: true)
-}
+issue(fhirBundle: FHIRBundle, options?: VerifiableCredentialParams): Promise<SmartHealthCard>
 ```
 
-#### Methods
+**Parameters:**
 
-- `issue(fhirBundle: FHIRBundle, options?: VerifiableCredentialParams): Promise<SmartHealthCard>` - Issues a new SMART Health Card object with various output formats (supports additional VC types via `options.includeAdditionalTypes`)
+- `fhirBundle`: FHIR R4 Bundle containing medical data
+- `options`: Optional Verifiable Credential parameters
 
-### `SmartHealthCard`
+**Returns:** Promise resolving to SmartHealthCard object
 
-Represents an issued SMART Health Card with various output formats. This is the main user-facing object returned by `SmartHealthCardIssuer.issue()`.
+**Example:**
+```typescript
+const issuer = new SmartHealthCardIssuer(config);
+const healthCard = await issuer.issue(fhirBundle, {
+  includeAdditionalTypes: ['https://smarthealth.cards#covid19']
+});
+```
 
-#### Methods
+---
 
-- `asQR(config?: QRCodeConfigParams): Promise<string[]>` - Generate QR code data URLs from the health card
-- `asBundle(optimizeForQR?: boolean, strictReferences?: boolean): Promise<FHIRBundle>` - Return the FHIR Bundle, optionally optimized for QR codes
-- `asFileContent(): Promise<string>` - Return JSON file content for .smart-health-card files
-- `asFileBlob(): Promise<Blob>` - Return downloadable Blob with correct MIME type
-- `asJWS(): string` - Return the raw JWS string
-- `getOriginalBundle(): FHIRBundle` - Return the original (unoptimized) FHIR Bundle
+#### `SmartHealthCard`
 
-### `SmartHealthCardReader`
+Represents an issued SMART Health Card with various output formats.
+
+##### Methods
+
+###### `asQR([config])`
+
+Generate QR code data URLs from the health card.
+
+```typescript
+asQR(config?: QRCodeConfigParams): Promise<string[]>
+```
+
+**Parameters:**
+- `config`: Optional QR code generation configuration
+
+**Returns:** Promise resolving to array of QR code data URLs
+
+**Example:**
+```typescript
+const qrCodes = await healthCard.asQR({
+  enableChunking: false,
+  encodeOptions: {
+    errorCorrectionLevel: 'L',
+    scale: 4
+  }
+});
+```
+
+###### `asBundle([optimizeForQR], [strictReferences])`
+
+Return the FHIR Bundle from the health card.
+
+```typescript
+asBundle(optimizeForQR?: boolean, strictReferences?: boolean): Promise<FHIRBundle>
+```
+
+**Parameters:**
+- `optimizeForQR`: Whether to apply QR code optimizations
+- `strictReferences`: Whether to enforce strict reference validation
+
+**Returns:** Promise resolving to FHIR Bundle
+
+###### `asFileContent()`
+
+Return JSON file content for .smart-health-card files.
+
+```typescript
+asFileContent(): Promise<string>
+```
+
+**Returns:** Promise resolving to JSON string with verifiableCredential array
+
+###### `asFileBlob()`
+
+Return downloadable Blob with correct MIME type.
+
+```typescript
+asFileBlob(): Promise<Blob>
+```
+
+**Returns:** Promise resolving to Blob with `application/smart-health-card` MIME type
+
+###### `asJWS()`
+
+Return the raw JWS string.
+
+```typescript
+asJWS(): string
+```
+
+**Returns:** JWS string
+
+###### `getOriginalBundle()`
+
+Return the original (unoptimized) FHIR Bundle.
+
+```typescript
+getOriginalBundle(): FHIRBundle
+```
+
+**Returns:** Original FHIR Bundle
+
+---
+
+#### `SmartHealthCardReader`
 
 Reads and verifies SMART Health Cards from various sources.
 
-#### Constructor
+##### Constructor
 
 ```typescript
 new SmartHealthCardReader(config: SmartHealthCardReaderConfigParams)
 ```
 
-**Configuration Parameters:**
+##### `config`
+Type: `SmartHealthCardReaderConfigParams`
+
+Configuration object for the reader.
+
+###### `publicKey`
+Type: `CryptoKey | Uint8Array | String`  
+Required: Yes
+
+ES256 public key for verifying health card signatures.
+
+###### `enableQROptimization`
+Type: `Boolean`  
+Default: `true`
+
+Whether to optimize FHIR Bundle for QR codes when reading.
+
+###### `strictReferences`
+Type: `Boolean`  
+Default: `true`
+
+Whether to enforce strict reference validation during optimization.
+
+##### Methods
+
+###### `fromJWS(jws)`
+
+Read and verify a SMART Health Card JWS.
+
 ```typescript
-interface SmartHealthCardReaderConfigParams {
-  publicKey: CryptoKey | Uint8Array | string // ES256 public key for verification
-  enableQROptimization?: boolean // Enable FHIR Bundle optimization for QR codes (default: true)
-  strictReferences?: boolean // Throw on missing references when optimizing for QR (default: true)
-}
+fromJWS(jws: string): Promise<SmartHealthCard>
 ```
 
-#### Methods
+**Parameters:**
+- `jws`: JWS string to verify
 
-- `fromJWS(jws: string): Promise<SmartHealthCard>` - Read and verify a JWS string, return SmartHealthCard object
-- `fromFileContent(fileContent: string | Blob): Promise<SmartHealthCard>` - Read and verify file content, return SmartHealthCard object
+**Returns:** Promise resolving to verified SmartHealthCard object
 
-### `FHIRBundleProcessor`
+###### `fromFileContent(fileContent)`
+
+Read and verify a SMART Health Card from file content.
+
+```typescript
+fromFileContent(fileContent: string | Blob): Promise<SmartHealthCard>
+```
+
+**Parameters:**
+- `fileContent`: File content as string or Blob from .smart-health-card files
+
+**Returns:** Promise resolving to verified SmartHealthCard object
+
+---
+
+### Lower-Level API
+
+#### `FHIRBundleProcessor`
 
 Processes and validates FHIR R4 Bundles according to SMART Health Cards specification.
 
-- `process(bundle: FHIRBundle): FHIRBundle` - Processes Bundle (sets default type="collection")
-- `processForQR(bundle: FHIRBundle, strict: boolean): FHIRBundle` - Processes Bundle with QR code optimizations (short resource-scheme URIs, removes unnecessary fields). When `strict` is true, missing `Reference.reference` targets throw `InvalidBundleReferenceError`; when false, original references are preserved when no target resource is found in bundle.
-- `validate(bundle: FHIRBundle): boolean` - Validates Bundle structure
+##### Methods
 
-### `VerifiableCredentialProcessor`
+###### `process(bundle)`
+
+Processes a FHIR Bundle with standard processing.
+
+```typescript
+process(bundle: FHIRBundle): FHIRBundle
+```
+
+###### `processForQR(bundle, strict)`
+
+Processes a FHIR Bundle with QR code optimizations (short resource-scheme URIs, removes unnecessary fields).
+
+```typescript
+processForQR(bundle: FHIRBundle, strict: boolean): FHIRBundle
+```
+
+**Parameters:**
+- `bundle`: FHIR Bundle to process
+- `strict`: When `strict` is true, missing `Reference.reference` targets throw `InvalidBundleReferenceError`; when false, original references are preserved when no target resource is found in bundle.
+
+###### `validate(bundle)`
+
+Validates a FHIR Bundle for basic compliance.
+
+```typescript
+validate(bundle: FHIRBundle): boolean
+```
+
+---
+
+#### `VerifiableCredentialProcessor`
 
 Creates and validates Verifiable Credentials for SMART Health Cards.
 
-- `create(fhirBundle: FHIRBundle, options?): VerifiableCredential` - Creates VC
-- `validate(vc: VerifiableCredential): boolean` - Validates VC structure
+##### Methods
 
-### `JWSProcessor`
+###### `create(fhirBundle, [options])`
 
-Handles JWT/JWS signing and verification with ES256 algorithm. Payloads are raw-DEFLATE compressed when `zip: "DEF"` is set.
+Creates a Verifiable Credential from a FHIR Bundle.
 
-- `sign(payload: SmartHealthCardJWT, privateKey, publicKey, enableCompression?: boolean): Promise<string>` - Signs JWT (compresses payload before signing and sets `zip: "DEF"` when `enableCompression` is true; default is true). The `kid` is derived from the public key using RFC7638 JWK Thumbprint as required by SMART Health Cards spec.
-- `verify(jws: string, publicKey): Promise<SmartHealthCardJWT>` - Verifies JWS and returns payload
-- To inspect headers without verification, use `jose.decodeProtectedHeader(jws)` from the `jose` library
+```typescript
+create(fhirBundle: FHIRBundle, options?: VerifiableCredentialParams): VerifiableCredential
+```
 
-### `QRCodeGenerator`
+###### `validate(vc)`
 
-Generates and scans QR codes for SMART Health Cards with proper numeric encoding and SMART Health Cards specification compliance.
+Validates a Verifiable Credential structure.
 
-#### Configuration Options
+```typescript
+validate(vc: VerifiableCredential): boolean
+```
 
-- `maxSingleQRSize?: number` - Maximum size for single QR code (auto-derived from errorCorrectionLevel if not provided: L=1195, M=927, Q=670, H=519 per [V22 QR limits](https://github.com/smart-on-fhir/health-cards/blob/main/FAQ/qr.md))
-- `enableChunking?: boolean` - Whether to support multi-chunk QR codes (deprecated per SMART Health Cards spec)
-- `encodeOptions?: QREncodeParams` - Options passed to the QR encoder:
-  - `errorCorrectionLevel?: 'L' | 'M' | 'Q' | 'H'` - Error correction level (default: 'L')
-  - `scale?: number` - QR code scale factor (default: 4)
-  - `margin?: number` - Quiet zone size (default: 1)
-  - `color?: { dark?: string; light?: string }` - Module and background colors in hex format
-  - `version?: number` - QR version 1-40 (auto-selected by default)
-  - `maskPattern?: number` - Mask pattern 0-7
-  - `width?: number` - Forces specific width for output
+---
 
-#### Methods
+#### `JWSProcessor`
 
-- `generateQR(jws: string): Promise<string[]>` - Generates QR code data URLs
-- `scanQR(qrCodeData: string[]): Promise<string>` - Reconstructs JWS from QR data
-- `encodeJWSToNumeric(jws: string): string` - Converts JWS to numeric format (Ord(c)-45)
-- `decodeNumericToJWS(numericData: string): string` - Converts numeric data back to JWS string
-- `chunkJWS(jws: string): string[]` - Splits JWS into balanced chunks for multi-QR encoding (returns `shc:/...` strings; chunked form uses `shc:/INDEX/TOTAL/DATA`)
+Handles JWT/JWS signing and verification with ES256 algorithm.
+
+##### Methods
+
+###### `sign(payload, privateKey, publicKey, [enableCompression])`
+
+Signs a JWT payload using ES256 algorithm.
+
+```typescript
+sign(payload: SmartHealthCardJWT, privateKey: CryptoKey | Uint8Array | string, publicKey: CryptoKey | Uint8Array | string, enableCompression?: boolean): Promise<string>
+```
+
+**Parameters:**
+- `payload`: JWT payload to sign
+- `privateKey`: ES256 private key
+- `publicKey`: ES256 public key (for key ID derivation)
+- `enableCompression`: Whether to compress payload with raw DEFLATE (default: true). When `enableCompression` is true, compresses payload before signing and sets `zip: "DEF"`.
+
+**Returns:** Promise resolving to JWS string
+
+###### `verify(jws, publicKey)`
+
+Verifies a JWS and returns the decoded payload.
+
+```typescript
+verify(jws: string, publicKey: CryptoKey | Uint8Array | string): Promise<SmartHealthCardJWT>
+```
+
+**Parameters:**
+- `jws`: JWS string to verify
+- `publicKey`: ES256 public key for verification
+
+**Returns:** Promise resolving to decoded JWT payload
+
+**Note:** To inspect headers without verification, use `jose.decodeProtectedHeader(jws)` from the `jose` library.
+
+---
+
+#### `QRCodeGenerator`
+
+Generates and scans QR codes for SMART Health Cards with proper numeric encoding.
+
+##### Constructor
+
+```typescript
+new QRCodeGenerator(config?: QRCodeConfigParams)
+```
+
+##### Methods
+
+###### `generateQR(jws)`
+
+Generates QR code data URLs from a JWS string.
+
+```typescript
+generateQR(jws: string): Promise<string[]>
+```
+
+**Parameters:**
+- `jws`: JWS string to encode
+
+**Returns:** Promise resolving to array of QR code data URLs
+
+###### `scanQR(qrCodeData)`
+
+Reconstructs JWS from QR code data.
+
+```typescript
+scanQR(qrCodeData: string[]): Promise<string>
+```
+
+**Parameters:**
+- `qrCodeData`: Array of QR code numeric strings
+
+**Returns:** Promise resolving to reconstructed JWS string
+
+###### `encodeJWSToNumeric(jws)`
+
+Converts JWS to SMART Health Cards numeric format.
+
+```typescript
+encodeJWSToNumeric(jws: string): string
+```
+
+###### `decodeNumericToJWS(numericData)`
+
+Converts numeric data back to JWS string.
+
+```typescript
+decodeNumericToJWS(numericData: string): string
+```
+
+###### `chunkJWS(jws)`
+
+Splits JWS into balanced chunks for multi-QR encoding.
+
+```typescript
+chunkJWS(jws: string): string[]
+```
+
+---
+
+### Configuration Interfaces
+
+#### `VerifiableCredentialParams`
+
+Optional parameters for Verifiable Credential creation.
+
+```typescript
+interface VerifiableCredentialParams {
+  fhirVersion?: string              // FHIR version (default: '4.0.1')
+  includeAdditionalTypes?: string[] // Additional VC type URIs to include
+}
+```
+
+**Properties:**
+
+###### `fhirVersion`
+Type: `String`  
+Default: `'4.0.1'`
+
+FHIR version string in semantic version format (e.g., '4.0.1').
+
+###### `includeAdditionalTypes`
+Type: `String[]`
+
+Array of additional Verifiable Credential type URIs to include beyond the standard `https://smarthealth.cards#health-card`. Common values:
+- `https://smarthealth.cards#immunization`
+- `https://smarthealth.cards#covid19`
+- `https://smarthealth.cards#laboratory`
+
+**Example:**
+```typescript
+const vcOptions = {
+  fhirVersion: '4.0.1',
+  includeAdditionalTypes: [
+    'https://smarthealth.cards#immunization',
+    'https://smarthealth.cards#covid19'
+  ]
+};
+```
+
+---
+
+#### `QRCodeConfigParams`
+
+Configuration parameters for QR code generation.
+
+```typescript
+interface QRCodeConfigParams {
+  maxSingleQRSize?: number    // Maximum JWS size for single QR code
+  enableChunking?: boolean    // Whether to support multi-chunk QR codes
+  encodeOptions?: QREncodeParams // QR encoding options
+}
+```
+
+**Properties:**
+
+###### `maxSingleQRSize`
+Type: `Number`
+
+Maximum JWS character length for single QR code. Auto-derived from `errorCorrectionLevel` if not provided:
+- L: 1195 characters
+- M: 927 characters  
+- Q: 670 characters
+- H: 519 characters
+
+Based on Version 22 QR code limits from [SMART Health Cards QR FAQ](https://github.com/smart-on-fhir/health-cards/blob/main/FAQ/qr.md).
+
+###### `enableChunking`
+Type: `Boolean`  
+Default: `false`
+
+Whether to support multi-chunk QR codes. Note that chunked QR codes are deprecated per SMART Health Cards specification, but supported for compatibility.
+
+###### `encodeOptions`
+Type: `QREncodeParams`
+
+Options passed to the underlying QR code encoder.
+
+**Example:**
+```typescript
+const qrConfig = {
+  maxSingleQRSize: 1195,
+  enableChunking: false,
+  encodeOptions: {
+    errorCorrectionLevel: 'L',
+    scale: 4,
+    margin: 1,
+    color: {
+      dark: '#000000ff',
+      light: '#ffffffff'
+    }
+  }
+};
+```
+
+---
+
+#### `QREncodeParams`
+
+Detailed QR code encoding parameters.
+
+```typescript
+interface QREncodeParams {
+  errorCorrectionLevel?: 'L' | 'M' | 'Q' | 'H' // Error correction level
+  version?: number        // QR version 1-40
+  maskPattern?: 0 | 1 | 2 | 3 | 4 | 5 | 6 | 7 // Mask pattern
+  margin?: number         // Quiet zone size
+  scale?: number          // Scale factor for output
+  width?: number          // Forces specific width
+  color?: {
+    dark?: string         // Color of dark modules (hex format)
+    light?: string        // Color of light modules (hex format)
+  }
+}
+```
+
+**Properties:**
+
+###### `errorCorrectionLevel`
+Type: `'L' | 'M' | 'Q' | 'H'`  
+Default: `'L'`
+
+Error correction level per SMART Health Cards specification:
+- **L (Low)**: ~7% error resistance, 1195 max characters (V22)
+- **M (Medium)**: ~15% error resistance, 927 max characters (V22)  
+- **Q (Quartile)**: ~25% error resistance, 670 max characters (V22)
+- **H (High)**: ~30% error resistance, 519 max characters (V22)
+
+###### `version`
+Type: `Number`  
+Range: 1-40
+
+QR code version determining symbol size. Version 1 is 21x21 modules, Version 2 is 25x25, etc. Auto-selected by default based on data size.
+
+###### `maskPattern`
+Type: `Number`  
+Range: 0-7
+
+Mask pattern used to mask the QR code symbol. Auto-selected by default for optimal readability.
+
+###### `scale`
+Type: `Number`  
+Default: `4`
+
+Scale factor for output image. A value of 1 means 1 pixel per module.
+
+###### `margin`
+Type: `Number`  
+Default: `1`
+
+Quiet zone size (border) around the QR code in modules.
+
+###### `width`
+Type: `Number`
+
+Forces specific width for output image in pixels. Takes precedence over `scale` if specified.
+
+###### `color.dark`
+Type: `String`  
+Default: `'#000000ff'`
+
+Color of dark modules in hex RGBA format (e.g., '#000000ff' for black).
+
+###### `color.light`
+Type: `String`  
+Default: `'#ffffffff'`
+
+Color of light modules in hex RGBA format (e.g., '#ffffffff' for white).
 
 ## Contributing
 
