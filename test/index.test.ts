@@ -6,12 +6,14 @@ import {
   type FhirBundle,
   FhirBundleProcessor,
   FhirValidationError,
+  InvalidBundleReferenceError,
   JWSError,
   JWSProcessor,
   QRCodeError,
   QRCodeGenerator,
   SmartHealthCard,
   type SmartHealthCardConfig,
+  type SmartHealthCardConfigParams,
   SmartHealthCardError,
   type SmartHealthCardJWT,
   type VerifiableCredential,
@@ -25,7 +27,7 @@ const createValidFhirBundle = (): FhirBundle => ({
   type: 'collection',
   entry: [
     {
-      fullUrl: 'Patient/123',
+      fullUrl: 'https://example.com/base/Patient/123',
       resource: {
         resourceType: 'Patient',
         id: '123',
@@ -34,7 +36,7 @@ const createValidFhirBundle = (): FhirBundle => ({
       },
     },
     {
-      fullUrl: 'Immunization/456',
+      fullUrl: 'https://example.com/base/Immunization/456',
       resource: {
         resourceType: 'Immunization',
         id: '456',
@@ -684,6 +686,9 @@ EQqQipjEJazEpNXKUbJ4GV0zYi4qZqIOC5tBTyAYas7JJ9RW6mFuNysgJA==
         issuer: 'https://example.com/issuer',
         privateKey: testPrivateKeyPKCS8,
         publicKey: testPublicKeySPKI,
+        expirationTime: null,
+        enableQROptimization: false,
+        strictReferences: true,
       }
       smartHealthCard = new SmartHealthCard(config)
     })
@@ -710,6 +715,9 @@ EQqQipjEJazEpNXKUbJ4GV0zYi4qZqIOC5tBTyAYas7JJ9RW6mFuNysgJA==
           issuer: 'https://example.com/issuer',
           privateKey: privateKeyCrypto,
           publicKey: publicKeyCrypto,
+          expirationTime: null,
+          enableQROptimization: false,
+          strictReferences: true,
         }
         const cardWithCryptoKeys = new SmartHealthCard(configWithCryptoKeys)
 
@@ -1002,7 +1010,9 @@ EQqQipjEJazEpNXKUbJ4GV0zYi4qZqIOC5tBTyAYas7JJ9RW6mFuNysgJA==
         issuer: 'https://example.com/issuer',
         privateKey: testPrivateKeyPKCS8,
         publicKey: testPublicKeySPKI,
-        // kid derived from public key
+        expirationTime: null,
+        enableQROptimization: false,
+        strictReferences: true,
       })
 
       const validBundle = createValidFhirBundle()
@@ -1049,7 +1059,6 @@ EQqQipjEJazEpNXKUbJ4GV0zYi4qZqIOC5tBTyAYas7JJ9RW6mFuNysgJA==
 
         expect(defaultGenerator.config.maxSingleQRSize).toBe(1195)
         expect(defaultGenerator.config.enableChunking).toBe(false)
-        // errorCorrectionLevel and scale are now only in encodeOptions
       })
 
       it('should respect custom configuration values', () => {
@@ -1096,9 +1105,7 @@ EQqQipjEJazEpNXKUbJ4GV0zYi4qZqIOC5tBTyAYas7JJ9RW6mFuNysgJA==
 
       it('should auto-derive maxSingleQRSize from errorCorrectionLevel', async () => {
         // Test L level (default)
-        const qrGeneratorL = new QRCodeGenerator({
-          encodeOptions: { errorCorrectionLevel: 'L' },
-        })
+        const qrGeneratorL = new QRCodeGenerator()
         expect(qrGeneratorL.config.maxSingleQRSize).toBe(1195)
 
         // Test M level
@@ -1526,6 +1533,9 @@ EQqQipjEJazEpNXKUbJ4GV0zYi4qZqIOC5tBTyAYas7JJ9RW6mFuNysgJA==
           issuer: 'https://example.com/issuer',
           privateKey: testPrivateKeyPKCS8,
           publicKey: testPublicKeySPKI,
+          expirationTime: null,
+          enableQROptimization: false,
+          strictReferences: true,
         })
 
         const verifiedVC = await smartHealthCard.verify(scannedJWS)
@@ -1648,6 +1658,9 @@ EQqQipjEJazEpNXKUbJ4GV0zYi4qZqIOC5tBTyAYas7JJ9RW6mFuNysgJA==
         issuer: 'https://example.com/issuer',
         privateKey: testPrivateKeyPKCS8,
         publicKey: testPublicKeySPKI,
+        expirationTime: null,
+        enableQROptimization: false,
+        strictReferences: true,
       }
       smartHealthCard = new SmartHealthCard(config)
     })
@@ -1707,6 +1720,9 @@ EQqQipjEJazEpNXKUbJ4GV0zYi4qZqIOC5tBTyAYas7JJ9RW6mFuNysgJA==
         issuer: 'https://example.com/issuer',
         privateKey: testPrivateKeyPKCS8,
         publicKey: testPublicKeySPKI,
+        expirationTime: null,
+        enableQROptimization: false,
+        strictReferences: true,
       }
       smartHealthCard = new SmartHealthCard(config)
     })
@@ -1777,7 +1793,7 @@ EQqQipjEJazEpNXKUbJ4GV0zYi4qZqIOC5tBTyAYas7JJ9RW6mFuNysgJA==
           type: 'collection',
           entry: [
             {
-              fullUrl: 'Patient/123',
+              fullUrl: 'https://example.com/base/Patient/123',
               resource: {
                 resourceType: 'Patient',
                 id: '123',
@@ -1816,7 +1832,7 @@ EQqQipjEJazEpNXKUbJ4GV0zYi4qZqIOC5tBTyAYas7JJ9RW6mFuNysgJA==
               },
             },
             {
-              fullUrl: 'Immunization/456',
+              fullUrl: 'https://example.com/base/Immunization/456',
               resource: {
                 resourceType: 'Immunization',
                 id: '456',
@@ -1838,7 +1854,7 @@ EQqQipjEJazEpNXKUbJ4GV0zYi4qZqIOC5tBTyAYas7JJ9RW6mFuNysgJA==
               },
             },
             {
-              fullUrl: 'Condition/789',
+              fullUrl: 'https://example.com/base/Condition/789',
               resource: {
                 resourceType: 'Condition',
                 id: '789',
@@ -1852,7 +1868,7 @@ EQqQipjEJazEpNXKUbJ4GV0zYi4qZqIOC5tBTyAYas7JJ9RW6mFuNysgJA==
           ],
         }
 
-        optimizedBundle = fhirProcessor.processForQR(bundleWithAllElements)
+        optimizedBundle = fhirProcessor.processForQR(bundleWithAllElements, true)
       })
 
       it('should remove Resource.id elements', () => {
@@ -1913,22 +1929,29 @@ EQqQipjEJazEpNXKUbJ4GV0zYi4qZqIOC5tBTyAYas7JJ9RW6mFuNysgJA==
           type: 'collection',
           entry: [
             {
-              fullUrl: 'Patient/123',
+              fullUrl: 'https://example.com/base/Patient/123',
               resource: {
                 resourceType: 'Patient',
                 id: '123',
                 generalPractitioner: [
                   {
-                    reference: 'Practitioner/123',
+                    reference: 'Practitioner/456',
                     display: 'Display Name', // This should be preserved
                   },
                 ],
               },
             },
+            {
+              fullUrl: 'https://example.com/base/Practitioner/456',
+              resource: {
+                resourceType: 'Practitioner',
+                id: '456',
+              },
+            },
           ],
         }
 
-        const optimized = fhirProcessor.processForQR(bundleWithDisplayFields)
+        const optimized = fhirProcessor.processForQR(bundleWithDisplayFields, true)
         const patient = optimized.entry?.[0]?.resource as Patient
 
         // Display in generalPractitioner should be preserved
@@ -1948,13 +1971,63 @@ EQqQipjEJazEpNXKUbJ4GV0zYi4qZqIOC5tBTyAYas7JJ9RW6mFuNysgJA==
         expect(immunization?.patient?.reference).toBe('resource:0')
       })
 
+      it('should throw exception for missing references in strict mode', () => {
+        const bundleWithDisplayFields: Bundle = {
+          resourceType: 'Bundle',
+          type: 'collection',
+          entry: [
+            {
+              fullUrl: 'https://example.com/base/Patient/123',
+              resource: {
+                resourceType: 'Patient',
+                id: '123',
+                generalPractitioner: [
+                  {
+                    reference: 'Practitioner/456', // Missing reference
+                  },
+                ],
+              },
+            },
+          ],
+        }
+
+        expect(() => fhirProcessor.processForQR(bundleWithDisplayFields, true)).toThrow(
+          'Reference "Practitioner/456" not found in bundle resources'
+        )
+      })
+
+      it('should not throw exception for missing references in non-strict mode', () => {
+        const bundleWithDisplayFields: Bundle = {
+          resourceType: 'Bundle',
+          type: 'collection',
+          entry: [
+            {
+              fullUrl: 'https://example.com/base/Patient/123',
+              resource: {
+                resourceType: 'Patient',
+                id: '123',
+                generalPractitioner: [
+                  {
+                    reference: 'Practitioner/456', // Missing reference
+                  },
+                ],
+              },
+            },
+          ],
+        }
+
+        const optimized = fhirProcessor.processForQR(bundleWithDisplayFields, false)
+        const patient = optimized.entry?.[0]?.resource as Patient
+        expect(patient?.generalPractitioner?.[0]).toHaveProperty('reference', 'Practitioner/456')
+      })
+
       it('should handle resources with null, undefined, and empty array values', () => {
         const bundleWithNullValues: Bundle = {
           resourceType: 'Bundle',
           type: 'collection',
           entry: [
             {
-              fullUrl: 'Patient/123',
+              fullUrl: 'https://example.com/base/Patient/123',
               resource: {
                 resourceType: 'Patient',
                 id: '123',
@@ -1967,7 +2040,7 @@ EQqQipjEJazEpNXKUbJ4GV0zYi4qZqIOC5tBTyAYas7JJ9RW6mFuNysgJA==
           ],
         }
 
-        const optimized = fhirProcessor.processForQR(bundleWithNullValues)
+        const optimized = fhirProcessor.processForQR(bundleWithNullValues, true)
         const patient = optimized.entry?.[0]?.resource as Patient
 
         // null, undefined, and empty arrays should be removed
@@ -1986,7 +2059,7 @@ EQqQipjEJazEpNXKUbJ4GV0zYi4qZqIOC5tBTyAYas7JJ9RW6mFuNysgJA==
           type: 'collection',
           entry: [
             {
-              fullUrl: 'Patient/123',
+              fullUrl: 'https://example.com/base/Patient/123',
               resource: {
                 resourceType: 'Patient',
                 id: 'patient-id-to-remove',
@@ -1994,7 +2067,7 @@ EQqQipjEJazEpNXKUbJ4GV0zYi4qZqIOC5tBTyAYas7JJ9RW6mFuNysgJA==
               },
             },
             {
-              fullUrl: 'Observation/456',
+              fullUrl: 'https://example.com/base/Observation/456',
               resource: {
                 resourceType: 'Observation',
                 id: 'observation-id-to-remove',
@@ -2005,7 +2078,7 @@ EQqQipjEJazEpNXKUbJ4GV0zYi4qZqIOC5tBTyAYas7JJ9RW6mFuNysgJA==
           ],
         }
 
-        const optimized = fhirProcessor.processForQR(bundleWithIds)
+        const optimized = fhirProcessor.processForQR(bundleWithIds, true)
 
         optimized.entry?.forEach(entry => {
           expect(entry.resource).not.toHaveProperty('id')
@@ -2013,8 +2086,35 @@ EQqQipjEJazEpNXKUbJ4GV0zYi4qZqIOC5tBTyAYas7JJ9RW6mFuNysgJA==
       })
     })
 
+    it('should remove id from Bundle root in QR optimization', () => {
+      const bundleWithRootId: Bundle = {
+        resourceType: 'Bundle',
+        id: 'bundle-id-to-remove',
+        type: 'collection',
+        entry: [
+          {
+            fullUrl: 'https://example.com/base/Patient/123',
+            resource: {
+              resourceType: 'Patient',
+              id: 'patient-id',
+              name: [{ family: 'Doe' }],
+            },
+          },
+        ],
+      }
+
+      const optimized = fhirProcessor.processForQR(bundleWithRootId, true)
+
+      // Bundle root id should be removed
+      expect(optimized).not.toHaveProperty('id')
+
+      // Resource-level ids are handled by existing tests; ensure entry still present
+      expect(optimized.entry).toBeDefined()
+      expect(optimized.entry?.length).toBe(1)
+    })
+
     it('should create SmartHealthCard with QR optimization enabled', async () => {
-      const config: SmartHealthCardConfig = {
+      const config: SmartHealthCardConfigParams = {
         issuer: 'https://example.com/issuer',
         privateKey: `-----BEGIN PRIVATE KEY-----
 MIGHAgEAMBMGByqGSM49AgEGCCqGSM49AwEHBG0wawIBAQQgF+y5n2Nu3g2hwBj+
@@ -2025,7 +2125,8 @@ CpCKmMQlrMSk1cpRsngZXTNiLipmog4Lm0FPIBhqzskn1FbqYW43KyAk
 MFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAEnK1jOUDttU3YQmaWYUcJQ/C84E2J
 EQqQipjEJazEpNXKUbJ4GV0zYi4qZqIOC5tBTyAYas7JJ9RW6mFuNysgJA==
 -----END PUBLIC KEY-----`,
-        enableQROptimization: true,
+        expirationTime: null,
+        // enableQROptimization and strictReferences are true by default
       }
 
       const smartHealthCard = new SmartHealthCard(config)
@@ -2061,7 +2162,9 @@ CpCKmMQlrMSk1cpRsngZXTNiLipmog4Lm0FPIBhqzskn1FbqYW43KyAk
 MFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAEnK1jOUDttU3YQmaWYUcJQ/C84E2J
 EQqQipjEJazEpNXKUbJ4GV0zYi4qZqIOC5tBTyAYas7JJ9RW6mFuNysgJA==
 -----END PUBLIC KEY-----`,
+        expirationTime: null,
         enableQROptimization: true,
+        strictReferences: true,
       }
 
       const smartHealthCard = new SmartHealthCard(config)
@@ -2098,6 +2201,17 @@ EQqQipjEJazEpNXKUbJ4GV0zYi4qZqIOC5tBTyAYas7JJ9RW6mFuNysgJA==
         expect(error.name).toBe('SmartHealthCardError')
         expect(error.message).toBe('Test error')
         expect(error.code).toBe('TEST_CODE')
+      })
+    })
+
+    describe('InvalidBundleReferenceError', () => {
+      it('should create invalid bundle reference error', () => {
+        const error = new InvalidBundleReferenceError('Patient/123')
+
+        expect(error).toBeInstanceOf(SmartHealthCardError)
+        expect(error.name).toBe('InvalidBundleReferenceError')
+        expect(error.message).toBe('Patient/123')
+        expect(error.code).toBe('INVALID_BUNDLE_REFERENCE_ERROR')
       })
     })
 

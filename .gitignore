@@ -139,6 +139,7 @@ coverage
 # Project specific files
 health-cards-dev-tools/
 health-cards/
+health_cards/
 test-output/
 scripts/generated-examples/
 _personal/

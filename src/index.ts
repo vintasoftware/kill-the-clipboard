@@ -86,14 +86,24 @@ export class QRCodeError extends SmartHealthCardError {
   }
 }
 
+export class InvalidBundleReferenceError extends SmartHealthCardError {
+  constructor(message: string) {
+    super(message, 'INVALID_BUNDLE_REFERENCE_ERROR')
+    this.name = 'InvalidBundleReferenceError'
+  }
+}
+
 // Configuration Interfaces
-export interface SmartHealthCardConfig {
+export interface SmartHealthCardConfigParams {
   issuer: string
   privateKey: CryptoKey | Uint8Array | string
   publicKey: CryptoKey | Uint8Array | string
-  expirationTime?: number // Optional expiration in seconds from now
-  enableQROptimization?: boolean // Whether to optimize FHIR Bundle for QR codes
+  expirationTime?: number | null // Optional expiration in seconds from now, defaults to null (no expiration)
+  enableQROptimization?: boolean // Whether to optimize FHIR Bundle for QR codes, defaults to true
+  strictReferences?: boolean // If true, throw error for missing references; if false, map to reference:{index}, defaults to true
 }
+
+export type SmartHealthCardConfig = Required<SmartHealthCardConfigParams>
 
 // Additional QR encoding options that can be passed to the qrcode library
 // This interface matches the expected qrcode library options
@@ -120,11 +130,19 @@ export type QRCodeConfig = Required<QRCodeConfigParams>
 
 // Core Classes
 export class SmartHealthCard {
+  private config: SmartHealthCardConfig
   private fhirProcessor: FhirBundleProcessor
   private vcProcessor: VerifiableCredentialProcessor
   private jwsProcessor: JWSProcessor
 
-  constructor(private config: SmartHealthCardConfig) {
+  constructor(config: SmartHealthCardConfigParams) {
+    this.config = {
+      ...config,
+      expirationTime: config.expirationTime ?? null,
+      enableQROptimization: config.enableQROptimization ?? true,
+      strictReferences: config.strictReferences ?? true,
+    }
+
     this.fhirProcessor = new FhirBundleProcessor()
     this.vcProcessor = new VerifiableCredentialProcessor()
     this.jwsProcessor = new JWSProcessor()
@@ -141,7 +159,7 @@ export class SmartHealthCard {
     try {
       // Step 1: Process and validate FHIR Bundle
       const processedBundle = this.config.enableQROptimization
-        ? this.fhirProcessor.processForQR(fhirBundle)
+        ? this.fhirProcessor.processForQR(fhirBundle, this.config.strictReferences)
         : this.fhirProcessor.process(fhirBundle)
       this.fhirProcessor.validate(processedBundle)
 
@@ -341,12 +359,12 @@ export class FhirBundleProcessor {
    * Processes a FHIR Bundle with QR code optimizations
    * Implements short resource-scheme URIs and removes unnecessary fields
    */
-  processForQR(bundle: FhirBundle): FhirBundle {
+  processForQR(bundle: FhirBundle, strict: boolean): FhirBundle {
     // Start with standard processing
     const processedBundle = this.process(bundle)
 
     // Apply QR optimizations
-    return this.optimizeForQR(processedBundle)
+    return this.optimizeForQR(processedBundle, strict)
   }
 
   /**
@@ -355,8 +373,11 @@ export class FhirBundleProcessor {
    * - Removes unnecessary .id and .display fields
    * - Removes empty arrays and null values
    */
-  private optimizeForQR(bundle: FhirBundle): FhirBundle {
+  private optimizeForQR(bundle: FhirBundle, strict: boolean): FhirBundle {
     const optimizedBundle: FhirBundle = JSON.parse(JSON.stringify(bundle))
+
+    // Drop Bundle.id
+    delete optimizedBundle.id
 
     // Create resource reference mapping
     const resourceMap = new Map<string, string>()
@@ -365,7 +386,7 @@ export class FhirBundleProcessor {
     if (optimizedBundle.entry) {
       optimizedBundle.entry.forEach((entry, index) => {
         if (entry.fullUrl) {
-          resourceMap.set(entry.fullUrl, `resource:${index}`)
+          resourceMap.set(entry.fullUrl.split('/').slice(-2).join('/'), `resource:${index}`)
           entry.fullUrl = `resource:${index}`
         }
       })
@@ -376,7 +397,8 @@ export class FhirBundleProcessor {
           // Recursively optimize the resource
           entry.resource = this.optimizeResource(
             entry.resource,
-            resourceMap
+            resourceMap,
+            strict
           ) as typeof entry.resource
         }
       })
@@ -388,14 +410,18 @@ export class FhirBundleProcessor {
   /**
    * Recursively optimizes a FHIR resource for QR codes
    */
-  private optimizeResource(resource: unknown, resourceMap: Map<string, string>): unknown {
+  private optimizeResource(
+    resource: unknown,
+    resourceMap: Map<string, string>,
+    strict: boolean
+  ): unknown {
     if (!resource || typeof resource !== 'object') {
       return resource
     }
 
     if (Array.isArray(resource)) {
       return resource
-        .map(item => this.optimizeResource(item, resourceMap))
+        .map(item => this.optimizeResource(item, resourceMap, strict))
         .filter(item => item !== null && item !== undefined)
     }
 
@@ -439,12 +465,26 @@ export class FhirBundleProcessor {
       // Update references to use short resource-scheme URIs
       if (key === 'reference' && typeof value === 'string') {
         const shortRef = resourceMap.get(value)
-        optimized[key] = shortRef || value
+        if (shortRef) {
+          // Found reference in resourceMap
+          optimized[key] = shortRef
+        } else {
+          // Reference not found in resourceMap
+          if (strict) {
+            // Strict mode: raise exception for missing references
+            throw new InvalidBundleReferenceError(
+              `Reference "${value}" not found in bundle resources`
+            )
+          } else {
+            // Non-strict mode: keep the original reference
+            optimized[key] = value
+          }
+        }
         continue
       }
 
       // Recursively process nested objects and arrays
-      optimized[key] = this.optimizeResource(value, resourceMap)
+      optimized[key] = this.optimizeResource(value, resourceMap, strict)
     }
 
     return optimized
@@ -888,9 +928,9 @@ export class QRCodeGenerator {
    * Uses Version 22 QR code limits from SMART Health Cards QR Code FAQ
    */
   private deriveMaxSingleQRSize(
-    errorCorrectionLevel: QREncodeOptions['errorCorrectionLevel']
+    errorCorrectionLevel: Required<QREncodeOptions>['errorCorrectionLevel']
   ): number {
-    const ecLevel = errorCorrectionLevel || 'L' // Default to L if undefined
+    const ecLevel = errorCorrectionLevel
     return V22_MAX_JWS_BY_EC_LEVEL[ecLevel]
   }
 
@@ -898,11 +938,11 @@ export class QRCodeGenerator {
    * Builds the final options object for encodeQR by merging defaults with user options
    * Defaults are aligned with SMART Health Cards specification recommendations
    */
-  private buildEncodeOptions(encodeOptions: QREncodeOptions = {}): QREncodeOptions {
+  private buildEncodeOptions(encodeOptions: QREncodeOptions = {}) {
     // Default options aligned with SMART Health Cards specification
     // See: https://spec.smarthealth.cards/#health-cards-as-qr-codes
-    const defaultOptions: QREncodeOptions = {
-      errorCorrectionLevel: 'L', // L level error correction per SMART Health Cards spec
+    const defaultOptions = {
+      errorCorrectionLevel: 'L' as const, // L level error correction per SMART Health Cards spec
       scale: 4, // Default scale factor for readability
       margin: 1, // Minimal quiet zone size
       color: {
@@ -911,9 +951,12 @@ export class QRCodeGenerator {
       },
     }
 
-    // Merge user-provided options, giving them precedence
     return {
-      ...defaultOptions,
+      errorCorrectionLevel:
+        encodeOptions.errorCorrectionLevel ?? defaultOptions.errorCorrectionLevel,
+      scale: encodeOptions.scale ?? defaultOptions.scale,
+      margin: encodeOptions.margin ?? defaultOptions.margin,
+      color: encodeOptions.color ?? defaultOptions.color,
       ...encodeOptions,
     }
   }
