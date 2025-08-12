@@ -2,6 +2,8 @@
 
 JavaScript/TypeScript universal (browser and node) library to generate QR codes containing medical records for patients to share with providers. Implements the [SMART Health Cards Framework](https://smarthealth.cards/) for FHIR-based medical records, enabling patients to "Kill the Clipboard" by sharing health data via secure, verifiable QR codes.
 
+Smart Health Links support is coming soon.
+
 This aligns with the [CMS Interoperability Framework](https://www.cms.gov/health-technology-ecosystem/interoperability-framework) call to action for Patient Facing Apps to "Kill the Clipboard":
 
 > We pledge to empower patients to retrieve their health records from CMS Aligned Networks or personal health record apps and share them with providers via **QR codes or Smart Health Cards/Links using FHIR bundles**. When possible, we will return visit records to patients in the same format. We commit to seamless, secure data exchange—eliminating the need for patients to repeatedly recall and write out their medical history. We are committed to "kill the clipboard," one encounter at a time.
@@ -18,6 +20,9 @@ This aligns with the [CMS Interoperability Framework](https://www.cms.gov/health
 - File generation (.smart-health-card files)
 - QR code generation with optional chunking support
 - Encoding and decoding support
+
+**Smart Health Links**
+- Support for Smart Health Links is coming soon.
 
 **Great Developer Experience**
 - TypeScript support with full type definitions
@@ -56,7 +61,7 @@ const fhirBundle = {
   type: 'collection',
   entry: [
     {
-      fullUrl: 'Patient/123',
+      fullUrl: 'https://example.org/fhir/Patient/123',
       resource: {
         resourceType: 'Patient',
         id: '123', 
@@ -65,7 +70,7 @@ const fhirBundle = {
       },
     },
     {
-      fullUrl: 'Immunization/456',
+      fullUrl: 'https://example.org/fhir/Immunization/456',
       resource: {
         resourceType: 'Immunization',
         id: '456',
@@ -122,16 +127,18 @@ const processedBundle = fhirProcessor.process(fhirBundle);
 fhirProcessor.validate(processedBundle);
 
 // Or process with QR code optimizations (shorter resource references, removes unnecessary fields)
-const optimizedBundle = fhirProcessor.processForQR(fhirBundle);
+// Pass 'strict' as the second argument. When strict=true, missing references throw an error.
+// When strict=false, original references are preserved if target resource is not found in bundle.
+const optimizedBundle = fhirProcessor.processForQR(fhirBundle, true);
 fhirProcessor.validate(optimizedBundle);
 
 // Create Verifiable Credential
 const vc = vcProcessor.create(processedBundle, {
   fhirVersion: '4.0.1',
   includeAdditionalTypes: [
-      'https://smarthealth.cards#immunization',
-      'https://smarthealth.cards#covid19',
-    ],
+    'https://smarthealth.cards#immunization',
+    'https://smarthealth.cards#covid19',
+  ],
 });
 
 // Create JWT payload
@@ -284,17 +291,18 @@ Main class for creating and verifying SMART Health Cards.
 #### Constructor
 
 ```typescript
-new SmartHealthCard(config: SmartHealthCardConfig)
+new SmartHealthCard(config: SmartHealthCardConfigParams)
 ```
 
 **Configuration Parameters:**
 ```typescript
-interface SmartHealthCardConfig {
+interface SmartHealthCardConfigParams {
   issuer: string // Issuer URL
   privateKey: CryptoKey | Uint8Array | string // ES256 private key
   publicKey: CryptoKey | Uint8Array | string // ES256 public key  
-  expirationTime?: number // Optional expiration in seconds from now
-  enableQROptimization?: boolean // Enable FHIR Bundle optimization for QR codes
+  expirationTime?: number | null // Optional expiration in seconds from now (default: null)
+  enableQROptimization?: boolean // Enable FHIR Bundle optimization for QR codes (default: true)
+  strictReferences?: boolean // Throw on missing references when optimizing for QR (default: true)
 }
 ```
 
@@ -313,7 +321,7 @@ interface SmartHealthCardConfig {
 Processes and validates FHIR R4 Bundles according to SMART Health Cards specification.
 
 - `process(bundle: FhirBundle): FhirBundle` - Processes Bundle (sets default type="collection")
-- `processForQR(bundle: FhirBundle): FhirBundle` - Processes Bundle with QR code optimizations (short resource-scheme URIs, removes unnecessary fields)
+- `processForQR(bundle: FhirBundle, strict: boolean): FhirBundle` - Processes Bundle with QR code optimizations (short resource-scheme URIs, removes unnecessary fields). When `strict` is true, missing `Reference.reference` targets throw `InvalidBundleReferenceError`; when false, original references are preserved when no target resource is found in bundle.
 - `validate(bundle: FhirBundle): boolean` - Validates Bundle structure
 
 ### `VerifiableCredentialProcessor`
@@ -327,7 +335,7 @@ Creates and validates W3C Verifiable Credentials for SMART Health Cards.
 
 Handles JWT/JWS signing and verification with ES256 algorithm. Payloads are raw-DEFLATE compressed when `zip: "DEF"` is set.
 
-- `sign(payload: SmartHealthCardJWT, privateKey, publicKey): Promise<string>` - Signs JWT (compresses payload before signing, sets `zip: "DEF"`). The `kid` is derived from the public key using RFC7638 JWK Thumbprint as required by SMART Health Cards spec.
+- `sign(payload: SmartHealthCardJWT, privateKey, publicKey, enableCompression?: boolean): Promise<string>` - Signs JWT (compresses payload before signing and sets `zip: "DEF"` when `enableCompression` is true; default is true). The `kid` is derived from the public key using RFC7638 JWK Thumbprint as required by SMART Health Cards spec.
 - `verify(jws: string, publicKey): Promise<SmartHealthCardJWT>` - Verifies JWS and returns payload
 - To inspect headers without verification, use `jose.decodeProtectedHeader(jws)` from the `jose` library
 
@@ -354,7 +362,7 @@ Generates and scans QR codes for SMART Health Cards with proper numeric encoding
 - `scanQR(qrCodeData: string[]): Promise<string>` - Reconstructs JWS from QR data
 - `encodeJWSToNumeric(jws: string): string` - Converts JWS to numeric format (Ord(c)-45)
 - `decodeNumericToJWS(numericData: string): string` - Converts numeric data back to JWS string
-- `chunkJWS(jws: string): string[]` - Splits JWS into balanced chunks for multi-QR encoding
+- `chunkJWS(jws: string): string[]` - Splits JWS into balanced chunks for multi-QR encoding (returns `shc:/...` strings; chunked form uses `shc:/INDEX/TOTAL/DATA`)
 
 ## Contributing
 
