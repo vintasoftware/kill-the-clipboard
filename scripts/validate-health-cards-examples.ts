@@ -11,7 +11,7 @@ import fs from "fs";
 import path from "path";
 import { fileURLToPath } from "url";
 
-import { SmartHealthCard, QRCodeGenerator } from "kill-the-clipboard";
+import { SmartHealthCardIssuer, SmartHealthCardReader, QRCodeGenerator } from "kill-the-clipboard";
 
 import { importJWK } from "jose";
 
@@ -82,19 +82,20 @@ function deepEqualJson(a, b) {
 async function generateForExample(fixture, exampleNum, issuerIndex, qrCount) {
   const prefix = `example-${exampleNum}-`;
 
-  // Sign using high-level SmartHealthCard API with same keys and issuer
+  // Sign using SmartHealthCardIssuer API with same keys and issuer
   const { privateKey, publicKey } = await loadIssuerKeys(issuerIndex);
-  const issuer = "https://spec.smarthealth.cards/examples/issuer";
-  const shc = new SmartHealthCard({
-    issuer,
+  const issuerUrl = "https://spec.smarthealth.cards/examples/issuer";
+  const issuer = new SmartHealthCardIssuer({
+    issuer: issuerUrl,
     privateKey,
     publicKey,
     enableQROptimization: true,
     strictReferences: false,  // reference implementation does not use strict references
   });
 
-  // Create JWS
-  const jws = await shc.create(fixture);
+  // Create health card
+  const healthCard = await issuer.issue(fixture);
+  const jws = healthCard.asJWS();
 
   // Generate numeric QR values
   const qrGenerator = new QRCodeGenerator({
@@ -108,7 +109,7 @@ async function generateForExample(fixture, exampleNum, issuerIndex, qrCount) {
   fs.writeFileSync(path.join(OUTPUT_DIR, `${prefix}d-jws.txt`), jws);
   fs.writeFileSync(
     path.join(OUTPUT_DIR, `${prefix}e-file.smart-health-card`),
-    await shc.createFile(fixture)
+    await healthCard.asFileContent()
   );
   qrCodeStrings.forEach((qrString, i) => {
     fs.writeFileSync(
@@ -120,6 +121,13 @@ async function generateForExample(fixture, exampleNum, issuerIndex, qrCount) {
   // Read each of the reference files and compare to our outputs.
   // Load the payload, to ensure deterministic differences are not present.
 
+  // Create reader for verification
+  const reader = new SmartHealthCardReader({
+    publicKey,
+    enableQROptimization: true,
+    strictReferences: false,
+  });
+
   // Load the JWS and ensure it matches the reference.
   console.log(
     `Checking if example ${exampleNum} matches ${prefix}d-jws.txt reference.`
@@ -128,12 +136,14 @@ async function generateForExample(fixture, exampleNum, issuerIndex, qrCount) {
     path.join(EXAMPLES_DIR, `${prefix}d-jws.txt`),
     "utf8"
   );
-  const referenceJwsFhirBundle = await shc.getBundle(referenceJws);
+  const referenceHealthCard = await reader.fromJWS(referenceJws);
+  const referenceJwsFhirBundle = await referenceHealthCard.asBundle();
   const ourJws = fs.readFileSync(
     path.join(OUTPUT_DIR, `${prefix}d-jws.txt`),
     "utf8"
   );
-  const ourJwsFhirBundle = await shc.getBundle(ourJws);
+  const ourHealthCard = await reader.fromJWS(ourJws);
+  const ourJwsFhirBundle = await ourHealthCard.asBundle();
   if (!deepEqualJson(ourJwsFhirBundle, referenceJwsFhirBundle)) {
     throw new Error(
       `FHIR Bundle does not match reference: ${path.join(
@@ -156,8 +166,10 @@ async function generateForExample(fixture, exampleNum, issuerIndex, qrCount) {
     path.join(OUTPUT_DIR, `${prefix}e-file.smart-health-card`),
     "utf8"
   );
-  const referenceShcFhirBundle = await shc.getBundleFromFile(referenceShc);
-  const ourShcFhirBundle = await shc.getBundleFromFile(ourShc);
+  const referenceShcHealthCard = await reader.fromFileContent(referenceShc);
+  const referenceShcFhirBundle = await referenceShcHealthCard.asBundle();
+  const ourShcHealthCard = await reader.fromFileContent(ourShc);
+  const ourShcFhirBundle = await ourShcHealthCard.asBundle();
   if (!deepEqualJson(ourShcFhirBundle, referenceShcFhirBundle)) {
     throw new Error("SHC does not match reference");
   }
@@ -183,12 +195,12 @@ async function generateForExample(fixture, exampleNum, issuerIndex, qrCount) {
     const referenceQRValue = fs.readFileSync(referenceQRPath, "utf8").trim();
     referenceQRNumericValues.push(referenceQRValue);
   }
-  const ourQrFhirBundle = await shc.getBundle(
-    await qrGenerator.scanQR(ourQRNumericValues)
-  );
-  const referenceQrFhirBundle = await shc.getBundle(
-    await qrGenerator.scanQR(referenceQRNumericValues)
-  );
+  const ourQrJws = await qrGenerator.scanQR(ourQRNumericValues);
+  const ourQrHealthCard = await reader.fromJWS(ourQrJws);
+  const ourQrFhirBundle = await ourQrHealthCard.asBundle();
+  const referenceQrJws = await qrGenerator.scanQR(referenceQRNumericValues);
+  const referenceQrHealthCard = await reader.fromJWS(referenceQrJws);
+  const referenceQrFhirBundle = await referenceQrHealthCard.asBundle();
 
   if (!deepEqualJson(ourQrFhirBundle, referenceQrFhirBundle)) {
     throw new Error("FHIR Bundle from QR codes does not match reference");
