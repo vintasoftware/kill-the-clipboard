@@ -11,7 +11,7 @@ import fs from "fs";
 import path from "path";
 import { fileURLToPath } from "url";
 
-import { SmartHealthCardIssuer, SmartHealthCardReader, QRCodeGenerator } from "kill-the-clipboard";
+import { SmartHealthCardIssuer, SmartHealthCardReader } from "kill-the-clipboard";
 
 import { importJWK } from "jose";
 
@@ -97,11 +97,10 @@ async function generateForExample(fixture, exampleNum, issuerIndex, qrCount) {
   const healthCard = await issuer.issue(fixture);
   const jws = healthCard.asJWS();
 
-  // Generate numeric QR values
-  const qrGenerator = new QRCodeGenerator({
+  // Generate numeric QR values using the cleaner API
+  const qrCodeStrings = healthCard.asQRNumeric({
     enableChunking: qrCount > 1,
   });
-  const qrCodeStrings = qrGenerator.chunkJWS(jws);
 
   // Write outputs mirroring reference filenames into OUTPUT_DIR
   ensureDir(OUTPUT_DIR);
@@ -195,11 +194,9 @@ async function generateForExample(fixture, exampleNum, issuerIndex, qrCount) {
     const referenceQRValue = fs.readFileSync(referenceQRPath, "utf8").trim();
     referenceQRNumericValues.push(referenceQRValue);
   }
-  const ourQrJws = await qrGenerator.scanQR(ourQRNumericValues);
-  const ourQrHealthCard = await reader.fromJWS(ourQrJws);
+  const ourQrHealthCard = await reader.fromQRNumeric(ourQRNumericValues);
   const ourQrFhirBundle = await ourQrHealthCard.asBundle();
-  const referenceQrJws = await qrGenerator.scanQR(referenceQRNumericValues);
-  const referenceQrHealthCard = await reader.fromJWS(referenceQrJws);
+  const referenceQrHealthCard = await reader.fromQRNumeric(referenceQRNumericValues);
   const referenceQrFhirBundle = await referenceQrHealthCard.asBundle();
 
   if (!deepEqualJson(ourQrFhirBundle, referenceQrFhirBundle)) {
