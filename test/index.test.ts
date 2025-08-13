@@ -980,6 +980,81 @@ EQqQipjEJazEpNXKUbJ4GV0zYi4qZqIOC5tBTyAYas7JJ9RW6mFuNysgJA==
           expect(qr).toMatch(/^data:image\/png;base64,/)
         })
       })
+
+      it('should generate QR numeric strings', async () => {
+        const healthCard = await issuer.issue(validBundle)
+        const qrNumericStrings = healthCard.asQRNumeric()
+
+        expect(Array.isArray(qrNumericStrings)).toBe(true)
+        expect(qrNumericStrings.length).toBeGreaterThan(0)
+
+        // Each string should be in SMART Health Cards format
+        qrNumericStrings.forEach(qrString => {
+          expect(typeof qrString).toBe('string')
+          expect(qrString).toMatch(/^shc:\//)
+        })
+
+        // Should be single QR code for normal sized data
+        expect(qrNumericStrings).toHaveLength(1)
+      })
+
+      it('should generate chunked QR numeric strings when configured', async () => {
+        const healthCard = await issuer.issue(validBundle)
+        const chunkedQRStrings = healthCard.asQRNumeric({
+          enableChunking: true,
+          maxSingleQRSize: 100, // Force chunking
+        })
+
+        expect(Array.isArray(chunkedQRStrings)).toBe(true)
+        expect(chunkedQRStrings.length).toBeGreaterThan(1) // Should be chunked
+
+        // Each chunk should have the proper format
+        chunkedQRStrings.forEach((qrString, index) => {
+          expect(typeof qrString).toBe('string')
+          expect(qrString).toMatch(/^shc:\/\d+\/\d+\//)
+
+          // Verify chunk index and total
+          const parts = qrString.split('/')
+          expect(parts).toHaveLength(4) // shc:, chunkIndex, total, data
+          expect(parseInt(parts[1])).toBe(index + 1) // 1-based indexing
+          expect(parseInt(parts[2])).toBe(chunkedQRStrings.length) // Total chunks
+        })
+      })
+    })
+
+    describe('fromQRNumeric() method', () => {
+      it('should read and verify a SMART Health Card from single QR numeric data', async () => {
+        // Step 1: Issue health card and generate QR numeric strings
+        const healthCard = await issuer.issue(validBundle)
+        const qrNumericStrings = healthCard.asQRNumeric()
+        expect(qrNumericStrings).toHaveLength(1) // Should be a single QR code
+
+        // Step 2: Read from QR numeric data
+        const verifiedHealthCard = await reader.fromQRNumeric(qrNumericStrings[0])
+        expect(verifiedHealthCard).toBeDefined()
+
+        // Step 3: Verify data integrity
+        const verifiedBundle = await verifiedHealthCard.asBundle()
+        expect(verifiedBundle).toEqual(validBundle)
+      })
+
+      it('should read and verify a SMART Health Card from chunked QR numeric data', async () => {
+        // Step 1: Issue health card with chunking enabled
+        const healthCard = await issuer.issue(validBundle)
+        const qrChunks = healthCard.asQRNumeric({
+          enableChunking: true,
+          maxSingleQRSize: 100, // Small size to force chunking
+        })
+        expect(qrChunks.length).toBeGreaterThan(1) // Ensure it's chunked
+
+        // Step 2: Read from chunked QR numeric data
+        const verifiedHealthCard = await reader.fromQRNumeric(qrChunks)
+        expect(verifiedHealthCard).toBeDefined()
+
+        // Step 3: Verify data integrity
+        const verifiedBundle = await verifiedHealthCard.asBundle()
+        expect(verifiedBundle).toEqual(validBundle)
+      })
     })
 
     describe('end-to-end workflow', () => {
@@ -1014,6 +1089,42 @@ EQqQipjEJazEpNXKUbJ4GV0zYi4qZqIOC5tBTyAYas7JJ9RW6mFuNysgJA==
         expect(verifiedHealthCard).toBeDefined()
 
         // Step 3: Verify data integrity
+        const verifiedBundle = await verifiedHealthCard.asBundle()
+        expect(verifiedBundle).toEqual(validBundle)
+      })
+
+      it('should handle complete QR numeric workflow', async () => {
+        // Step 1: Issue health card
+        const healthCard = await issuer.issue(validBundle)
+
+        // Step 2: Generate QR numeric data
+        const qrNumericChunks = healthCard.asQRNumeric()
+        expect(qrNumericChunks).toHaveLength(1) // Should be single QR code
+
+        // Step 3: Read and verify from QR numeric data
+        const verifiedHealthCard = await reader.fromQRNumeric(qrNumericChunks[0])
+        expect(verifiedHealthCard).toBeDefined()
+
+        // Step 4: Verify data integrity
+        const verifiedBundle = await verifiedHealthCard.asBundle()
+        expect(verifiedBundle).toEqual(validBundle)
+      })
+
+      it('should handle complete chunked QR numeric workflow', async () => {
+        // Step 1: Issue health card
+        const healthCard = await issuer.issue(validBundle)
+
+        // Step 2: Create chunks (simulate what would be in QR codes)
+        const qrNumericChunks = healthCard.asQRNumeric({
+          enableChunking: true,
+          maxSingleQRSize: 150,
+        })
+        expect(qrNumericChunks.length).toBeGreaterThan(1) // Should be chunked
+
+        // Step 3: Read and verify from QR numeric data
+        const verifiedHealthCard = await reader.fromQRNumeric(qrNumericChunks)
+
+        // Step 4: Verify data integrity
         const verifiedBundle = await verifiedHealthCard.asBundle()
         expect(verifiedBundle).toEqual(validBundle)
       })

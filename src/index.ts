@@ -157,6 +157,15 @@ export class SmartHealthCard {
   }
 
   /**
+   * Returns the health card as QR numeric strings
+   * These are the text strings that would be contained within QR codes
+   */
+  asQRNumeric(config: QRCodeConfigParams = {}): string[] {
+    const qrGenerator = new QRCodeGenerator(config)
+    return qrGenerator.chunkJWS(this.jws)
+  }
+
+  /**
    * Returns the FHIR Bundle from the health card
    * @param optimizeForQR - Whether to apply QR code optimizations to the bundle
    * @param strictReferences - Whether to enforce strict reference validation when optimizing
@@ -372,6 +381,37 @@ export class SmartHealthCardReader {
       throw new SmartHealthCardError(
         `Failed to verify SMART Health Card: ${errorMessage}`,
         'VERIFICATION_ERROR'
+      )
+    }
+  }
+
+  /**
+   * Reads and verifies a SMART Health Card from QR numeric data
+   * Accepts either a single QR code numeric string or array of chunked QR codes
+   */
+  async fromQRNumeric(qrNumeric: string): Promise<SmartHealthCard>
+  async fromQRNumeric(qrNumericChunks: string[]): Promise<SmartHealthCard>
+  async fromQRNumeric(qrData: string | string[]): Promise<SmartHealthCard> {
+    try {
+      // Create QR generator instance to decode the QR data
+      const qrGenerator = new QRCodeGenerator()
+
+      // Convert to array format for consistent handling
+      const qrDataArray = Array.isArray(qrData) ? qrData : [qrData]
+
+      // Decode QR data to JWS
+      const jws = await qrGenerator.scanQR(qrDataArray)
+
+      // Use existing JWS verification method
+      return await this.fromJWS(jws)
+    } catch (error) {
+      if (error instanceof SmartHealthCardError) {
+        throw error
+      }
+      const errorMessage = error instanceof Error ? error.message : String(error)
+      throw new SmartHealthCardError(
+        `Failed to read SMART Health Card from QR numeric data: ${errorMessage}`,
+        'QR_DECODE_ERROR'
       )
     }
   }

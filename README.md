@@ -102,6 +102,10 @@ console.log('Health Card JWS:', healthCard.asJWS());
 const qrCodes = await healthCard.asQR();
 console.log('QR code data URL:', qrCodes[0]);
 
+// Generate numeric QR codes (shc:/ prefixed strings)
+const qrNumericStrings = healthCard.asQRNumeric();
+console.log('Numeric QR code:', qrNumericStrings[0]);
+
 // Create downloadable .smart-health-card file
 const blob = await healthCard.asFileBlob();
 console.log('File blob created, type:', blob.type);
@@ -115,6 +119,10 @@ console.log('Verified FHIR Bundle:', verifiedBundle);
 const fileContent = await healthCard.asFileContent();
 const healthCardFromFile = await reader.fromFileContent(fileContent);
 console.log('Bundle from file:', await healthCardFromFile.asBundle());
+
+// Read from QR numeric data (simulate scanning QR codes)
+const healthCardFromQR = await reader.fromQRNumeric(qrNumericStrings);
+console.log('Bundle from QR:', await healthCardFromQR.asBundle());
 ```
 
 ### Advanced Usage
@@ -249,6 +257,14 @@ try {
   const bundle = await verifiedCard.asBundle();
 } catch (error) {
   console.error('Verification failed:', error.message);
+}
+
+try {
+  const qrNumeric = 'shc:/56762959532654603460292540772804336028...';
+  const verifiedCard = await reader.fromQRNumeric(qrNumeric);
+  const bundle = await verifiedCard.asBundle();
+} catch (error) {
+  console.error('QR numeric verification failed:', error.message);
 }
 ```
 
@@ -441,6 +457,31 @@ const qrCodes = await healthCard.asQR({
 });
 ```
 
+###### `asQRNumeric([config])`
+
+Generate QR numeric strings from the health card.
+
+```typescript
+asQRNumeric(config?: QRCodeConfigParams): string[]
+```
+
+**Parameters:**
+- `config`: Optional QR code generation configuration
+
+**Returns:** Array of QR numeric strings in SMART Health Cards format (`shc:/...`)
+
+**Example:**
+```typescript
+const qrNumericStrings = healthCard.asQRNumeric();
+console.log(qrNumericStrings[0]); // "shc:/567629595326546034602925..."
+
+// With chunking for large health cards
+const chunkedStrings = healthCard.asQRNumeric({
+  enableChunking: true,
+  maxSingleQRSize: 500
+});
+```
+
 ###### `asBundle([optimizeForQR], [strictReferences])`
 
 Return the FHIR Bundle from the health card.
@@ -557,6 +598,35 @@ fromFileContent(fileContent: string | Blob): Promise<SmartHealthCard>
 - `fileContent`: File content as string or Blob from .smart-health-card files
 
 **Returns:** Promise resolving to verified SmartHealthCard object
+
+###### `fromQRNumeric(qrNumeric)`
+
+Read and verify a SMART Health Card from QR numeric data.
+
+```typescript
+fromQRNumeric(qrNumeric: string): Promise<SmartHealthCard>
+fromQRNumeric(qrNumericChunks: string[]): Promise<SmartHealthCard>
+```
+
+**Parameters:**
+- `qrNumeric`: Single QR code numeric string (format: `shc:/...`)
+- `qrNumericChunks`: Array of chunked QR code numeric strings (format: `shc:/index/total/...`)
+
+**Returns:** Promise resolving to verified SmartHealthCard object
+
+**Example:**
+```typescript
+// Single QR code
+const qrNumeric = 'shc:/56762959532654603460292540772804336028...';
+const healthCard = await reader.fromQRNumeric(qrNumeric);
+
+// Chunked QR codes
+const chunkedQR = [
+  'shc:/1/2/567629595326546034602925',
+  'shc:/2/2/407728043360287028647167'
+];
+const healthCard = await reader.fromQRNumeric(chunkedQR);
+```
 
 ---
 
