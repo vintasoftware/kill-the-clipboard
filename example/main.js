@@ -8,12 +8,7 @@ import {
 import decodeQR from "qr/decode.js";
 // Import JOSE for key handling
 import { importJWK } from "jose";
-// Import Buffer polyfill for browser compatibility
-import { Buffer } from "buffer";
 import TEST_JWKS from "./issuer.jwks.private.json" assert { type: "json" };
-
-// Make Buffer available globally (needed for qrcode library)
-window.Buffer = Buffer;
 
 // Load test JWKS keys (FOR TESTING ONLY - NEVER USE IN PRODUCTION)
 let TEST_SIGNING_KEY = null;

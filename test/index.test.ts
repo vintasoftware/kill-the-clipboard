@@ -1386,7 +1386,7 @@ EQqQipjEJazEpNXKUbJ4GV0zYi4qZqIOC5tBTyAYas7JJ9RW6mFuNysgJA==
         const expectedNumeric = '595652555669016752766366525501706058655271726956'
         expect(mockToDataURL).toHaveBeenCalledWith(
           [
-            { data: Buffer.from('shc:/', 'utf8'), mode: 'byte' },
+            { data: new TextEncoder().encode('shc:/'), mode: 'byte' },
             { data: expectedNumeric, mode: 'numeric' },
           ],
           {

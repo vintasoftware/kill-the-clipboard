@@ -1569,7 +1569,7 @@ export class QRCodeGenerator {
     // Segment 1: Bytes mode for "shc:/" prefix
     // Segment 2: Numeric mode for JWS numeric data
     const segments = [
-      { data: Buffer.from('shc:/', 'utf8'), mode: 'byte' as const },
+      { data: new TextEncoder().encode('shc:/'), mode: 'byte' as const },
       { data: numericData, mode: 'numeric' as const },
     ]
 
@@ -1635,7 +1635,7 @@ export class QRCodeGenerator {
       // Segment 2: Numeric mode for chunk numeric data
       const chunkPrefix = `shc:/${chunkIndex}/${totalChunks}/`
       const segments = [
-        { data: Buffer.from(chunkPrefix, 'utf8'), mode: 'byte' as const },
+        { data: new TextEncoder().encode(chunkPrefix), mode: 'byte' as const },
         { data: numericData, mode: 'numeric' as const },
       ]
 
