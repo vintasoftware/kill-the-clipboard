@@ -4,27 +4,24 @@ import {
   SmartHealthCardIssuer,
   SmartHealthCardReader,
 } from "kill-the-clipboard";
-// Import QR code scanning library
-import jsQR from "jsqr";
+// Import QR code decoding library
+import decodeQR from "qr/decode.js";
 // Import JOSE for key handling
 import { importJWK } from "jose";
 // Import Buffer polyfill for browser compatibility
 import { Buffer } from "buffer";
+import TEST_JWKS from "./issuer.jwks.private.json" assert { type: "json" };
 
 // Make Buffer available globally (needed for qrcode library)
 window.Buffer = Buffer;
 
 // Load test JWKS keys (FOR TESTING ONLY - NEVER USE IN PRODUCTION)
-let TEST_JWKS = null;
 let TEST_SIGNING_KEY = null;
 let TEST_VERIFICATION_KEY = null;
 
-// Load the test keys from JWKS file
+// Load the test keys from imported JWKS
 async function loadTestKeys() {
   try {
-    const response = await fetch("./issuer.jwks.private.json");
-    TEST_JWKS = await response.json();
-
     // Find the signing key (first key with use: "sig" and alg: "ES256")
     const signingJwk = TEST_JWKS.keys.find(
       (key) => key.use === "sig" && key.alg === "ES256" && key.kty === "EC"
@@ -41,8 +38,8 @@ async function loadTestKeys() {
     const { d, ...publicJwk } = signingJwk;
     TEST_VERIFICATION_KEY = await importJWK(publicJwk, "ES256");
 
-    console.log("✅ Test keys loaded successfully");
-    console.log("🔑 Using key ID:", signingJwk.kid);
+    console.log("Test keys loaded successfully");
+    console.log("Using key ID:", signingJwk.kid);
   } catch (error) {
     console.error("❌ Failed to load test keys:", error);
     throw error;
@@ -52,7 +49,7 @@ async function loadTestKeys() {
 // Enumerate available camera devices
 async function enumerateCameraDevices() {
   try {
-    console.log("🔍 Enumerating camera devices...");
+    console.log("Enumerating camera devices...");
 
     // Request permission first to get device labels
     let stream = null;
@@ -74,7 +71,7 @@ async function enumerateCameraDevices() {
     }
 
     console.log(
-      `📷 Found ${availableCameras.length} camera(s):`,
+      `Found ${availableCameras.length} camera(s):`,
       availableCameras.map(
         (c) => c.label || `Camera ${c.deviceId.substring(0, 8)}...`
       )
@@ -267,8 +264,8 @@ async function init() {
     // Display the sample bundle
     displaySampleBundle();
 
-    console.log("✅ SMART Health Cards demo initialized successfully");
-    console.log("🔐 Using SMART Health Cards example test keys");
+    console.log("SMART Health Cards demo initialized successfully");
+    console.log("Using SMART Health Cards example test keys");
   } catch (error) {
     console.error("❌ Failed to initialize demo:", error);
     showScanStatus("error", `Initialization failed: ${error.message}`);
@@ -294,7 +291,7 @@ function setupEventListeners() {
   // Listen for device changes (cameras being connected/disconnected)
   if (navigator.mediaDevices && navigator.mediaDevices.addEventListener) {
     navigator.mediaDevices.addEventListener("devicechange", async () => {
-      console.log("📷 Camera devices changed, refreshing camera list...");
+      console.log("Camera devices changed, refreshing camera list...");
       await enumerateCameraDevices();
       populateCameraSelector();
     });
@@ -339,8 +336,8 @@ async function generateQRCode() {
       `✅ QR code generated successfully! This contains the demo health card data.`
     );
 
-    console.log("✅ Generated QR code:", qrCodes[0].substring(0, 50) + "...");
-    console.log("📄 JWS:", healthCard.asJWS().substring(0, 100) + "...");
+    console.log("Generated QR code:", qrCodes[0].substring(0, 50) + "...");
+    console.log("JWS:", healthCard.asJWS().substring(0, 100) + "...");
   } catch (error) {
     console.error("❌ QR generation failed:", error);
     showGenerationStatus("error", `QR generation failed: ${error.message}`);
@@ -406,11 +403,11 @@ async function startCameraScan() {
     if (selectedDeviceId) {
       // Use specific camera device
       videoConstraints.deviceId = { exact: selectedDeviceId };
-      console.log(`📷 Using selected camera: ${selectedDeviceId}`);
+      console.log(`Using selected camera: ${selectedDeviceId}`);
     } else {
       // Use default behavior (prefer back camera)
       videoConstraints.facingMode = "environment";
-      console.log("📷 Using auto camera selection (prefer back camera)");
+      console.log("Using auto camera selection (prefer back camera)");
     }
 
     // Request camera access with selected constraints
@@ -516,11 +513,23 @@ function scanForQRCode(video, canvas) {
 
     // Get image data and scan for QR codes
     const imageData = context.getImageData(0, 0, canvas.width, canvas.height);
-    const qrCode = jsQR(imageData.data, imageData.width, imageData.height);
+    let decoded = null;
+    try {
+      decoded = decodeQR(
+        {
+          width: imageData.width,
+          height: imageData.height,
+          data: imageData.data,
+        },
+        {}
+      );
+    } catch (_) {
+      // Ignore decode errors for individual frames
+    }
 
-    if (qrCode && qrCode.data.startsWith("shc:/")) {
+    if (typeof decoded === "string" && decoded.startsWith("shc:/")) {
       // QR code found! Process it
-      processScanResult(qrCode.data);
+      processScanResult(decoded);
       return;
     }
   }
@@ -531,7 +540,7 @@ function scanForQRCode(video, canvas) {
 
 // Process the scanned QR code result
 async function processScanResult(qrData) {
-  console.log("📱 QR code detected:", qrData.substring(0, 50) + "...");
+  console.log("QR code detected:", qrData.substring(0, 50) + "...");
 
   try {
     // Stop scanning

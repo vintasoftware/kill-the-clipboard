@@ -11,7 +11,7 @@
   },
   "dependencies": {
     "jose": "^6.0.12",
-    "jsqr": "^1.4.0"
+    "qr": "^0.5.0"
   },
   "devDependencies": {
     "buffer": "^6.0.3",
