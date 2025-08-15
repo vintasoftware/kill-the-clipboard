@@ -69,12 +69,12 @@ import { SmartHealthCardIssuer, SmartHealthCardReader } from 'kill-the-clipboard
 const issuer = new SmartHealthCardIssuer({
   issuer: 'https://your-healthcare-org.com',
   privateKey: privateKeyPKCS8String, // ES256 private key in PKCS#8 format
-  publicKey: publicKeySPKIString,     // ES256 public key in SPKI format
+  publicKey: publicKeySPKIString, // ES256 public key in SPKI format
 });
 
 // Configure reader for verification (only needs public key)
 const reader = new SmartHealthCardReader({
-  publicKey: publicKeySPKIString,     // ES256 public key in SPKI format
+  publicKey: publicKeySPKIString, // ES256 public key in SPKI format
 });
 
 // Create FHIR Bundle
@@ -217,8 +217,8 @@ const qrGenerator = new QRCodeGenerator({
   enableChunking: false, // Use single QR mode (recommended)
   encodeOptions: {
     errorCorrectionLevel: 'L', // L per SMART Health Cards spec
-    scale: 4,                  // QR code scale factor
-    margin: 1,                 // Quiet zone size
+    scale: 4, // QR code scale factor
+    margin: 1, // Quiet zone size
     color: { dark: '#000000ff', light: '#ffffffff' },
     // Optional: version, maskPattern, width
   }
