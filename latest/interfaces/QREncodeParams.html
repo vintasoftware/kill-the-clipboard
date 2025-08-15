@@ -1,0 +1,209 @@
+<!DOCTYPE html><html class="default" lang="en" data-base="../"><head><meta charset="utf-8"/><meta http-equiv="x-ua-compatible" content="IE=edge"/><title>QREncodeParams | Kill the Clipboard - SMART Health Cards Library - v0.0.1</title><meta name="description" content="Documentation for Kill the Clipboard - SMART Health Cards Library"/><meta name="viewport" content="width=device-width, initial-scale=1"/><link rel="stylesheet" href="../assets/style.css"/><link rel="stylesheet" href="../assets/highlight.css"/><script defer src="../assets/main.js"></script><script async src="../assets/icons.js" id="tsd-icons-script"></script><script async src="../assets/search.js" id="tsd-search-script"></script><script async src="../assets/navigation.js" id="tsd-nav-script"></script><script async src="../assets/hierarchy.js" id="tsd-hierarchy-script"></script><style>
+@media (prefers-color-scheme: dark) {
+  :root {
+    --md-sys-color-primary: #b7c4ff;
+    --md-sys-color-on-primary: #002682;
+    --md-sys-color-primary-container: #0038b6;
+    --md-sys-color-on-primary-container: #dde1ff;
+    --md-sys-color-secondary: #c2c5dd;
+    --md-sys-color-on-secondary: #2c3042;
+    --md-sys-color-secondary-container: #424659;
+    --md-sys-color-on-secondary-container: #dee1f9;
+    --md-sys-color-tertiary: #e4bada;
+    --md-sys-color-on-tertiary: #43273f;
+    --md-sys-color-tertiary-container: #5c3d56;
+    --md-sys-color-on-tertiary-container: #ffd7f4;
+    --md-sys-color-error: #ffb4ab;
+    --md-sys-color-on-error: #690005;
+    --md-sys-color-error-container: #93000a;
+    --md-sys-color-on-error-container: #ffb4ab;
+    --md-sys-color-background: #1b1b1f;
+    --md-sys-color-on-background: #e4e1e6;
+    --md-sys-color-surface: #1b1b1f;
+    --md-sys-color-on-surface: #e4e1e6;
+    --md-sys-color-surface-variant: #45464f;
+    --md-sys-color-on-surface-variant: #c6c5d0;
+    --md-sys-color-outline: #90909a;
+    --md-sys-color-outline-variant: #45464f;
+    --md-sys-color-shadow: #000000;
+    --md-sys-color-scrim: #000000;
+    --md-sys-color-inverse-surface: #e4e1e6;
+    --md-sys-color-inverse-on-surface: #303034;
+    --md-sys-color-inverse-primary: #004ced;
+    --md-sys-color-surface-dim: #131316;
+    --md-sys-color-surface-bright: #39393c;
+    --md-sys-color-surface-container-lowest: #0e0e11;
+    --md-sys-color-surface-container-low: #1b1b1f;
+    --md-sys-color-surface-container: #1f1f23;
+    --md-sys-color-surface-container-high: #2a2a2d;
+    --md-sys-color-surface-container-highest: #343438
+  }
+}
+:root[data-theme="dark"] {
+  --md-sys-color-primary: #b7c4ff;
+  --md-sys-color-on-primary: #002682;
+  --md-sys-color-primary-container: #0038b6;
+  --md-sys-color-on-primary-container: #dde1ff;
+  --md-sys-color-secondary: #c2c5dd;
+  --md-sys-color-on-secondary: #2c3042;
+  --md-sys-color-secondary-container: #424659;
+  --md-sys-color-on-secondary-container: #dee1f9;
+  --md-sys-color-tertiary: #e4bada;
+  --md-sys-color-on-tertiary: #43273f;
+  --md-sys-color-tertiary-container: #5c3d56;
+  --md-sys-color-on-tertiary-container: #ffd7f4;
+  --md-sys-color-error: #ffb4ab;
+  --md-sys-color-on-error: #690005;
+  --md-sys-color-error-container: #93000a;
+  --md-sys-color-on-error-container: #ffb4ab;
+  --md-sys-color-background: #1b1b1f;
+  --md-sys-color-on-background: #e4e1e6;
+  --md-sys-color-surface: #1b1b1f;
+  --md-sys-color-on-surface: #e4e1e6;
+  --md-sys-color-surface-variant: #45464f;
+  --md-sys-color-on-surface-variant: #c6c5d0;
+  --md-sys-color-outline: #90909a;
+  --md-sys-color-outline-variant: #45464f;
+  --md-sys-color-shadow: #000000;
+  --md-sys-color-scrim: #000000;
+  --md-sys-color-inverse-surface: #e4e1e6;
+  --md-sys-color-inverse-on-surface: #303034;
+  --md-sys-color-inverse-primary: #004ced;
+  --md-sys-color-surface-dim: #131316;
+  --md-sys-color-surface-bright: #39393c;
+  --md-sys-color-surface-container-lowest: #0e0e11;
+  --md-sys-color-surface-container-low: #1b1b1f;
+  --md-sys-color-surface-container: #1f1f23;
+  --md-sys-color-surface-container-high: #2a2a2d;
+  --md-sys-color-surface-container-highest: #343438
+}
+
+@media (prefers-color-scheme: light) {
+  :root {
+    --md-sys-color-primary: #004ced;
+    --md-sys-color-on-primary: #ffffff;
+    --md-sys-color-primary-container: #dde1ff;
+    --md-sys-color-on-primary-container: #001452;
+    --md-sys-color-secondary: #5a5d72;
+    --md-sys-color-on-secondary: #ffffff;
+    --md-sys-color-secondary-container: #dee1f9;
+    --md-sys-color-on-secondary-container: #171b2c;
+    --md-sys-color-tertiary: #75546f;
+    --md-sys-color-on-tertiary: #ffffff;
+    --md-sys-color-tertiary-container: #ffd7f4;
+    --md-sys-color-on-tertiary-container: #2c1229;
+    --md-sys-color-error: #ba1a1a;
+    --md-sys-color-on-error: #ffffff;
+    --md-sys-color-error-container: #ffdad6;
+    --md-sys-color-on-error-container: #410002;
+    --md-sys-color-background: #fefbff;
+    --md-sys-color-on-background: #1b1b1f;
+    --md-sys-color-surface: #fefbff;
+    --md-sys-color-on-surface: #1b1b1f;
+    --md-sys-color-surface-variant: #e2e1ec;
+    --md-sys-color-on-surface-variant: #45464f;
+    --md-sys-color-outline: #767680;
+    --md-sys-color-outline-variant: #c6c5d0;
+    --md-sys-color-shadow: #000000;
+    --md-sys-color-scrim: #000000;
+    --md-sys-color-inverse-surface: #303034;
+    --md-sys-color-inverse-on-surface: #f2f0f4;
+    --md-sys-color-inverse-primary: #b7c4ff;
+    --md-sys-color-surface-dim: #dbd9de;
+    --md-sys-color-surface-bright: #fbf8fd;
+    --md-sys-color-surface-container-lowest: #ffffff;
+    --md-sys-color-surface-container-low: #f5f3f7;
+    --md-sys-color-surface-container: #efedf1;
+    --md-sys-color-surface-container-high: #eae7ec;
+    --md-sys-color-surface-container-highest: #e4e1e6
+  }
+}
+:root[data-theme="light"] {
+  --md-sys-color-primary: #004ced;
+  --md-sys-color-on-primary: #ffffff;
+  --md-sys-color-primary-container: #dde1ff;
+  --md-sys-color-on-primary-container: #001452;
+  --md-sys-color-secondary: #5a5d72;
+  --md-sys-color-on-secondary: #ffffff;
+  --md-sys-color-secondary-container: #dee1f9;
+  --md-sys-color-on-secondary-container: #171b2c;
+  --md-sys-color-tertiary: #75546f;
+  --md-sys-color-on-tertiary: #ffffff;
+  --md-sys-color-tertiary-container: #ffd7f4;
+  --md-sys-color-on-tertiary-container: #2c1229;
+  --md-sys-color-error: #ba1a1a;
+  --md-sys-color-on-error: #ffffff;
+  --md-sys-color-error-container: #ffdad6;
+  --md-sys-color-on-error-container: #410002;
+  --md-sys-color-background: #fefbff;
+  --md-sys-color-on-background: #1b1b1f;
+  --md-sys-color-surface: #fefbff;
+  --md-sys-color-on-surface: #1b1b1f;
+  --md-sys-color-surface-variant: #e2e1ec;
+  --md-sys-color-on-surface-variant: #45464f;
+  --md-sys-color-outline: #767680;
+  --md-sys-color-outline-variant: #c6c5d0;
+  --md-sys-color-shadow: #000000;
+  --md-sys-color-scrim: #000000;
+  --md-sys-color-inverse-surface: #303034;
+  --md-sys-color-inverse-on-surface: #f2f0f4;
+  --md-sys-color-inverse-primary: #b7c4ff;
+  --md-sys-color-surface-dim: #dbd9de;
+  --md-sys-color-surface-bright: #fbf8fd;
+  --md-sys-color-surface-container-lowest: #ffffff;
+  --md-sys-color-surface-container-low: #f5f3f7;
+  --md-sys-color-surface-container: #efedf1;
+  --md-sys-color-surface-container-high: #eae7ec;
+  --md-sys-color-surface-container-highest: #e4e1e6
+}
+</style><link rel="stylesheet" href="../assets/material-style.css"/><link rel="stylesheet" href="../assets/version-select.css"/><script src="../assets/version-select.js"></script></head><body><script>document.documentElement.dataset.theme = localStorage.getItem("tsd-theme") || "os";document.body.style.display="none";setTimeout(() => window.app?app.showPage():document.body.style.removeProperty("display"),500)</script><header class="tsd-page-toolbar"><div class="tsd-toolbar-contents container"><a href="../index.html" class="title">Kill the Clipboard - SMART Health Cards Library - v0.0.1</a><select id="version-select" class="title loading"></select><div id="tsd-toolbar-links"><a href="https://github.com/vintasoftware/kill-the-clipboard">GitHub</a><a href="https://www.vinta.com.br">Maintained by Vinta Software</a></div><button id="tsd-search-trigger" class="tsd-widget" aria-label="Search"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true"><use href="../assets/icons.svg#icon-search"></use></svg></button><dialog id="tsd-search" aria-label="Search"><input role="combobox" id="tsd-search-input" aria-controls="tsd-search-results" aria-autocomplete="list" aria-expanded="true" autocapitalize="off" autocomplete="off" placeholder="Search the docs" maxLength="100"/><ul role="listbox" id="tsd-search-results"></ul><div id="tsd-search-status" aria-live="polite" aria-atomic="true"><div>Preparing search index...</div></div></dialog><a href="#" class="tsd-widget menu" id="tsd-toolbar-menu-trigger" data-toggle="menu" aria-label="Menu"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true"><use href="../assets/icons.svg#icon-menu"></use></svg></a></div></header><div class="container container-main"><div class="col-content"><div class="tsd-page-title"><ul class="tsd-breadcrumb" aria-label="Breadcrumb"><li><a href="" aria-current="page">QREncodeParams</a></li></ul><h1>Interface QREncodeParams</h1></div><section class="tsd-panel tsd-comment"><div class="tsd-comment tsd-typography"><p>Additional QR encoding parameters that can be passed to the qrcode library.
+This interface matches the expected qrcode library params.</p>
+</div><div class="tsd-comment tsd-typography"></div></section><div class="tsd-signature"><span class="tsd-signature-keyword">interface</span> <span class="tsd-kind-interface">QREncodeParams</span> <span class="tsd-signature-symbol">{</span><br/>    <a class="tsd-kind-property" href="#color">color</a><span class="tsd-signature-symbol">?:</span> <span class="tsd-signature-symbol">{</span> <span class="tsd-kind-property">dark</span><span class="tsd-signature-symbol">?:</span> <span class="tsd-signature-type">string</span><span class="tsd-signature-symbol">;</span> <span class="tsd-kind-property">light</span><span class="tsd-signature-symbol">?:</span> <span class="tsd-signature-type">string</span> <span class="tsd-signature-symbol">}</span><span class="tsd-signature-symbol">;</span><br/>    <a class="tsd-kind-property" href="#errorcorrectionlevel">errorCorrectionLevel</a><span class="tsd-signature-symbol">?:</span> <span class="tsd-signature-type">&quot;Q&quot;</span> <span class="tsd-signature-symbol">|</span> <span class="tsd-signature-type">&quot;L&quot;</span> <span class="tsd-signature-symbol">|</span> <span class="tsd-signature-type">&quot;M&quot;</span> <span class="tsd-signature-symbol">|</span> <span class="tsd-signature-type">&quot;H&quot;</span><span class="tsd-signature-symbol">;</span><br/>    <a class="tsd-kind-property" href="#margin">margin</a><span class="tsd-signature-symbol">?:</span> <span class="tsd-signature-type">number</span><span class="tsd-signature-symbol">;</span><br/>    <a class="tsd-kind-property" href="#maskpattern">maskPattern</a><span class="tsd-signature-symbol">?:</span> <span class="tsd-signature-type">0</span> <span class="tsd-signature-symbol">|</span> <span class="tsd-signature-type">2</span> <span class="tsd-signature-symbol">|</span> <span class="tsd-signature-type">1</span> <span class="tsd-signature-symbol">|</span> <span class="tsd-signature-type">3</span> <span class="tsd-signature-symbol">|</span> <span class="tsd-signature-type">4</span> <span class="tsd-signature-symbol">|</span> <span class="tsd-signature-type">5</span> <span class="tsd-signature-symbol">|</span> <span class="tsd-signature-type">6</span> <span class="tsd-signature-symbol">|</span> <span class="tsd-signature-type">7</span><span class="tsd-signature-symbol">;</span><br/>    <a class="tsd-kind-property" href="#scale">scale</a><span class="tsd-signature-symbol">?:</span> <span class="tsd-signature-type">number</span><span class="tsd-signature-symbol">;</span><br/>    <a class="tsd-kind-property" href="#version">version</a><span class="tsd-signature-symbol">?:</span> <span class="tsd-signature-type">number</span><span class="tsd-signature-symbol">;</span><br/>    <a class="tsd-kind-property" href="#width">width</a><span class="tsd-signature-symbol">?:</span> <span class="tsd-signature-type">number</span><span class="tsd-signature-symbol">;</span><br/><span class="tsd-signature-symbol">}</span></div><aside class="tsd-sources"><ul><li>Defined in <a href="https://github.com/vintasoftware/kill-the-clipboard/blob/main/src/index.ts#L279">src/index.ts:279</a></li></ul></aside><section class="tsd-panel-group tsd-index-group"><section class="tsd-panel tsd-index-panel"><details class="tsd-index-content tsd-accordion" open><summary class="tsd-accordion-summary tsd-index-summary"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true"><use href="../assets/icons.svg#icon-chevronDown"></use></svg><h5 class="tsd-index-heading uppercase">Index</h5></summary><div class="tsd-accordion-details"><section class="tsd-index-section"><h3 class="tsd-index-heading">Properties</h3><div class="tsd-index-list"><a href="#color" class="tsd-index-link"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="Property"><use href="../assets/icons.svg#icon-1024"></use></svg><span>color?</span></a>
+<a href="#errorcorrectionlevel" class="tsd-index-link"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="Property"><use href="../assets/icons.svg#icon-1024"></use></svg><span>error<wbr/>Correction<wbr/>Level?</span></a>
+<a href="#margin" class="tsd-index-link"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="Property"><use href="../assets/icons.svg#icon-1024"></use></svg><span>margin?</span></a>
+<a href="#maskpattern" class="tsd-index-link"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="Property"><use href="../assets/icons.svg#icon-1024"></use></svg><span>mask<wbr/>Pattern?</span></a>
+<a href="#scale" class="tsd-index-link"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="Property"><use href="../assets/icons.svg#icon-1024"></use></svg><span>scale?</span></a>
+<a href="#version" class="tsd-index-link"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="Property"><use href="../assets/icons.svg#icon-1024"></use></svg><span>version?</span></a>
+<a href="#width" class="tsd-index-link"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="Property"><use href="../assets/icons.svg#icon-1024"></use></svg><span>width?</span></a>
+</div></section></div></details></section></section><details class="tsd-panel-group tsd-member-group tsd-accordion" open><summary class="tsd-accordion-summary" data-key="section-Properties"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true"><use href="../assets/icons.svg#icon-chevronDown"></use></svg><h2>Properties</h2></summary><section><section class="tsd-panel tsd-member"><h3 class="tsd-anchor-link" id="color"><code class="tsd-tag">Optional</code><span>color</span><a href="#color" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h3><div class="tsd-signature"><span class="tsd-kind-property">color</span><span class="tsd-signature-symbol">?:</span> <span class="tsd-signature-symbol">{</span> <span class="tsd-kind-property">dark</span><span class="tsd-signature-symbol">?:</span> <span class="tsd-signature-type">string</span><span class="tsd-signature-symbol">;</span> <span class="tsd-kind-property">light</span><span class="tsd-signature-symbol">?:</span> <span class="tsd-signature-type">string</span> <span class="tsd-signature-symbol">}</span></div><div class="tsd-comment tsd-typography"><p>Color configuration for QR code modules.</p>
+</div><div class="tsd-type-declaration"><h4>Type declaration</h4><ul class="tsd-parameters"><li class="tsd-parameter"><h5><code class="tsd-tag">Optional</code><span class="tsd-kind-property">dark</span><span class="tsd-signature-symbol">?: </span><span class="tsd-signature-type">string</span></h5><div class="tsd-comment tsd-typography"><p>Color of dark modules in hex RGBA format (e.g., '#000000ff' for black).</p>
+</div><div class="tsd-comment tsd-typography"><div class="tsd-tag-defaultValue"><h4 class="tsd-anchor-link" id="default-value">Default Value<a href="#default-value" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h4><p><code>'#000000ff'</code></p>
+</div></div></li><li class="tsd-parameter"><h5><code class="tsd-tag">Optional</code><span class="tsd-kind-property">light</span><span class="tsd-signature-symbol">?: </span><span class="tsd-signature-type">string</span></h5><div class="tsd-comment tsd-typography"><p>Color of light modules in hex RGBA format (e.g., '#ffffffff' for white).</p>
+</div><div class="tsd-comment tsd-typography"><div class="tsd-tag-defaultValue"><h4 class="tsd-anchor-link" id="default-value-1">Default Value<a href="#default-value-1" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h4><p><code>'#ffffffff'</code></p>
+</div></div></li></ul></div><div class="tsd-comment tsd-typography"></div><aside class="tsd-sources"><ul><li>Defined in <a href="https://github.com/vintasoftware/kill-the-clipboard/blob/main/src/index.ts#L324">src/index.ts:324</a></li></ul></aside></section><section class="tsd-panel tsd-member"><h3 class="tsd-anchor-link" id="errorcorrectionlevel"><code class="tsd-tag">Optional</code><span>error<wbr/>Correction<wbr/>Level</span><a href="#errorcorrectionlevel" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h3><div class="tsd-signature"><span class="tsd-kind-property">errorCorrectionLevel</span><span class="tsd-signature-symbol">?:</span> <span class="tsd-signature-type">&quot;Q&quot;</span> <span class="tsd-signature-symbol">|</span> <span class="tsd-signature-type">&quot;L&quot;</span> <span class="tsd-signature-symbol">|</span> <span class="tsd-signature-type">&quot;M&quot;</span> <span class="tsd-signature-symbol">|</span> <span class="tsd-signature-type">&quot;H&quot;</span></div><div class="tsd-comment tsd-typography"><p>Error correction level per SMART Health Cards specification:</p>
+<ul>
+<li><strong>L (Low)</strong>: ~7% error resistance, 1195 max characters (V22)</li>
+<li><strong>M (Medium)</strong>: ~15% error resistance, 927 max characters (V22)</li>
+<li><strong>Q (Quartile)</strong>: ~25% error resistance, 670 max characters (V22)</li>
+<li><strong>H (High)</strong>: ~30% error resistance, 519 max characters (V22)</li>
+</ul>
+</div><div class="tsd-comment tsd-typography"><div class="tsd-tag-defaultValue"><h4 class="tsd-anchor-link" id="default-value-2">Default Value<a href="#default-value-2" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h4><p><code>'L'</code></p>
+</div></div><aside class="tsd-sources"><ul><li>Defined in <a href="https://github.com/vintasoftware/kill-the-clipboard/blob/main/src/index.ts#L288">src/index.ts:288</a></li></ul></aside></section><section class="tsd-panel tsd-member"><h3 class="tsd-anchor-link" id="margin"><code class="tsd-tag">Optional</code><span>margin</span><a href="#margin" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h3><div class="tsd-signature"><span class="tsd-kind-property">margin</span><span class="tsd-signature-symbol">?:</span> <span class="tsd-signature-type">number</span></div><div class="tsd-comment tsd-typography"><p>Quiet zone size (border) around the QR code in modules.</p>
+</div><div class="tsd-comment tsd-typography"><div class="tsd-tag-defaultValue"><h4 class="tsd-anchor-link" id="default-value-3">Default Value<a href="#default-value-3" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h4><p><code>1</code></p>
+</div></div><aside class="tsd-sources"><ul><li>Defined in <a href="https://github.com/vintasoftware/kill-the-clipboard/blob/main/src/index.ts#L309">src/index.ts:309</a></li></ul></aside></section><section class="tsd-panel tsd-member"><h3 class="tsd-anchor-link" id="maskpattern"><code class="tsd-tag">Optional</code><span>mask<wbr/>Pattern</span><a href="#maskpattern" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h3><div class="tsd-signature"><span class="tsd-kind-property">maskPattern</span><span class="tsd-signature-symbol">?:</span> <span class="tsd-signature-type">0</span> <span class="tsd-signature-symbol">|</span> <span class="tsd-signature-type">2</span> <span class="tsd-signature-symbol">|</span> <span class="tsd-signature-type">1</span> <span class="tsd-signature-symbol">|</span> <span class="tsd-signature-type">3</span> <span class="tsd-signature-symbol">|</span> <span class="tsd-signature-type">4</span> <span class="tsd-signature-symbol">|</span> <span class="tsd-signature-type">5</span> <span class="tsd-signature-symbol">|</span> <span class="tsd-signature-type">6</span> <span class="tsd-signature-symbol">|</span> <span class="tsd-signature-type">7</span></div><div class="tsd-comment tsd-typography"><p>Mask pattern used to mask the QR code symbol.
+Auto-selected by default for optimal readability.</p>
+</div><div class="tsd-comment tsd-typography"><div class="tsd-tag-remarks"><h4 class="tsd-anchor-link" id="remarks">Remarks<a href="#remarks" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h4><p>Range: 0-7</p>
+</div></div><aside class="tsd-sources"><ul><li>Defined in <a href="https://github.com/vintasoftware/kill-the-clipboard/blob/main/src/index.ts#L303">src/index.ts:303</a></li></ul></aside></section><section class="tsd-panel tsd-member"><h3 class="tsd-anchor-link" id="scale"><code class="tsd-tag">Optional</code><span>scale</span><a href="#scale" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h3><div class="tsd-signature"><span class="tsd-kind-property">scale</span><span class="tsd-signature-symbol">?:</span> <span class="tsd-signature-type">number</span></div><div class="tsd-comment tsd-typography"><p>Scale factor for output image. A value of 1 means 1 pixel per module.</p>
+</div><div class="tsd-comment tsd-typography"><div class="tsd-tag-defaultValue"><h4 class="tsd-anchor-link" id="default-value-4">Default Value<a href="#default-value-4" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h4><p><code>4</code></p>
+</div></div><aside class="tsd-sources"><ul><li>Defined in <a href="https://github.com/vintasoftware/kill-the-clipboard/blob/main/src/index.ts#L315">src/index.ts:315</a></li></ul></aside></section><section class="tsd-panel tsd-member"><h3 class="tsd-anchor-link" id="version"><code class="tsd-tag">Optional</code><span>version</span><a href="#version" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h3><div class="tsd-signature"><span class="tsd-kind-property">version</span><span class="tsd-signature-symbol">?:</span> <span class="tsd-signature-type">number</span></div><div class="tsd-comment tsd-typography"><p>QR code version determining symbol size.
+Version 1 is 21x21 modules, Version 2 is 25x25, etc.
+Auto-selected by default based on data size.</p>
+</div><div class="tsd-comment tsd-typography"><div class="tsd-tag-remarks"><h4 class="tsd-anchor-link" id="remarks-1">Remarks<a href="#remarks-1" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h4><p>Range: 1-40</p>
+</div></div><aside class="tsd-sources"><ul><li>Defined in <a href="https://github.com/vintasoftware/kill-the-clipboard/blob/main/src/index.ts#L296">src/index.ts:296</a></li></ul></aside></section><section class="tsd-panel tsd-member"><h3 class="tsd-anchor-link" id="width"><code class="tsd-tag">Optional</code><span>width</span><a href="#width" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h3><div class="tsd-signature"><span class="tsd-kind-property">width</span><span class="tsd-signature-symbol">?:</span> <span class="tsd-signature-type">number</span></div><div class="tsd-comment tsd-typography"><p>Forces specific width for output image in pixels.
+Takes precedence over <code>scale</code> if specified.</p>
+</div><div class="tsd-comment tsd-typography"></div><aside class="tsd-sources"><ul><li>Defined in <a href="https://github.com/vintasoftware/kill-the-clipboard/blob/main/src/index.ts#L321">src/index.ts:321</a></li></ul></aside></section></section></details></div><div class="col-sidebar"><div class="page-menu"><div class="tsd-navigation settings"><details class="tsd-accordion"><summary class="tsd-accordion-summary"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true"><use href="../assets/icons.svg#icon-chevronDown"></use></svg><h3>Settings</h3></summary><div class="tsd-accordion-details"><div class="tsd-filter-visibility"><span class="settings-label">Member Visibility</span><ul id="tsd-filter-options"><li class="tsd-filter-item"><label class="tsd-filter-input"><input type="checkbox" id="tsd-filter-inherited" name="inherited" checked/><svg width="32" height="32" viewBox="0 0 32 32" aria-hidden="true"><rect class="tsd-checkbox-background" width="30" height="30" x="1" y="1" rx="6" fill="none"></rect><path class="tsd-checkbox-checkmark" d="M8.35422 16.8214L13.2143 21.75L24.6458 10.25" stroke="none" stroke-width="3.5" stroke-linejoin="round" fill="none"></path></svg><span>Inherited</span></label></li><li class="tsd-filter-item"><label class="tsd-filter-input"><input type="checkbox" id="tsd-filter-external" name="external"/><svg width="32" height="32" viewBox="0 0 32 32" aria-hidden="true"><rect class="tsd-checkbox-background" width="30" height="30" x="1" y="1" rx="6" fill="none"></rect><path class="tsd-checkbox-checkmark" d="M8.35422 16.8214L13.2143 21.75L24.6458 10.25" stroke="none" stroke-width="3.5" stroke-linejoin="round" fill="none"></path></svg><span>External</span></label></li><li class="tsd-filter-item"><label class="tsd-filter-input"><input type="checkbox" id="tsd-filter-alpha" name="alpha"/><svg width="32" height="32" viewBox="0 0 32 32" aria-hidden="true"><rect class="tsd-checkbox-background" width="30" height="30" x="1" y="1" rx="6" fill="none"></rect><path class="tsd-checkbox-checkmark" d="M8.35422 16.8214L13.2143 21.75L24.6458 10.25" stroke="none" stroke-width="3.5" stroke-linejoin="round" fill="none"></path></svg><span>Alpha</span></label></li><li class="tsd-filter-item"><label class="tsd-filter-input"><input type="checkbox" id="tsd-filter-beta" name="beta"/><svg width="32" height="32" viewBox="0 0 32 32" aria-hidden="true"><rect class="tsd-checkbox-background" width="30" height="30" x="1" y="1" rx="6" fill="none"></rect><path class="tsd-checkbox-checkmark" d="M8.35422 16.8214L13.2143 21.75L24.6458 10.25" stroke="none" stroke-width="3.5" stroke-linejoin="round" fill="none"></path></svg><span>Beta</span></label></li></ul></div><div class="tsd-theme-toggle"><label class="settings-label" for="tsd-theme">Theme</label><select id="tsd-theme"><option value="os">OS</option><option value="light">Light</option><option value="dark">Dark</option></select></div></div></details></div><details open class="tsd-accordion tsd-page-navigation"><summary class="tsd-accordion-summary"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true"><use href="../assets/icons.svg#icon-chevronDown"></use></svg><h3>On This Page</h3></summary><div class="tsd-accordion-details"><details open class="tsd-accordion tsd-page-navigation-section"><summary class="tsd-accordion-summary" data-key="section-Properties"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true"><use href="../assets/icons.svg#icon-chevronDown"></use></svg>Properties</summary><div><a href="#color"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="Property"><use href="../assets/icons.svg#icon-1024"></use></svg><span>color</span></a><a href="#errorcorrectionlevel"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="Property"><use href="../assets/icons.svg#icon-1024"></use></svg><span>error<wbr/>Correction<wbr/>Level</span></a><a href="#margin"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="Property"><use href="../assets/icons.svg#icon-1024"></use></svg><span>margin</span></a><a href="#maskpattern"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="Property"><use href="../assets/icons.svg#icon-1024"></use></svg><span>mask<wbr/>Pattern</span></a><a href="#scale"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="Property"><use href="../assets/icons.svg#icon-1024"></use></svg><span>scale</span></a><a href="#version"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="Property"><use href="../assets/icons.svg#icon-1024"></use></svg><span>version</span></a><a href="#width"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="Property"><use href="../assets/icons.svg#icon-1024"></use></svg><span>width</span></a></div></details></div></details></div><div class="site-menu"><nav id="tsd-sidebar-links" class="tsd-navigation"><a href="https://github.com/vintasoftware/kill-the-clipboard" class="tsd-nav-link">GitHub</a><a href="https://www.vinta.com.br" class="tsd-nav-link">Maintained by Vinta Software</a></nav><nav class="tsd-navigation"><a href="../modules.html">Kill the Clipboard - SMART Health Cards Library - v0.0.1</a><ul class="tsd-small-nested-navigation" id="tsd-nav-container"><li>Loading...</li></ul></nav></div></div></div><footer><p class="tsd-generator">Generated using <a href="https://typedoc.org/" target="_blank">TypeDoc</a></p></footer><div class="overlay"></div><script>
+          try {
+            const generateLinkElement = document.querySelector(".tsd-generator a");
+            const link = document.createElement("a");
+            Object.assign(link, {
+              href: "https://github.com/dmnsgn/typedoc-material-theme",
+              target: "_blank",
+              rel: "noreferrer",
+              innerText: "typedoc-material-theme."
+            });
+            generateLinkElement.insertAdjacentElement("afterend", link);
+            generateLinkElement.insertAdjacentText("afterend", " with ");
+          } catch (error) {
+
+          }
+        </script></body></html>
