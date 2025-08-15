@@ -8,6 +8,7 @@ dist/
 build/
 lib/
 out/
+docs/
 
 # TypeScript
 *.tsbuildinfo

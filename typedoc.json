@@ -1,0 +1,62 @@
+{
+  "entryPoints": ["src/index.ts"],
+  "out": "docs",
+  "name": "Kill the Clipboard - SMART Health Cards Library",
+  "includeVersion": true,
+  "excludePrivate": true,
+  "excludeProtected": true,
+  "excludeInternal": true,
+  "readme": "README.md",
+  "plugin": ["typedoc-material-theme"],
+  "themeColor": "#0052ff",
+  "hideGenerator": false,
+  "sort": ["alphabetical"],
+  "kindSortOrder": [
+    "Project",
+    "Module",
+    "Namespace",
+    "Enum",
+    "EnumMember",
+    "Class",
+    "Interface",
+    "TypeAlias",
+    "Constructor",
+    "Property",
+    "Variable",
+    "Function",
+    "Accessor",
+    "Method",
+    "Reference"
+  ],
+  "categorizeByGroup": true,
+  "defaultCategory": "Other",
+  "categoryOrder": [
+    "High-Level API",
+    "Lower-Level API",
+    "Configuration",
+    "Types",
+    "Errors",
+    "Other",
+    "*"
+  ],
+  "gitRevision": "main",
+  "gitRemote": "origin",
+  "visibilityFilters": {
+    "protected": false,
+    "private": false,
+    "inherited": true,
+    "external": false,
+    "@alpha": false,
+    "@beta": false
+  },
+  "searchInComments": true,
+  "cleanOutputDir": true,
+  "navigation": {
+    "includeCategories": true,
+    "includeGroups": true
+  },
+  "navigationLinks": {
+    "GitHub": "https://github.com/vintasoftware/kill-the-clipboard",
+    "Maintained by Vinta Software": "https://www.vinta.com.br"
+  }
+}

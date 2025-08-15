@@ -6,6 +6,7 @@ import {
   type FHIRBundle,
   FHIRBundleProcessor,
   FhirValidationError,
+  FileFormatError,
   InvalidBundleReferenceError,
   JWSError,
   JWSProcessor,
@@ -21,6 +22,7 @@ import {
   type VerifiableCredential,
   type VerifiableCredentialParams,
   VerifiableCredentialProcessor,
+  VerificationError,
 } from '../src/index'
 
 // Test data fixtures
@@ -599,7 +601,7 @@ EQqQipjEJazEpNXKUbJ4GV0zYi4qZqIOC5tBTyAYas7JJ9RW6mFuNysgJA==
         )
       })
 
-      it('should throw JWSError for wrong signature', async () => {
+      it('should throw JWSError for wrong public key', async () => {
         const jws = await processor.sign(validJWTPayload, testPrivateKeyPKCS8, testPublicKeySPKI)
         // Try to verify with wrong public key (using the private key string, which will fail)
         await expect(processor.verify(jws, 'wrong-public-key')).rejects.toThrow(JWSError)
@@ -782,7 +784,7 @@ EQqQipjEJazEpNXKUbJ4GV0zYi4qZqIOC5tBTyAYas7JJ9RW6mFuNysgJA==
       })
 
       it('should throw error for null bundle', async () => {
-        await expect(issuer.issue(null as unknown as Bundle)).rejects.toThrow(SmartHealthCardError)
+        await expect(issuer.issue(null as unknown as Bundle)).rejects.toThrow(FhirValidationError)
       })
 
       it('should include correct issuer in JWT payload', async () => {
@@ -820,7 +822,7 @@ EQqQipjEJazEpNXKUbJ4GV0zYi4qZqIOC5tBTyAYas7JJ9RW6mFuNysgJA==
       })
 
       it('should throw error for invalid JWS', async () => {
-        await expect(reader.fromJWS('invalid.jws.signature')).rejects.toThrow(SmartHealthCardError)
+        await expect(reader.fromJWS('invalid.jws.signature')).rejects.toThrow(JWSError)
       })
 
       it('should throw error for tampered health card', async () => {
@@ -830,7 +832,7 @@ EQqQipjEJazEpNXKUbJ4GV0zYi4qZqIOC5tBTyAYas7JJ9RW6mFuNysgJA==
         // Tamper with the health card by changing a character
         const tamperedCard = `${jws.slice(0, -5)}XXXXX`
 
-        await expect(reader.fromJWS(tamperedCard)).rejects.toThrow(SmartHealthCardError)
+        await expect(reader.fromJWS(tamperedCard)).rejects.toThrow(JWSError)
       })
 
       it('should validate round-trip: issue then verify', async () => {
@@ -1054,6 +1056,14 @@ EQqQipjEJazEpNXKUbJ4GV0zYi4qZqIOC5tBTyAYas7JJ9RW6mFuNysgJA==
         // Step 3: Verify data integrity
         const verifiedBundle = await verifiedHealthCard.asBundle()
         expect(verifiedBundle).toEqual(validBundle)
+      })
+
+      it('should surface QRCodeError from QR decoding', async () => {
+        // Invalid format (missing shc:/ prefix) triggers QRCodeError inside scanner
+        await expect(reader.fromQRNumeric('invalid-qr-data')).rejects.toThrow(QRCodeError)
+        await expect(reader.fromQRNumeric('invalid-qr-data')).rejects.toThrow(
+          "Invalid QR code format. Expected 'shc:/' prefix."
+        )
       })
     })
 
@@ -1925,6 +1935,7 @@ EQqQipjEJazEpNXKUbJ4GV0zYi4qZqIOC5tBTyAYas7JJ9RW6mFuNysgJA==
         verifiableCredential: [],
       })
 
+      await expect(reader.fromFileContent(invalidFileContent)).rejects.toThrow(FileFormatError)
       await expect(reader.fromFileContent(invalidFileContent)).rejects.toThrow(
         'File contains empty verifiableCredential array'
       )
@@ -1935,6 +1946,7 @@ EQqQipjEJazEpNXKUbJ4GV0zYi4qZqIOC5tBTyAYas7JJ9RW6mFuNysgJA==
         somethingElse: ['jws'],
       })
 
+      await expect(reader.fromFileContent(invalidFileContent)).rejects.toThrow(FileFormatError)
       await expect(reader.fromFileContent(invalidFileContent)).rejects.toThrow(
         'File does not contain expected verifiableCredential array'
       )
@@ -2425,6 +2437,28 @@ EQqQipjEJazEpNXKUbJ4GV0zYi4qZqIOC5tBTyAYas7JJ9RW6mFuNysgJA==
         expect(error.name).toBe('QRCodeError')
         expect(error.message).toBe('QR processing failed')
         expect(error.code).toBe('QR_CODE_ERROR')
+      })
+    })
+
+    describe('FileFormatError', () => {
+      it('should create file format error', () => {
+        const error = new FileFormatError('Invalid file format')
+
+        expect(error).toBeInstanceOf(SmartHealthCardError)
+        expect(error.name).toBe('FileFormatError')
+        expect(error.message).toBe('Invalid file format')
+        expect(error.code).toBe('FILE_FORMAT_ERROR')
+      })
+    })
+
+    describe('VerificationError', () => {
+      it('should create verification error', () => {
+        const error = new VerificationError('Verification failed')
+
+        expect(error).toBeInstanceOf(SmartHealthCardError)
+        expect(error.name).toBe('VerificationError')
+        expect(error.message).toBe('Verification failed')
+        expect(error.code).toBe('VERIFICATION_ERROR')
       })
     })
   })
