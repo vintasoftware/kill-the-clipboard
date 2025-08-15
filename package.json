@@ -39,7 +39,10 @@
     "postinstall": "husky",
     "prepublishOnly": "pnpm build",
     "release": "semantic-release",
-    "generate:examples": "node ./scripts/generate-health-cards-examples.ts"
+    "validate:examples": "node ./scripts/validate-health-cards-examples.ts",
+    "example:dev": "pnpm run build && cd example && pnpm dev",
+    "example:build": "pnpm run build && cd example && pnpm build",
+    "example:preview": "cd example && pnpm preview"
   },
   "lint-staged": {
     "*.{js,ts,json}": "biome check --write --no-errors-on-unmatched"

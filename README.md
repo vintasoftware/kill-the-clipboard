@@ -8,18 +8,16 @@ This aligns with the [CMS Interoperability Framework](https://www.cms.gov/health
 
 > We pledge to empower patients to retrieve their health records from CMS Aligned Networks or personal health record apps and share them with providers via **QR codes or Smart Health Cards/Links using FHIR bundles**. When possible, we will return visit records to patients in the same format. We commit to seamless, secure data exchange—eliminating the need for patients to repeatedly recall and write out their medical history. We are committed to "kill the clipboard," one encounter at a time.
 
-⚠️ **This is a new library. While it's well tested, please verify the proper functionality before using in production. Please report any issues or suggestions to the [GitHub Issues](https://github.com/vintasoftware/kill-the-clipboard/issues) page.**
+⚠️ **This is a new library. While it's well tested, please verify the proper functionality before using in production. Please report any issues or suggestions to the [GitHub Issues](https://github.com/vintasoftware/kill-the-clipboard/issues) page. For sensitive security reports, please contact us at contact at vinta.com.br**
 
 ## Features
 
 **Complete SMART Health Cards Implementation**
 - Follows [SMART Health Cards Framework v1.4.0](https://spec.smarthealth.cards/)
-- FHIR R4 Bundle processing and basic structural validation  
-- ES256 cryptographic signing
-- DEFLATE payload compression
+- JWS generation
 - File generation (.smart-health-card files)
 - QR code generation with optional chunking support
-- Encoding and decoding support
+- Decoding / Verification support
 
 **Smart Health Links**
 - Support for Smart Health Links is coming soon.
@@ -28,8 +26,20 @@ This aligns with the [CMS Interoperability Framework](https://www.cms.gov/health
 - TypeScript support with full type definitions
 - Comprehensive test suite (100+ tests)
 - Proper error handling hierarchy  
-- Built for Node.js and browser environments
-- Web-compatible file operations
+- Built both for Node.js and browser environments
+
+## Live Demo
+
+**⚠️ FOR TESTING PURPOSES ONLY - NOT FOR REAL HEALTH DATA**
+
+Want to see the library in action? Try our interactive browser demo that showcases QR code generation and camera-based scanning:
+
+```bash
+pnpm install
+pnpm run example:dev
+```
+
+The demo will open in your browser at `http://localhost:3000`.
 
 ## Installation
 
@@ -283,11 +293,11 @@ const healthCard = await issuer.issue(fhirBundle);
 const fileContent = await healthCard.asFileContent();
 console.log('File content:', fileContent); // JSON string with { verifiableCredential: [jws] }
 
-// Create downloadable Blob (web-compatible)
+// Create downloadable Blob (browser-compatible)
 const blob = await healthCard.asFileBlob();
 console.log('Blob type:', blob.type); // 'application/smart-health-card'
 
-// Trigger download in web browser (example implementation)
+// Trigger download in browser (example implementation)
 const url = URL.createObjectURL(blob);
 const a = document.createElement('a');
 a.href = url;
@@ -345,7 +355,7 @@ const config = {
 };
 ```
 
-## API Reference
+## API Reference Documentation
 
 Available at [https://vintasoftware.github.io/kill-the-clipboard/](https://vintasoftware.github.io/kill-the-clipboard/).
 
@@ -360,16 +370,6 @@ pnpm run docs:build
 # The documentation will be generated in the ./docs directory
 # Open docs/index.html in your browser to view the complete API reference
 ```
-
-The documentation includes:
-
-- **High-Level API**: `SmartHealthCardIssuer`, `SmartHealthCardReader`, `SmartHealthCard` 
-- **Lower-Level API**: `FHIRBundleProcessor`, `VerifiableCredentialProcessor`, `JWSProcessor`, `QRCodeGenerator`
-- **Configuration Interfaces**: All configuration parameters with detailed descriptions
-- **Error Classes**: Complete error handling reference
-- **Type Definitions**: All TypeScript types and interfaces
-- **Usage Examples**: Code examples for all major functionality
-
 
 ## Contributing
 
