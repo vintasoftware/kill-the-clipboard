@@ -43,7 +43,7 @@ echo "Wrote ${DOCS_DIR}/versions.json: ${OUTPUT}"
 ROOT_REDIRECT_DIR="${DOCS_DIR}-root"
 mkdir -p "${ROOT_REDIRECT_DIR}"
 
-REDIRECT_URL="/latest/"
+REDIRECT_URL="latest/"
 
 cat > "${ROOT_REDIRECT_DIR}/index.html" <<EOF
 <!DOCTYPE html>
