@@ -55,10 +55,17 @@ yarn add kill-the-clipboard
 
 ### Basic Usage
 
+**Security warning**: Issue/sign on a secure backend only; never expose the ES256 private key in browsers.
+
+Use `SmartHealthCardIssuer` on the server. Use `SmartHealthCardReader` in the browser or server to verify and render QR.
+
+Typical flow: client sends FHIR Bundle → server returns JWS/.smart-health-card or QR data.
+
 ```typescript
 import { SmartHealthCardIssuer, SmartHealthCardReader } from 'kill-the-clipboard';
 
 // Configure issuer with your details and ES256 key pair
+// SECURITY: Use issuer on a secure backend only; never include privateKey in client-side code.
 const issuer = new SmartHealthCardIssuer({
   issuer: 'https://your-healthcare-org.com',
   privateKey: privateKeyPKCS8String, // ES256 private key in PKCS#8 format
