@@ -498,6 +498,8 @@ export class SmartHealthCard {
 /**
  * Issues new SMART Health Cards from FHIR Bundles.
  *
+ * **Security Warning**: Issue/sign on a secure backend only; never expose the private key in browsers.
+ *
  * @public
  * @category High-Level API
  */
