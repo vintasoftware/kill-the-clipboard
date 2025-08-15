@@ -37,6 +37,14 @@ jobs:
         run: |
           bash ./scripts/docs/generate-doc-versions-json.sh docs "https://vintasoftware.github.io/kill-the-clipboard"
 
+      - name: Deploy to gh-pages (root redirect)
+        uses: peaceiris/actions-gh-pages@v4
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_branch: gh-pages
+          publish_dir: docs-root
+          keep_files: true
+
       - name: Resolve ref name
         id: ref
         run: |

@@ -38,4 +38,26 @@ mkdir -p "${DOCS_DIR}"
 echo "${OUTPUT}" > "${DOCS_DIR}/versions.json"
 echo "Wrote ${DOCS_DIR}/versions.json: ${OUTPUT}"
 
+# Generate a root redirect index.html to point to latest docs
+# This will be deployed to the gh-pages root by the CI workflow
+ROOT_REDIRECT_DIR="${DOCS_DIR}-root"
+mkdir -p "${ROOT_REDIRECT_DIR}"
 
+REDIRECT_URL="/latest/"
+
+cat > "${ROOT_REDIRECT_DIR}/index.html" <<EOF
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Redirecting...</title>
+    <link rel="canonical" href="${REDIRECT_URL}" />
+    <meta charset="utf-8" />
+    <meta http-equiv="refresh" content="0; url=${REDIRECT_URL}" />
+  </head>
+  <body>
+    <p>Redirecting...</p>
+  </body>
+</html>
+EOF
+
+echo "Wrote ${ROOT_REDIRECT_DIR}/index.html redirecting to ${REDIRECT_URL}"
