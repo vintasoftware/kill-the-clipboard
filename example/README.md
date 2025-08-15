@@ -4,6 +4,15 @@
 
 This example application demonstrates how to use the `kill-the-clipboard` library to generate and scan SMART Health Card QR codes. **This is NOT intended for production use with real patient health data.**
 
+## Usage
+
+```bash
+pnpm install
+pnpm run example:dev
+```
+
+The demo will open in your browser at `http://localhost:3000`.
+
 ## What This Example Shows
 
 - **QR Code Generation**: Generate SMART Health Card QR codes from FHIR bundles
