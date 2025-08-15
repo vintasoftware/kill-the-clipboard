@@ -66,16 +66,16 @@ jobs:
         if: github.ref == 'refs/heads/main'
         run: pnpm run build
 
-      - name: Install example dependencies
+      - name: Install demo dependencies
         if: github.ref == 'refs/heads/main'
         run: |
-          cd example
+          cd demo
           pnpm install --frozen-lockfile
 
       - name: Build demo (Vite)
         if: github.ref == 'refs/heads/main'
         run: |
-          cd example
+          cd demo
           pnpm build
 
       - name: Deploy to gh-pages (root redirect)
@@ -119,6 +119,6 @@ jobs:
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           publish_branch: gh-pages
-          publish_dir: example/dist
+          publish_dir: demo/dist
           destination_dir: demo
           keep_files: true

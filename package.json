@@ -40,9 +40,8 @@
     "prepublishOnly": "pnpm build",
     "release": "semantic-release",
     "validate:examples": "node ./scripts/validate-health-cards-examples.ts",
-    "example:dev": "pnpm run build && cd example && pnpm dev",
-    "example:build": "pnpm run build && cd example && pnpm build",
-    "example:preview": "cd example && pnpm preview"
+    "demo:dev": "pnpm run build && cd demo && pnpm dev",
+    "demo:build": "pnpm run build && cd demo && pnpm build"
   },
   "lint-staged": {
     "*.{js,ts,json}": "biome check --write --no-errors-on-unmatched"
