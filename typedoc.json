@@ -7,7 +7,7 @@
   "excludeProtected": true,
   "excludeInternal": true,
   "readme": "README.md",
-  "plugin": ["typedoc-material-theme"],
+  "plugin": ["typedoc-material-theme", "typedoc-plugin-version-select"],
   "themeColor": "#0052ff",
   "hideGenerator": false,
   "sort": ["alphabetical"],

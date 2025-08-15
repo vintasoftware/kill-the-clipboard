@@ -347,7 +347,7 @@ const config = {
 
 ## API Reference
 
-Available at [https://vintasoftware.github.io/kill-the-clipboard/modules.html](https://vintasoftware.github.io/kill-the-clipboard/modules.html).
+Available at [https://vintasoftware.github.io/kill-the-clipboard/](https://vintasoftware.github.io/kill-the-clipboard/).
 
 ### Generating Documentation
 
