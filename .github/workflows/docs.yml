@@ -1,12 +1,18 @@
-name: Deploy TypeDoc (latest) to gh-pages
+name: Deploy docs and demo to gh-pages
 
 on:
   push:
     branches: ["main"]
+    tags:
+      - "v*.*.*"
   workflow_dispatch:
 
 permissions:
   contents: write
+
+concurrency:
+  group: gh-pages-deploy
+  cancel-in-progress: false
 
 jobs:
   build-and-deploy:
@@ -29,12 +35,48 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
+      - name: Verify build requirements
+        run: |
+          # Check if required scripts exist
+          if [ ! -f "./scripts/docs/generate-doc-versions-json.sh" ]; then
+            echo "Error: generate-doc-versions-json.sh not found"
+            exit 1
+          fi
+          # Make script executable
+          chmod +x ./scripts/docs/generate-doc-versions-json.sh
+
       - name: Build TypeDoc
         run: pnpm run docs:build
 
       - name: Generate versions.json (latest + tags)
         run: |
           bash ./scripts/docs/generate-doc-versions-json.sh docs "https://vintasoftware.github.io/kill-the-clipboard"
+          # Verify the required directories were created
+          if [ ! -d "docs-root" ]; then
+            echo "Error: docs-root directory was not created"
+            exit 1
+          fi
+          if [ ! -f "docs/versions.json" ]; then
+            echo "Error: versions.json was not created"
+            exit 1
+          fi
+
+      # Build demo only for main branch
+      - name: Build library (for demo)
+        if: github.ref == 'refs/heads/main'
+        run: pnpm run build
+
+      - name: Install example dependencies
+        if: github.ref == 'refs/heads/main'
+        run: |
+          cd example
+          pnpm install --frozen-lockfile
+
+      - name: Build demo (Vite)
+        if: github.ref == 'refs/heads/main'
+        run: |
+          cd example
+          pnpm build
 
       - name: Deploy to gh-pages (root redirect)
         uses: peaceiris/actions-gh-pages@v4
@@ -45,10 +87,38 @@ jobs:
           keep_files: true
 
       - name: Deploy to gh-pages (latest/)
+        if: github.ref == 'refs/heads/main'
         uses: peaceiris/actions-gh-pages@v4
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           publish_branch: gh-pages
           publish_dir: docs
           destination_dir: latest
+          keep_files: true
+
+      - name: Resolve ref name (tag)
+        if: startsWith(github.ref, 'refs/tags/v')
+        id: ref
+        run: |
+          REF=${GITHUB_REF_NAME}
+          echo "ref_name=${REF}" >> $GITHUB_OUTPUT
+
+      - name: Deploy to gh-pages (vX.Y.Z/)
+        if: startsWith(github.ref, 'refs/tags/v')
+        uses: peaceiris/actions-gh-pages@v4
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_branch: gh-pages
+          publish_dir: docs
+          destination_dir: ${{ steps.ref.outputs.ref_name }}
+          keep_files: true
+
+      - name: Deploy to gh-pages (demo/)
+        if: github.ref == 'refs/heads/main'
+        uses: peaceiris/actions-gh-pages@v4
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_branch: gh-pages
+          publish_dir: example/dist
+          destination_dir: demo
           keep_files: true
