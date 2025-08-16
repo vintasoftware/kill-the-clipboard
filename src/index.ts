@@ -1212,28 +1212,30 @@ export class JWSProcessor {
    * Raw DEFLATE compression helper
    */
   private async deflateRaw(data: Uint8Array): Promise<Uint8Array> {
-    const { deflate } = await import('fflate')
-    return new Promise<Uint8Array>((resolve, reject) => {
-      // fflate.deflate is raw DEFLATE (no headers)
-      deflate(data, (err: Error | null, out: Uint8Array) => {
-        if (err) reject(err)
-        else resolve(out)
-      })
+    const readable = new ReadableStream<Uint8Array>({
+      start(controller) {
+        controller.enqueue(data)
+        controller.close()
+      },
     })
+    const compressedStream = readable.pipeThrough(new CompressionStream('deflate-raw'))
+    const compressedBuffer = await new Response(compressedStream).arrayBuffer()
+    return new Uint8Array(compressedBuffer)
   }
 
   /**
    * Raw DEFLATE decompression helper
    */
   private async inflateRaw(data: Uint8Array): Promise<Uint8Array> {
-    const { inflate } = await import('fflate')
-    return new Promise<Uint8Array>((resolve, reject) => {
-      // fflate.inflate expects raw DEFLATE input
-      inflate(data, (err: Error | null, out: Uint8Array) => {
-        if (err) reject(err)
-        else resolve(out)
-      })
+    const readable = new ReadableStream<Uint8Array>({
+      start(controller) {
+        controller.enqueue(data)
+        controller.close()
+      },
     })
+    const decompressedStream = readable.pipeThrough(new DecompressionStream('deflate-raw'))
+    const decompressedBuffer = await new Response(decompressedStream).arrayBuffer()
+    return new Uint8Array(decompressedBuffer)
   }
 
   /**
