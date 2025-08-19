@@ -612,7 +612,7 @@ EQqQipjEJazEpNXKUbJ4GV0zYi4qZqIOC5tBTyAYas7JJ9RW6mFuNysgJA==
           { ...validJWTPayload },
           testPrivateKeyPKCS8,
           testPublicKeySPKI,
-          false
+          { enableCompression: false }
         )
         const verifiedPayload = await processor.verify(jws, testPublicKeySPKI)
         expect(verifiedPayload.iss).toBe(validJWTPayload.iss)
@@ -902,7 +902,10 @@ EQqQipjEJazEpNXKUbJ4GV0zYi4qZqIOC5tBTyAYas7JJ9RW6mFuNysgJA==
 
       it('should return optimized bundle when asBundle() is called with optimizeForQR=true', async () => {
         const healthCard = await issuer.issue(validBundle)
-        const optimizedBundle = await healthCard.asBundle(true, true)
+        const optimizedBundle = await healthCard.asBundle({
+          optimizeForQR: true,
+          strictReferences: true,
+        })
 
         expect(optimizedBundle).toBeDefined()
         expect(optimizedBundle.resourceType).toBe('Bundle')
@@ -922,7 +925,7 @@ EQqQipjEJazEpNXKUbJ4GV0zYi4qZqIOC5tBTyAYas7JJ9RW6mFuNysgJA==
 
       it('should return original bundle when asBundle() is called with optimizeForQR=false', async () => {
         const healthCard = await issuer.issue(validBundle)
-        const originalBundle = await healthCard.asBundle(false)
+        const originalBundle = await healthCard.asBundle({ optimizeForQR: false })
 
         expect(originalBundle).toBeDefined()
         expect(originalBundle).toEqual(validBundle)
@@ -2078,7 +2081,9 @@ EQqQipjEJazEpNXKUbJ4GV0zYi4qZqIOC5tBTyAYas7JJ9RW6mFuNysgJA==
           ],
         }
 
-        optimizedBundle = fhirProcessor.processForQR(bundleWithAllElements, true)
+        optimizedBundle = fhirProcessor.processForQR(bundleWithAllElements, {
+          strictReferences: true,
+        })
       })
 
       it('should remove Resource.id elements', () => {
@@ -2161,7 +2166,9 @@ EQqQipjEJazEpNXKUbJ4GV0zYi4qZqIOC5tBTyAYas7JJ9RW6mFuNysgJA==
           ],
         }
 
-        const optimized = fhirProcessor.processForQR(bundleWithDisplayFields, true)
+        const optimized = fhirProcessor.processForQR(bundleWithDisplayFields, {
+          strictReferences: true,
+        })
         const patient = optimized.entry?.[0]?.resource as Patient
 
         // Display in generalPractitioner should be preserved
@@ -2201,9 +2208,9 @@ EQqQipjEJazEpNXKUbJ4GV0zYi4qZqIOC5tBTyAYas7JJ9RW6mFuNysgJA==
           ],
         }
 
-        expect(() => fhirProcessor.processForQR(bundleWithDisplayFields, true)).toThrow(
-          'Reference "Practitioner/456" not found in bundle resources'
-        )
+        expect(() =>
+          fhirProcessor.processForQR(bundleWithDisplayFields, { strictReferences: true })
+        ).toThrow('Reference "Practitioner/456" not found in bundle resources')
       })
 
       it('should not throw exception for missing references in non-strict mode', () => {
@@ -2226,7 +2233,9 @@ EQqQipjEJazEpNXKUbJ4GV0zYi4qZqIOC5tBTyAYas7JJ9RW6mFuNysgJA==
           ],
         }
 
-        const optimized = fhirProcessor.processForQR(bundleWithDisplayFields, false)
+        const optimized = fhirProcessor.processForQR(bundleWithDisplayFields, {
+          strictReferences: false,
+        })
         const patient = optimized.entry?.[0]?.resource as Patient
         expect(patient?.generalPractitioner?.[0]).toHaveProperty('reference', 'Practitioner/456')
       })
@@ -2250,7 +2259,9 @@ EQqQipjEJazEpNXKUbJ4GV0zYi4qZqIOC5tBTyAYas7JJ9RW6mFuNysgJA==
           ],
         }
 
-        const optimized = fhirProcessor.processForQR(bundleWithNullValues, true)
+        const optimized = fhirProcessor.processForQR(bundleWithNullValues, {
+          strictReferences: true,
+        })
         const patient = optimized.entry?.[0]?.resource as Patient
 
         // null, undefined, and empty arrays should be removed
@@ -2288,7 +2299,7 @@ EQqQipjEJazEpNXKUbJ4GV0zYi4qZqIOC5tBTyAYas7JJ9RW6mFuNysgJA==
           ],
         }
 
-        const optimized = fhirProcessor.processForQR(bundleWithIds, true)
+        const optimized = fhirProcessor.processForQR(bundleWithIds, { strictReferences: true })
 
         optimized.entry?.forEach(entry => {
           expect(entry.resource).not.toHaveProperty('id')
@@ -2313,7 +2324,7 @@ EQqQipjEJazEpNXKUbJ4GV0zYi4qZqIOC5tBTyAYas7JJ9RW6mFuNysgJA==
         ],
       }
 
-      const optimized = fhirProcessor.processForQR(bundleWithRootId, true)
+      const optimized = fhirProcessor.processForQR(bundleWithRootId, { strictReferences: true })
 
       // Bundle root id should be removed
       expect(optimized).not.toHaveProperty('id')

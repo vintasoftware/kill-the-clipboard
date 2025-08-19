@@ -417,7 +417,7 @@ export class SmartHealthCard {
   /**
    * Generate QR code data URLs from the health card.
    *
-   * @param config - Optional QR code configuration parameters
+   * @param config - Optional QR code configuration parameters. See {@link QRCodeConfigParams}.
    * @returns Promise resolving to array of QR code data URLs
    * @throws {@link QRCodeError} When JWS contains invalid characters or chunking is required but disabled
    *
@@ -440,7 +440,7 @@ export class SmartHealthCard {
   /**
    * Generate QR numeric strings from the health card.
    *
-   * @param config - Optional QR code configuration parameters
+   * @param config - Optional QR code configuration parameters. See {@link QRCodeConfigParams}.
    * @returns Array of QR numeric strings in SMART Health Cards format (`shc:/...`)
    * @throws {@link QRCodeError} When JWS contains invalid characters
    *
@@ -464,16 +464,19 @@ export class SmartHealthCard {
   /**
    * Return the FHIR Bundle from the health card.
    *
-   * @param optimizeForQR - Whether to apply QR code optimizations to the bundle
-   * @param strictReferences - Whether to enforce strict reference validation when optimizing
+   * @param config.optimizeForQR - Whether to optimize the FHIR Bundle for QR code optimization
+   * @param config.strictReferences - Whether to enforce strict reference validation during QR optimization
    * @returns Promise resolving to FHIR Bundle
    * @throws {@link InvalidBundleReferenceError} If `optimizeForQR` is true and a reference target is missing when `strictReferences` is true
    * @throws {@link FhirValidationError} If the bundle fails validation during QR optimization
    */
-  async asBundle(optimizeForQR?: boolean, strictReferences?: boolean): Promise<FHIRBundle> {
+  async asBundle(
+    config: { optimizeForQR?: boolean; strictReferences?: boolean } = {}
+  ): Promise<FHIRBundle> {
+    const { optimizeForQR = false, strictReferences = true } = config
     if (optimizeForQR) {
       const fhirProcessor = new FHIRBundleProcessor()
-      return fhirProcessor.processForQR(this.originalBundle, strictReferences ?? true)
+      return fhirProcessor.processForQR(this.originalBundle, { strictReferences })
     }
     return this.originalBundle
   }
@@ -548,7 +551,7 @@ export class SmartHealthCardIssuer {
    * Issues a new SMART Health Card from a FHIR Bundle.
    *
    * @param fhirBundle - FHIR R4 Bundle containing medical data
-   * @param options - Optional Verifiable Credential parameters
+   * @param config - Optional Verifiable Credential parameters. See {@link VerifiableCredentialParams}.
    * @returns Promise resolving to SmartHealthCard object
    * @throws {@link FhirValidationError} When FHIR bundle or VC structure is invalid
    * @throws {@link JWSError} When signing fails
@@ -563,9 +566,9 @@ export class SmartHealthCardIssuer {
    */
   async issue(
     fhirBundle: FHIRBundle,
-    options: VerifiableCredentialParams = {}
+    config: VerifiableCredentialParams = {}
   ): Promise<SmartHealthCard> {
-    const jws = await this.createJWS(fhirBundle, options)
+    const jws = await this.createJWS(fhirBundle, config)
     return new SmartHealthCard(jws, fhirBundle)
   }
 
@@ -578,7 +581,9 @@ export class SmartHealthCardIssuer {
   ): Promise<string> {
     // Step 1: Process and validate FHIR Bundle
     const processedBundle = this.config.enableQROptimization
-      ? this.fhirProcessor.processForQR(fhirBundle, this.config.strictReferences)
+      ? this.fhirProcessor.processForQR(fhirBundle, {
+          strictReferences: this.config.strictReferences,
+        })
       : this.fhirProcessor.process(fhirBundle)
     this.fhirProcessor.validate(processedBundle)
 
@@ -604,7 +609,9 @@ export class SmartHealthCardIssuer {
       jwtPayload,
       this.config.privateKey,
       this.config.publicKey,
-      true // Enable compression per SMART Health Cards spec
+      {
+        enableCompression: true, // Enable compression per SMART Health Cards spec
+      }
     )
 
     return jws
@@ -832,17 +839,18 @@ export class FHIRBundleProcessor {
    * Processes a FHIR Bundle with QR code optimizations (short resource-scheme URIs, removes unnecessary fields).
    *
    * @param bundle - FHIR Bundle to process
-   * @param strict - When `strict` is true, missing `Reference.reference` targets throw `InvalidBundleReferenceError`;
-   *                 when false, original references are preserved when no target resource is found in bundle.
+   * @param config.strictReferences - When `strictReferences` is true,
+   *  missing `Reference.reference` targets throw `InvalidBundleReferenceError`;
+   *  when false, original references are preserved when no target resource is found in bundle.
    * @returns Processed FHIR Bundle optimized for QR codes
-   * @throws {@link InvalidBundleReferenceError} When `strict` is true and a reference cannot be resolved
+   * @throws {@link InvalidBundleReferenceError} When `strictReferences` is true and a reference cannot be resolved
    */
-  processForQR(bundle: FHIRBundle, strict: boolean): FHIRBundle {
+  processForQR(bundle: FHIRBundle, config: { strictReferences?: boolean } = {}): FHIRBundle {
     // Start with standard processing
     const processedBundle = this.process(bundle)
 
     // Apply QR optimizations
-    return this.optimizeForQR(processedBundle, strict)
+    return this.optimizeForQR(processedBundle, config.strictReferences ?? true)
   }
 
   /**
@@ -1089,21 +1097,21 @@ export class VerifiableCredentialProcessor {
    * Creates a Verifiable Credential from a FHIR Bundle.
    *
    * @param fhirBundle - FHIR Bundle to create credential from
-   * @param options - Optional Verifiable Credential parameters
+   * @param config - Optional Verifiable Credential parameters. See {@link VerifiableCredentialParams}.
    * @returns Verifiable Credential structure
    * @throws {@link FhirValidationError} When the input bundle is invalid
    */
-  create(fhirBundle: FHIRBundle, options: VerifiableCredentialParams = {}): VerifiableCredential {
+  create(fhirBundle: FHIRBundle, config: VerifiableCredentialParams = {}): VerifiableCredential {
     // Validate input bundle
     if (!fhirBundle || fhirBundle.resourceType !== 'Bundle') {
       throw new FhirValidationError('Invalid FHIR Bundle provided')
     }
 
     // Set default FHIR version per SMART Health Cards spec
-    const fhirVersion = options.fhirVersion || '4.0.1'
+    const fhirVersion = config.fhirVersion || '4.0.1'
 
     // Create the standard type array per SMART Health Cards spec
-    const type = this.createStandardTypes(options.includeAdditionalTypes)
+    const type = this.createStandardTypes(config.includeAdditionalTypes)
 
     // Create the verifiable credential structure
     const vc: VerifiableCredential = {
@@ -1255,8 +1263,8 @@ export class JWSProcessor {
    * @param payload - JWT payload to sign
    * @param privateKey - ES256 private key
    * @param publicKey - ES256 public key (for key ID derivation)
-   * @param enableCompression - Whether to compress payload with raw DEFLATE (default: true).
-   *                           When `enableCompression` is true, compresses payload before signing and sets `zip: "DEF"`.
+   * @param config.enableCompression - Whether to compress payload with raw DEFLATE (default: true).
+   *  When `enableCompression` is true, compresses payload before signing and sets `zip: "DEF"`.
    * @returns Promise resolving to JWS string
    * @throws {@link JWSError} When signing fails, key import fails, or payload is invalid
    */
@@ -1264,7 +1272,7 @@ export class JWSProcessor {
     payload: SmartHealthCardJWT,
     privateKey: CryptoKey | Uint8Array | string,
     publicKey: CryptoKey | Uint8Array | string,
-    enableCompression = true
+    config: { enableCompression?: boolean } = {}
   ): Promise<string> {
     try {
       const { CompactSign } = await import('jose')
@@ -1287,6 +1295,7 @@ export class JWSProcessor {
       let payloadBytes = encoder.encode(payloadJson)
 
       // Compress the payload BEFORE signing using raw DEFLATE (zip: "DEF")
+      const enableCompression = config.enableCompression ?? true
       if (enableCompression) {
         payloadBytes = await this.deflateRaw(payloadBytes)
         header.zip = 'DEF'
@@ -1339,6 +1348,9 @@ export class JWSProcessor {
    *
    * @param jws - JWS string to verify
    * @param publicKey - ES256 public key for verification
+   * @param config.verifyExpiration - Whether to verify the JWT `exp` claim during verification.
+   *  When true (default), expired health cards will be rejected.
+   *  Set to false to allow expired cards to be accepted.
    * @returns Promise resolving to decoded JWT payload
    * @throws {@link JWSError} When verification fails or JWS is invalid
    *
@@ -1347,7 +1359,7 @@ export class JWSProcessor {
   async verify(
     jws: string,
     publicKey: CryptoKey | Uint8Array | string,
-    options?: { verifyExpiration?: boolean }
+    config?: { verifyExpiration?: boolean }
   ): Promise<SmartHealthCardJWT> {
     try {
       const { compactVerify } = await import('jose')
@@ -1382,7 +1394,7 @@ export class JWSProcessor {
       this.validateJWTPayload(smartPayload)
 
       // Enforce expiration if present (if enabled)
-      const verifyExpiration = options?.verifyExpiration ?? true
+      const verifyExpiration = config?.verifyExpiration ?? true
       if (verifyExpiration) {
         const nowSeconds = Math.floor(Date.now() / 1000)
         if (typeof smartPayload.exp === 'number' && smartPayload.exp < nowSeconds) {
@@ -1516,7 +1528,8 @@ export class QRCodeGenerator {
     const needsChunking = jws.length > this.config.maxSingleQRSize
     if (!this.config.enableChunking && needsChunking) {
       throw new QRCodeError(
-        `Chunking is not enabled, but JWS length exceeds maxSingleQRSize: ${jws.length} > ${this.config.maxSingleQRSize}. Use enableChunking: true to enable chunking.`
+        `Chunking is not enabled, but JWS length exceeds maxSingleQRSize:
+        ${jws.length} > ${this.config.maxSingleQRSize}. Use enableChunking: true to enable chunking.`
       )
     }
 

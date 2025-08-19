@@ -164,7 +164,7 @@ const qrCodes = await healthCard.asQR({
   },
 });
 
-const bundle = await healthCard.asBundle(true, true); // optimizeForQR, strictReferences
+const bundle = await healthCard.asBundle({ optimizeForQR: true, strictReferences: true });
 const fileContent = await healthCard.asFileContent();
 
 // Use individual processors for more control
@@ -177,9 +177,9 @@ const processedBundle = fhirProcessor.process(fhirBundle);
 fhirProcessor.validate(processedBundle);
 
 // Or process with QR code optimizations (shorter resource references, removes unnecessary fields)
-// Pass 'strict' as the second argument. When strict=true, missing references throw an error.
-// When strict=false, original references are preserved if target resource is not found in bundle.
-const optimizedBundle = fhirProcessor.processForQR(fhirBundle, true);
+// Use 'strictReferences' option. When true, missing references throw an error.
+// When false, original references are preserved if target resource is not found in bundle.
+const optimizedBundle = fhirProcessor.processForQR(fhirBundle, { strictReferences: true });
 fhirProcessor.validate(optimizedBundle);
 
 // Create Verifiable Credential
@@ -199,7 +199,9 @@ const jwtPayload = {
 };
 
 // Sign to create JWS
-const jws = await jwsProcessor.sign(jwtPayload, privateKey, publicKey);
+const jws = await jwsProcessor.sign(jwtPayload, privateKey, publicKey, {
+  enableCompression: true, // Enable compression per SMART Health Cards spec
+});
 
 // Verify JWS
 const verified = await jwsProcessor.verify(jws, publicKey);
