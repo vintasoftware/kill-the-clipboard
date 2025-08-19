@@ -226,7 +226,7 @@ console.log('Generated QR code data URL:', qrDataUrls[0]);
 
 // Scan QR codes (simulate scanning with numeric data)
 const scannedData = ['shc:/56762959532654603460292540772804336028702864716745...'];
-const reconstructedJWS = await qrGenerator.scanQR(scannedData);
+const reconstructedJWS = await qrGenerator.decodeQR(scannedData);
 
 // Manual JWS chunking and numeric conversion
 const chunks = qrGenerator.chunkJWS(jws); // Returns array of shc:/ prefixed strings

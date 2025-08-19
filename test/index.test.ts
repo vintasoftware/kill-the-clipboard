@@ -1331,17 +1331,17 @@ EQqQipjEJazEpNXKUbJ4GV0zYi4qZqIOC5tBTyAYas7JJ9RW6mFuNysgJA==
 
         const emptyQRData: string[] = []
 
-        await expect(generator.scanQR(emptyQRData)).rejects.toThrow(QRCodeError)
-        await expect(generator.scanQR(emptyQRData)).rejects.toThrow('No QR code data provided')
+        await expect(generator.decodeQR(emptyQRData)).rejects.toThrow(QRCodeError)
+        await expect(generator.decodeQR(emptyQRData)).rejects.toThrow('No QR code data provided')
       })
 
-      it('should handle undefined QR data in scanQR', async () => {
+      it('should handle undefined QR data in decodeQR', async () => {
         const generator = new QRCodeGenerator()
 
         // Create a scenario that would trigger the undefined QR data check
         const qrDataWithUndefined = [undefined as unknown as string]
 
-        await expect(generator.scanQR(qrDataWithUndefined)).rejects.toThrow(QRCodeError)
+        await expect(generator.decodeQR(qrDataWithUndefined)).rejects.toThrow(QRCodeError)
       })
 
       it('should accept custom encodeOptions and merge them with SMART Health Cards spec defaults', () => {
@@ -1446,7 +1446,7 @@ EQqQipjEJazEpNXKUbJ4GV0zYi4qZqIOC5tBTyAYas7JJ9RW6mFuNysgJA==
       })
     })
 
-    describe('scanQR()', () => {
+    describe('decodeQR()', () => {
       it('should decode a single QR code back to original JWS', async () => {
         // First generate QR code
         const qrDataUrls = await qrGenerator.generateQR(validJWS)
@@ -1458,7 +1458,7 @@ EQqQipjEJazEpNXKUbJ4GV0zYi4qZqIOC5tBTyAYas7JJ9RW6mFuNysgJA==
         const qrContent = `shc:/${numericData}`
 
         // Decode back to JWS
-        const decodedJWS = await qrGenerator.scanQR([qrContent])
+        const decodedJWS = await qrGenerator.decodeQR([qrContent])
 
         expect(decodedJWS).toBe(validJWS)
       })
@@ -1482,18 +1482,18 @@ EQqQipjEJazEpNXKUbJ4GV0zYi4qZqIOC5tBTyAYas7JJ9RW6mFuNysgJA==
           (chunk, index) => `shc:/${index + 1}/${chunks.length}/${chunk}`
         )
 
-        const decodedJWS = await qrGenerator.scanQR(qrContents)
+        const decodedJWS = await qrGenerator.decodeQR(qrContents)
         expect(decodedJWS).toBe(validJWS)
       })
 
       it('should throw QRCodeError for empty QR data', async () => {
-        await expect(qrGenerator.scanQR([])).rejects.toThrow(QRCodeError)
-        await expect(qrGenerator.scanQR([])).rejects.toThrow('No QR code data provided')
+        await expect(qrGenerator.decodeQR([])).rejects.toThrow(QRCodeError)
+        await expect(qrGenerator.decodeQR([])).rejects.toThrow('No QR code data provided')
       })
 
       it('should throw QRCodeError for invalid QR format', async () => {
-        await expect(qrGenerator.scanQR(['invalid-qr-data'])).rejects.toThrow(QRCodeError)
-        await expect(qrGenerator.scanQR(['invalid-qr-data'])).rejects.toThrow(
+        await expect(qrGenerator.decodeQR(['invalid-qr-data'])).rejects.toThrow(QRCodeError)
+        await expect(qrGenerator.decodeQR(['invalid-qr-data'])).rejects.toThrow(
           "Invalid QR code format. Expected 'shc:/' prefix"
         )
       })
@@ -1501,63 +1501,63 @@ EQqQipjEJazEpNXKUbJ4GV0zYi4qZqIOC5tBTyAYas7JJ9RW6mFuNysgJA==
       it('should throw QRCodeError for invalid chunked format', async () => {
         const invalidChunked = ['shc:/1/2', 'shc:/2/2/data'] // Missing data in first chunk
 
-        await expect(qrGenerator.scanQR(invalidChunked)).rejects.toThrow(QRCodeError)
+        await expect(qrGenerator.decodeQR(invalidChunked)).rejects.toThrow(QRCodeError)
       })
 
       it("should throw QRCodeError when a chunk doesn't start with shc:/ prefix", async () => {
         const badPrefix = ['invalidprefix:/1/1/00', 'shc:/1/1/00']
-        await expect(qrGenerator.scanQR(badPrefix)).rejects.toThrow(QRCodeError)
-        await expect(qrGenerator.scanQR(badPrefix)).rejects.toThrow(
+        await expect(qrGenerator.decodeQR(badPrefix)).rejects.toThrow(QRCodeError)
+        await expect(qrGenerator.decodeQR(badPrefix)).rejects.toThrow(
           "Invalid chunked QR code format. Expected 'shc:/' prefix."
         )
       })
 
       it('should throw QRCodeError for chunked entries with missing parts', async () => {
         // parts length is 3 but one part empty => triggers missing parts branch
-        await expect(qrGenerator.scanQR(['shc:/1//1234', 'shc:/2/2/5678'])).rejects.toThrow(
+        await expect(qrGenerator.decodeQR(['shc:/1//1234', 'shc:/2/2/5678'])).rejects.toThrow(
           QRCodeError
         )
-        await expect(qrGenerator.scanQR(['shc:/1//1234', 'shc:/2/2/5678'])).rejects.toThrow(
+        await expect(qrGenerator.decodeQR(['shc:/1//1234', 'shc:/2/2/5678'])).rejects.toThrow(
           'Invalid chunked QR code format: missing parts'
         )
 
-        await expect(qrGenerator.scanQR(['shc:/1/2/', 'shc:/2/2/1234'])).rejects.toThrow(
+        await expect(qrGenerator.decodeQR(['shc:/1/2/', 'shc:/2/2/1234'])).rejects.toThrow(
           QRCodeError
         )
-        await expect(qrGenerator.scanQR(['shc:/1/2/', 'shc:/2/2/1234'])).rejects.toThrow(
+        await expect(qrGenerator.decodeQR(['shc:/1/2/', 'shc:/2/2/1234'])).rejects.toThrow(
           'Invalid chunked QR code format: missing parts'
         )
       })
 
       it('should throw QRCodeError for invalid chunk index or total in chunked QR', async () => {
         // index < 1
-        await expect(qrGenerator.scanQR(['shc:/0/2/12', 'shc:/2/2/34'])).rejects.toThrow(
+        await expect(qrGenerator.decodeQR(['shc:/0/2/12', 'shc:/2/2/34'])).rejects.toThrow(
           QRCodeError
         )
-        await expect(qrGenerator.scanQR(['shc:/0/2/12', 'shc:/2/2/34'])).rejects.toThrow(
+        await expect(qrGenerator.decodeQR(['shc:/0/2/12', 'shc:/2/2/34'])).rejects.toThrow(
           'Invalid chunk index or total in QR code'
         )
 
         // index > total
-        await expect(qrGenerator.scanQR(['shc:/3/2/12', 'shc:/2/2/34'])).rejects.toThrow(
+        await expect(qrGenerator.decodeQR(['shc:/3/2/12', 'shc:/2/2/34'])).rejects.toThrow(
           QRCodeError
         )
-        await expect(qrGenerator.scanQR(['shc:/3/2/12', 'shc:/2/2/34'])).rejects.toThrow(
+        await expect(qrGenerator.decodeQR(['shc:/3/2/12', 'shc:/2/2/34'])).rejects.toThrow(
           'Invalid chunk index or total in QR code'
         )
 
         // non-numeric index
-        await expect(qrGenerator.scanQR(['shc:/a/2/12', 'shc:/2/2/34'])).rejects.toThrow(
+        await expect(qrGenerator.decodeQR(['shc:/a/2/12', 'shc:/2/2/34'])).rejects.toThrow(
           QRCodeError
         )
-        await expect(qrGenerator.scanQR(['shc:/a/2/12', 'shc:/2/2/34'])).rejects.toThrow(
+        await expect(qrGenerator.decodeQR(['shc:/a/2/12', 'shc:/2/2/34'])).rejects.toThrow(
           'Invalid chunk index or total in QR code'
         )
       })
 
       it('should throw QRCodeError for empty numeric payload in single QR', async () => {
-        await expect(qrGenerator.scanQR(['shc:/'])).rejects.toThrow(QRCodeError)
-        await expect(qrGenerator.scanQR(['shc:/'])).rejects.toThrow(
+        await expect(qrGenerator.decodeQR(['shc:/'])).rejects.toThrow(QRCodeError)
+        await expect(qrGenerator.decodeQR(['shc:/'])).rejects.toThrow(
           'Invalid numeric data: cannot parse digit pairs'
         )
       })
@@ -1568,8 +1568,8 @@ EQqQipjEJazEpNXKUbJ4GV0zYi4qZqIOC5tBTyAYas7JJ9RW6mFuNysgJA==
           'shc:/3/3/789012', // Missing chunk 2
         ]
 
-        await expect(qrGenerator.scanQR(incompleteChunks)).rejects.toThrow(QRCodeError)
-        await expect(qrGenerator.scanQR(incompleteChunks)).rejects.toThrow(
+        await expect(qrGenerator.decodeQR(incompleteChunks)).rejects.toThrow(QRCodeError)
+        await expect(qrGenerator.decodeQR(incompleteChunks)).rejects.toThrow(
           'Missing chunks. Expected 3, got 2'
         )
       })
@@ -1580,8 +1580,8 @@ EQqQipjEJazEpNXKUbJ4GV0zYi4qZqIOC5tBTyAYas7JJ9RW6mFuNysgJA==
           'shc:/2/3/789012', // Different total count
         ]
 
-        await expect(qrGenerator.scanQR(inconsistentChunks)).rejects.toThrow(QRCodeError)
-        await expect(qrGenerator.scanQR(inconsistentChunks)).rejects.toThrow(
+        await expect(qrGenerator.decodeQR(inconsistentChunks)).rejects.toThrow(QRCodeError)
+        await expect(qrGenerator.decodeQR(inconsistentChunks)).rejects.toThrow(
           'Inconsistent total chunk count'
         )
       })
@@ -1589,8 +1589,8 @@ EQqQipjEJazEpNXKUbJ4GV0zYi4qZqIOC5tBTyAYas7JJ9RW6mFuNysgJA==
       it('should throw QRCodeError for invalid numeric data', async () => {
         const invalidNumeric = 'shc:/12345' // Odd length
 
-        await expect(qrGenerator.scanQR([invalidNumeric])).rejects.toThrow(QRCodeError)
-        await expect(qrGenerator.scanQR([invalidNumeric])).rejects.toThrow(
+        await expect(qrGenerator.decodeQR([invalidNumeric])).rejects.toThrow(QRCodeError)
+        await expect(qrGenerator.decodeQR([invalidNumeric])).rejects.toThrow(
           'Invalid numeric data: must have even length'
         )
       })
@@ -1598,16 +1598,16 @@ EQqQipjEJazEpNXKUbJ4GV0zYi4qZqIOC5tBTyAYas7JJ9RW6mFuNysgJA==
       it('should throw QRCodeError for out-of-range digit pairs', async () => {
         const outOfRange = 'shc:/9999' // 99 > 77 (max value for 'z')
 
-        await expect(qrGenerator.scanQR([outOfRange])).rejects.toThrow(QRCodeError)
-        await expect(qrGenerator.scanQR([outOfRange])).rejects.toThrow(
+        await expect(qrGenerator.decodeQR([outOfRange])).rejects.toThrow(QRCodeError)
+        await expect(qrGenerator.decodeQR([outOfRange])).rejects.toThrow(
           "Invalid digit pair '99': value 99 exceeds maximum 77"
         )
       })
 
       it('should throw QRCodeError when total chunk count is inconsistent across inputs', async () => {
         const inconsistentTotals = ['shc:/1/2/1234', 'shc:/2/3/5678']
-        await expect(qrGenerator.scanQR(inconsistentTotals)).rejects.toThrow(QRCodeError)
-        await expect(qrGenerator.scanQR(inconsistentTotals)).rejects.toThrow(
+        await expect(qrGenerator.decodeQR(inconsistentTotals)).rejects.toThrow(QRCodeError)
+        await expect(qrGenerator.decodeQR(inconsistentTotals)).rejects.toThrow(
           'Inconsistent total chunk count across QR codes'
         )
       })
@@ -1615,8 +1615,8 @@ EQqQipjEJazEpNXKUbJ4GV0zYi4qZqIOC5tBTyAYas7JJ9RW6mFuNysgJA==
       it('should throw QRCodeError when chunk total is consistent but missing chunks', async () => {
         // totalChunks=3 but only 2 provided
         const missing = ['shc:/1/3/1111', 'shc:/3/3/2222']
-        await expect(qrGenerator.scanQR(missing)).rejects.toThrow(QRCodeError)
-        await expect(qrGenerator.scanQR(missing)).rejects.toThrow(
+        await expect(qrGenerator.decodeQR(missing)).rejects.toThrow(QRCodeError)
+        await expect(qrGenerator.decodeQR(missing)).rejects.toThrow(
           'Missing chunks. Expected 3, got 2'
         )
       })
@@ -1713,7 +1713,7 @@ EQqQipjEJazEpNXKUbJ4GV0zYi4qZqIOC5tBTyAYas7JJ9RW6mFuNysgJA==
         const qrContent = `shc:/${numericData}`
 
         // Scan and decode
-        const scannedJWS = await qrGenerator.scanQR([qrContent])
+        const scannedJWS = await qrGenerator.decodeQR([qrContent])
 
         // Should match original
         expect(scannedJWS).toBe(validJWS)
@@ -1755,7 +1755,7 @@ EQqQipjEJazEpNXKUbJ4GV0zYi4qZqIOC5tBTyAYas7JJ9RW6mFuNysgJA==
         )
 
         // Scan and decode
-        const scannedJWS = await chunkedGenerator.scanQR(qrContents)
+        const scannedJWS = await chunkedGenerator.decodeQR(qrContents)
         expect(scannedJWS).toBe(validJWS)
       })
     })

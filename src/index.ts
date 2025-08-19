@@ -788,7 +788,7 @@ export class SmartHealthCardReader {
       const qrDataArray = Array.isArray(qrData) ? qrData : [qrData]
 
       // Decode QR data to JWS
-      const jws = await qrGenerator.scanQR(qrDataArray)
+      const jws = await qrGenerator.decodeQR(qrDataArray)
 
       // Use existing JWS verification method
       return await this.fromJWS(jws)
@@ -1550,7 +1550,7 @@ export class QRCodeGenerator {
    * @returns Promise resolving to reconstructed JWS string
    * @throws {@link QRCodeError} When QR code data is missing or malformed
    */
-  async scanQR(qrCodeData: string[]): Promise<string> {
+  async decodeQR(qrCodeData: string[]): Promise<string> {
     if (!qrCodeData || qrCodeData.length === 0) {
       throw new QRCodeError('No QR code data provided')
     }
