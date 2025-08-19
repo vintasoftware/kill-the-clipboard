@@ -237,6 +237,14 @@ export interface SmartHealthCardReaderConfigParams {
    * @defaultValue `true`
    */
   strictReferences?: boolean
+
+  /**
+   * Whether to verify the JWT `exp` claim during verification.
+   * When true (default), expired health cards will be rejected.
+   * Set to false to allow expired cards to be accepted.
+   * @defaultValue `true`
+   */
+  verifyExpiration?: boolean
 }
 
 /**
@@ -631,6 +639,7 @@ export class SmartHealthCardReader {
       ...config,
       enableQROptimization: config.enableQROptimization ?? true,
       strictReferences: config.strictReferences ?? true,
+      verifyExpiration: config.verifyExpiration ?? true,
     }
 
     this.vcProcessor = new VerifiableCredentialProcessor()
@@ -700,7 +709,9 @@ export class SmartHealthCardReader {
   async fromJWS(jws: string): Promise<SmartHealthCard> {
     try {
       // Step 1: Verify JWS signature and extract payload (decompression handled automatically)
-      const payload = await this.jwsProcessor.verify(jws, this.config.publicKey)
+      const payload = await this.jwsProcessor.verify(jws, this.config.publicKey, {
+        verifyExpiration: this.config.verifyExpiration,
+      })
 
       // Step 2: Validate the VC
       const vc: VerifiableCredential = { vc: payload.vc }
@@ -1335,7 +1346,8 @@ export class JWSProcessor {
    */
   async verify(
     jws: string,
-    publicKey: CryptoKey | Uint8Array | string
+    publicKey: CryptoKey | Uint8Array | string,
+    options?: { verifyExpiration?: boolean }
   ): Promise<SmartHealthCardJWT> {
     try {
       const { compactVerify } = await import('jose')
@@ -1368,6 +1380,15 @@ export class JWSProcessor {
 
       // Validate structure
       this.validateJWTPayload(smartPayload)
+
+      // Enforce expiration if present (if enabled)
+      const verifyExpiration = options?.verifyExpiration ?? true
+      if (verifyExpiration) {
+        const nowSeconds = Math.floor(Date.now() / 1000)
+        if (typeof smartPayload.exp === 'number' && smartPayload.exp < nowSeconds) {
+          throw new JWSError('SMART Health Card has expired')
+        }
+      }
 
       return smartPayload
     } catch (error) {

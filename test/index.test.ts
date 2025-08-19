@@ -618,6 +618,37 @@ EQqQipjEJazEpNXKUbJ4GV0zYi4qZqIOC5tBTyAYas7JJ9RW6mFuNysgJA==
         expect(verifiedPayload.iss).toBe(validJWTPayload.iss)
         expect(verifiedPayload.vc).toEqual(validJWTPayload.vc)
       })
+
+      it('should reject expired JWS by default', async () => {
+        const now = Math.floor(Date.now() / 1000)
+        const expiredPayload: SmartHealthCardJWT = {
+          iss: 'https://example.com/issuer',
+          nbf: now - 7200,
+          exp: now - 3600, // expired an hour ago
+          vc: validVC.vc,
+        }
+        const jws = await processor.sign(expiredPayload, testPrivateKeyPKCS8, testPublicKeySPKI)
+
+        await expect(processor.verify(jws, testPublicKeySPKI)).rejects.toThrow(JWSError)
+        await expect(processor.verify(jws, testPublicKeySPKI)).rejects.toThrow(
+          'SMART Health Card has expired'
+        )
+      })
+
+      it('should allow skipping expiration verification when option set', async () => {
+        const now = Math.floor(Date.now() / 1000)
+        const expiredPayload: SmartHealthCardJWT = {
+          iss: 'https://example.com/issuer',
+          nbf: now - 7200,
+          exp: now - 3600, // expired an hour ago
+          vc: validVC.vc,
+        }
+        const jws = await processor.sign(expiredPayload, testPrivateKeyPKCS8, testPublicKeySPKI)
+
+        const verified = await processor.verify(jws, testPublicKeySPKI, { verifyExpiration: false })
+        expect(verified.iss).toBe(expiredPayload.iss)
+        expect(verified.exp).toBe(expiredPayload.exp)
+      })
     })
 
     describe('validateJWTPayload() private method validation', () => {
