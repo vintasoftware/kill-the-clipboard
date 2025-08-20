@@ -1987,6 +1987,105 @@ EQqQipjEJazEpNXKUbJ4GV0zYi4qZqIOC5tBTyAYas7JJ9RW6mFuNysgJA==
     })
   })
 
+  describe('JWKS fetching for SmartHealthCardReader', () => {
+    const testPrivateKeyPKCS8 = `-----BEGIN PRIVATE KEY-----
+MIGHAgEAMBMGByqGSM49AgEGCCqGSM49AwEHBG0wawIBAQQgF+y5n2Nu3g2hwBj+
+uVYulsHxb7VQg+0yIHMBgD0dLwyhRANCAAScrWM5QO21TdhCZpZhRwlD8LzgTYkR
+CpCKmMQlrMSk1cpRsngZXTNiLipmog4Lm0FPIBhqzskn1FbqYW43KyAk
+-----END PRIVATE KEY-----`
+
+    const testPublicKeySPKI = `-----BEGIN PUBLIC KEY-----
+MFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAEnK1jOUDttU3YQmaWYUcJQ/C84E2J
+EQqQipjEJazEpNXKUbJ4GV0zYi4qZqIOC5tBTyAYas7JJ9RW6mFuNysgJA==
+-----END PUBLIC KEY-----`
+
+    it('fetches issuer JWKS and verifies using matching kid when publicKey is omitted', async () => {
+      // Issue a card so we have a valid JWS with kid derived from public key
+      const issuer = new SmartHealthCardIssuer({
+        issuer: 'https://example.com/issuer',
+        privateKey: testPrivateKeyPKCS8,
+        publicKey: testPublicKeySPKI,
+        expirationTime: null,
+        enableQROptimization: false,
+        strictReferences: true,
+      })
+
+      const healthCard = await issuer.issue(createValidFHIRBundle())
+      const jws = healthCard.asJWS()
+
+      // Build JWKS with matching kid
+      const { importSPKI, exportJWK, calculateJwkThumbprint } = await import('jose')
+      const keyObj = await importSPKI(testPublicKeySPKI, 'ES256')
+      const jwk = await exportJWK(keyObj)
+      const kid = await calculateJwkThumbprint(jwk)
+      const jwks = { keys: [{ ...jwk, kid }] }
+
+      const originalFetch = globalThis.fetch
+      const fetchMock = vi.fn(async (url: string) => {
+        // Basic shape of a Response-like object
+        return {
+          ok: true,
+          status: 200,
+          statusText: 'OK',
+          json: async () => jwks,
+        } as unknown as Response
+      })
+      ;(globalThis as any).fetch = fetchMock
+
+      const reader = new SmartHealthCardReader({
+        // No publicKey → should resolve via JWKS
+        enableQROptimization: false,
+        strictReferences: true,
+      } as SmartHealthCardReaderConfigParams)
+
+      const verified = await reader.fromJWS(jws)
+      const bundle = await verified.asBundle()
+      expect(bundle.resourceType).toBe('Bundle')
+
+      // Ensure JWKS endpoint was called on issuer origin
+      expect(fetchMock).toHaveBeenCalled()
+      const calledUrl = (fetchMock.mock.calls[0] as unknown[])[0] as string
+      expect(calledUrl).toBe('https://example.com/.well-known/jwks.json')
+
+      // Restore fetch
+      ;(globalThis as any).fetch = originalFetch
+    })
+
+    it('throws VerificationError when JWKS fetch fails', async () => {
+      const issuer = new SmartHealthCardIssuer({
+        issuer: 'https://example.com/issuer',
+        privateKey: testPrivateKeyPKCS8,
+        publicKey: testPublicKeySPKI,
+        expirationTime: null,
+        enableQROptimization: false,
+        strictReferences: true,
+      })
+
+      const healthCard = await issuer.issue(createValidFHIRBundle())
+      const jws = healthCard.asJWS()
+
+      const originalFetch = globalThis.fetch
+      const fetchMock = vi.fn(async () => {
+        return {
+          ok: false,
+          status: 404,
+          statusText: 'Not Found',
+          json: async () => ({}),
+        } as unknown as Response
+      })
+      ;(globalThis as any).fetch = fetchMock
+
+      const reader = new SmartHealthCardReader({
+        enableQROptimization: false,
+        strictReferences: true,
+      } as SmartHealthCardReaderConfigParams)
+
+      await expect(reader.fromJWS(jws)).rejects.toThrow(VerificationError)
+
+      ;(globalThis as any).fetch = originalFetch
+    })
+  })
+
   describe('QR Optimization Features', () => {
     let fhirProcessor: FHIRBundleProcessor
     let validBundle: FHIRBundle

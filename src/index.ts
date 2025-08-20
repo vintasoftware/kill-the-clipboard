@@ -3,6 +3,17 @@
 // https://spec.smarthealth.cards/
 
 import type { Bundle } from '@medplum/fhirtypes'
+import {
+  base64url,
+  CompactSign,
+  calculateJwkThumbprint,
+  compactVerify,
+  decodeProtectedHeader,
+  exportJWK,
+  importJWK,
+  importPKCS8,
+  importSPKI,
+} from 'jose'
 
 // Version 22 QR code max JWS lengths by error correction level
 // Source: SMART Health Cards QR Code FAQ
@@ -222,7 +233,7 @@ export interface SmartHealthCardReaderConfigParams {
    * ES256 public key for verifying health card signatures.
    * Can be a WebCrypto CryptoKey, raw bytes as Uint8Array, or PEM-formatted string.
    */
-  publicKey: CryptoKey | Uint8Array | string
+  publicKey?: CryptoKey | Uint8Array | string | null
 
   /**
    * Whether to optimize FHIR Bundle for QR codes when reading health cards.
@@ -250,7 +261,12 @@ export interface SmartHealthCardReaderConfigParams {
 /**
  * @category Configuration
  */
-export type SmartHealthCardReaderConfig = Required<SmartHealthCardReaderConfigParams>
+export type SmartHealthCardReaderConfig = {
+  publicKey?: CryptoKey | Uint8Array | string | null
+  enableQROptimization: boolean
+  strictReferences: boolean
+  verifyExpiration: boolean
+}
 
 /**
  * Parameters for creating Verifiable Credentials.
@@ -530,7 +546,7 @@ export class SmartHealthCardIssuer {
    * const issuer = new SmartHealthCardIssuer({
    *   issuer: 'https://your-healthcare-org.com',
    *   privateKey: privateKeyPKCS8String, // ES256 private key in PKCS#8 format
-   *   publicKey: publicKeySPKIString,     // ES256 public key in SPKI format
+   *   publicKey: publicKeySPKIString, // ES256 public key in SPKI format
    * });
    * ```
    */
@@ -637,7 +653,7 @@ export class SmartHealthCardReader {
    * @example
    * ```typescript
    * const reader = new SmartHealthCardReader({
-   *   publicKey: publicKeySPKIString,     // ES256 public key in SPKI format
+   *   publicKey: publicKeySPKIString, // ES256 public key in SPKI format
    * });
    * ```
    */
@@ -715,8 +731,14 @@ export class SmartHealthCardReader {
    */
   async fromJWS(jws: string): Promise<SmartHealthCard> {
     try {
+      // Resolve public key if not provided via issuer JWKS based on JWS header/payload
+      let publicKeyToUse = this.config.publicKey
+      if (!publicKeyToUse) {
+        publicKeyToUse = await this.resolvePublicKeyFromJWKS(jws)
+      }
+
       // Step 1: Verify JWS signature and extract payload (decompression handled automatically)
-      const payload = await this.jwsProcessor.verify(jws, this.config.publicKey, {
+      const payload = await this.jwsProcessor.verify(jws, publicKeyToUse, {
         verifyExpiration: this.config.verifyExpiration,
       })
 
@@ -734,6 +756,56 @@ export class SmartHealthCardReader {
       }
       const errorMessage = error instanceof Error ? error.message : String(error)
       throw new VerificationError(`Failed to verify SMART Health Card: ${errorMessage}`)
+    }
+  }
+
+  /**
+   * Resolves the public key for a JWS using the issuer's well-known JWKS endpoint when no key is provided.
+   * @throws {@link VerificationError} when the key cannot be resolved
+   */
+  private async resolvePublicKeyFromJWKS(jws: string): Promise<CryptoKey | Uint8Array | string> {
+    try {
+      // Decode without verification to obtain header.kid and payload.iss
+      const { header, payload } = await this.jwsProcessor.parseUnverified(jws)
+
+      if (!payload.iss || typeof payload.iss !== 'string') {
+        throw new VerificationError("Cannot resolve JWKS: missing 'iss' in payload")
+      }
+      if (!header.kid || typeof header.kid !== 'string') {
+        throw new VerificationError("Cannot resolve JWKS: missing 'kid' in JWS header")
+      }
+
+      // Build JWKS URL from issuer origin
+      const issuerUrl = new URL(payload.iss)
+      const jwksUrl = `${issuerUrl.origin}/.well-known/jwks.json`
+
+      // Fetch JWKS
+      const response = await fetch(jwksUrl)
+      if (!response.ok) {
+        throw new VerificationError(
+          `Failed to fetch JWKS from issuer (${jwksUrl}): ${response.status} ${response.statusText}`
+        )
+      }
+      const jwks = (await response.json()) as { keys?: Array<Record<string, unknown>> }
+      if (!jwks || !Array.isArray(jwks.keys)) {
+        throw new VerificationError('Invalid JWKS format: missing keys array')
+      }
+
+      // Find matching key by kid
+      const matching = jwks.keys.find(k => (k as Record<string, unknown>).kid === header.kid)
+      if (!matching) {
+        throw new VerificationError(`No matching key found in JWKS for kid '${header.kid}'`)
+      }
+
+      // Import JWK as CryptoKey
+      const cryptoKey = await importJWK(matching as JsonWebKey, 'ES256')
+      return cryptoKey
+    } catch (error) {
+      if (error instanceof SmartHealthCardError) {
+        throw error
+      }
+      const message = error instanceof Error ? error.message : String(error)
+      throw new VerificationError(`Unable to resolve public key via JWKS: ${message}`)
     }
   }
 
@@ -1275,8 +1347,6 @@ export class JWSProcessor {
     config: { enableCompression?: boolean } = {}
   ): Promise<string> {
     try {
-      const { CompactSign } = await import('jose')
-
       // Validate required payload fields
       this.validateJWTPayload(payload)
 
@@ -1304,7 +1374,6 @@ export class JWSProcessor {
       // Import key
       let key: CryptoKey | Uint8Array
       if (typeof privateKey === 'string') {
-        const { importPKCS8 } = await import('jose')
         key = await importPKCS8(privateKey, 'ES256')
       } else {
         key = privateKey
@@ -1328,8 +1397,6 @@ export class JWSProcessor {
   private async deriveKidFromPublicKey(
     publicKey: CryptoKey | Uint8Array | string
   ): Promise<string> {
-    const { importSPKI, exportJWK, calculateJwkThumbprint } = await import('jose')
-
     let keyObj: CryptoKey | Uint8Array
     if (typeof publicKey === 'string') {
       keyObj = await importSPKI(publicKey, 'ES256')
@@ -1362,8 +1429,6 @@ export class JWSProcessor {
     config?: { verifyExpiration?: boolean }
   ): Promise<SmartHealthCardJWT> {
     try {
-      const { compactVerify } = await import('jose')
-
       if (!jws || typeof jws !== 'string') {
         throw new JWSError('Invalid JWS: must be a non-empty string')
       }
@@ -1371,7 +1436,6 @@ export class JWSProcessor {
       // Import key
       let key: CryptoKey | Uint8Array
       if (typeof publicKey === 'string') {
-        const { importSPKI } = await import('jose')
         key = await importSPKI(publicKey, 'ES256')
       } else {
         key = publicKey
@@ -1443,6 +1507,43 @@ export class JWSProcessor {
       throw new JWSError(
         "Invalid JWT payload: 'vc' (verifiable credential) is required and must be an object"
       )
+    }
+  }
+
+  /**
+   * Parses a Compact JWS without verifying its signature to extract protected header and payload.
+   * If the header indicates zip: 'DEF', the payload will be decompressed.
+   * This is safe for metadata discovery (e.g., resolving JWKS by iss/kid) but MUST NOT be used to trust content.
+   */
+  async parseUnverified(
+    jws: string
+  ): Promise<{ header: { kid?: string; zip?: 'DEF' | string }; payload: SmartHealthCardJWT }> {
+    try {
+      if (!jws || typeof jws !== 'string') {
+        throw new JWSError('Invalid JWS: must be a non-empty string')
+      }
+
+      const parts = jws.split('.')
+      if (parts.length !== 3) {
+        throw new JWSError('Invalid Compact JWS')
+      }
+
+      const header = decodeProtectedHeader(jws) as { kid?: string; zip?: 'DEF' | string }
+
+      const payloadB64u = parts[1] as string
+      const payloadBytes = base64url.decode(payloadB64u)
+
+      const decompressed = header.zip === 'DEF' ? await this.inflateRaw(payloadBytes) : payloadBytes
+      const json = new TextDecoder().decode(decompressed)
+      const payload = JSON.parse(json) as SmartHealthCardJWT
+
+      return { header, payload }
+    } catch (error) {
+      if (error instanceof JWSError) {
+        throw error
+      }
+      const message = error instanceof Error ? error.message : String(error)
+      throw new JWSError(`Failed to parse JWS: ${message}`)
     }
   }
 }
