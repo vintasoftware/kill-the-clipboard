@@ -1,8 +1,0 @@
----
-alwaysApply: true
----
-# Development Workflow
-
-* Stop and ask for feedback at the end of each task
-* Use pnpm
-* Library is universal, so it needs to work on both browser and node.js

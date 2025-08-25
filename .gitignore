@@ -144,3 +144,4 @@ health_cards/
 test-output/
 scripts/generated-examples/
 _personal/
+.cursor/
