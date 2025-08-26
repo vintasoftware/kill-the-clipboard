@@ -19,17 +19,17 @@ Constraints: use pnpm; library must work in both browser and Node.js.
 - [x] Implement manifest fetching with passcode handling
 - [x] Implement file fetching and decryption
 - [x] Add crypto/compression helpers using `jose` and `CompressionStream`/`DecompressionStream`; ensure Node 18+ compatibility without browser‑unfriendly APIs
+- [x] Public exports wired in `src/index.ts`
 
 ### In Progress Tasks
+- [ ] Documentation: README section "Smart Health Links (SHL)" with minimal examples
+- [ ] API docs: include SHL classes and types in typedoc output
 
 
 ### Future Tasks
 
 - **Library (kill-the-clipboard) v1**
-  - [ ] Public exports wired in `src/index.ts`
   - [ ] Tests: unit and integration for create/share/resolve flows (including passcode, expired, not found, decrypt/auth failures)
-  - [ ] Documentation: README section "Smart Health Links (SHL)" with minimal examples
-  - [ ] API docs: include SHL classes and types in typedoc output
 
 - **Demo (Next.js + Medplum) v1**
   - [ ] Scaffold Next.js (App Router) patient portal app
