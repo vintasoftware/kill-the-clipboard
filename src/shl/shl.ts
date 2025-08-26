@@ -4,11 +4,32 @@ import type { SHLFlag, SHLinkPayloadV1 } from './types.js'
 
 /**
  * Immutable SHL class representing a Smart Health Link payload and URI.
- * This class only handles the SHLink "pointer" - the payload containing url, key, flags, etc.
- * Use SHLManifestBuilder to manage the manifest and files referenced by this SHL.
+ *
+ * This class handles the SHLink "pointer" - the payload containing url, key, flags, etc.
+ * It provides methods to generate SHLink URIs and access payload properties.
+ * Use {@link SHLManifestBuilder} to manage the manifest and files referenced by this SHL.
+ *
+ * Smart Health Links enable secure sharing of health data through encrypted links.
+ * The SHL contains a manifest URL and encryption key, allowing recipients to fetch
+ * and decrypt the shared health information.
+ *
+ * @example
+ * ```typescript
+ * // Generate a new SHL
+ * const shl = SHL.generate({
+ *   baseURL: 'https://shl.example.org',
+ *   expirationDate: new Date('2024-12-31'),
+ *   flag: 'P', // Requires passcode
+ *   label: 'COVID-19 Vaccination Record'
+ * });
+ *
+ * // Generate the SHLink URI
+ * const uri = shl.generateSHLinkURI();
+ * console.log(uri); // shlink:/eyJ1cmwiOi...
+ * ```
  *
  * @public
- * @category SHL High-Level API
+ * @category High-Level API
  */
 export class SHL {
   private readonly _baseURL: string
@@ -20,7 +41,12 @@ export class SHL {
   private readonly v: 1 = 1
 
   /**
-   * Private constructor for internal instantiation. Use SHL.generate to create new instances.
+   * Private constructor for internal instantiation.
+   *
+   * Use {@link SHL.generate} to create new instances or {@link SHL.fromPayload}
+   * to reconstruct from existing payloads.
+   *
+   * @param core - Core SHL properties
    */
   private constructor(core: {
     baseURL: string
@@ -40,12 +66,36 @@ export class SHL {
 
   /**
    * Create an immutable SHL representing a Smart Health Link payload and URI.
-   * Generates manifest path and encryption symmetric key automatically.
    *
-   * @param params.baseURL - Base URL for constructing manifest URLs (e.g., 'https://shl.example.org/manifests/')
-   * @param params.expirationDate - Optional expiration date for the SHLink, will fill the `exp` field in the SHLink payload.
-   * @param params.flag - Optional flag for the SHLink: `L` (long-term), `P` (passcode), `LP` (long-term + passcode).
-   * @param params.label - Optional label that provides a short description of the data behind the SHLink. Max length of 80 chars.
+   * Generates a cryptographically secure manifest path and 256-bit encryption key automatically.
+   * The manifest path uses 32 random bytes encoded as base64url (43 characters).
+   * The encryption key uses 32 random bytes encoded as base64url (43 characters).
+   *
+   * @param params.baseURL - Base URL for constructing manifest URLs (e.g., 'https://shl.example.org')
+   * @param params.expirationDate - Optional expiration date for the SHLink. When set, fills the `exp` field in the SHLink payload with Unix timestamp.
+   * @param params.flag - Optional flag for the SHLink:
+   *   - `'L'`: Long-term (allows polling for updates)
+   *   - `'P'`: Passcode-protected (requires passcode for access)
+   *   - `'LP'`: Both long-term and passcode-protected
+   * @param params.label - Optional short description of the shared data. Maximum 80 characters.
+   * @returns New SHL instance with generated manifest path and encryption key
+   * @throws {@link SHLFormatError} When label exceeds 80 characters
+   *
+   * @example
+   * ```typescript
+   * // Simple SHL
+   * const shl = SHL.generate({
+   *   baseURL: 'https://shl.example.org'
+   * });
+   *
+   * // SHL with expiration and passcode protection
+   * const protectedShl = SHL.generate({
+   *   baseURL: 'https://shl.example.org',
+   *   expirationDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000), // 30 days
+   *   flag: 'P',
+   *   label: 'Lab Results - Valid for 30 days'
+   * });
+   * ```
    */
   static generate(params: {
     baseURL: string
@@ -90,7 +140,21 @@ export class SHL {
     return new SHL(args)
   }
 
-  /** Generate the SHLink URI respecting the "Construct a SHLink Payload" section of the spec. */
+  /**
+   * Generate the SHLink URI following the Smart Health Links specification.
+   *
+   * Creates a `shlink:/` URI with base64url-encoded JSON payload containing
+   * the manifest URL, encryption key, and optional metadata (expiration, flags, label).
+   *
+   * @returns SHLink URI string in format `shlink:/<base64url-encoded-payload>`
+   *
+   * @example
+   * ```typescript
+   * const shl = SHL.generate({ baseURL: 'https://shl.example.org' });
+   * const uri = shl.generateSHLinkURI();
+   * // Returns: shlink:/eyJ1cmwiOiJodHRwczovL3NobC5leGFtcGxlLm9yZy9tYW5pZmVzdHMvLi4uXCIsXCJrZXlcIjpcIi4uLlwiLFwidlwiOjF9
+   * ```
+   */
   generateSHLinkURI(): string {
     const payload = this.payload
     const payloadJson = JSON.stringify(payload)
@@ -98,62 +162,141 @@ export class SHL {
     return `shlink:/${payloadB64u}`
   }
 
-  /** Get the full manifest URL that servers must handle (POST requests as per spec). */
+  /**
+   * Get the full manifest URL that servers must handle.
+   *
+   * Returns the complete HTTPS URL where the manifest can be fetched via POST request
+   * as specified in the Smart Health Links protocol.
+   *
+   * @returns Complete manifest URL (e.g., 'https://shl.example.org/manifests/abc123.../manifest.json')
+   */
   get url(): string {
     return this._baseURL.replace(/\/$/, '') + this._manifestPath
   }
 
-  /** Get the base URL used for constructing manifest URLs. */
+  /**
+   * Get the base URL used for constructing manifest URLs.
+   *
+   * @returns Base URL without trailing slash (e.g., 'https://shl.example.org')
+   */
   get baseURL(): string {
     return this._baseURL
   }
 
-  /** Get the manifest path. */
+  /**
+   * Get the manifest path segment.
+   *
+   * Returns the path portion of the manifest URL, including the random entropy
+   * and filename (e.g., '/manifests/abc123.../manifest.json').
+   *
+   * @returns Manifest path starting with '/'
+   */
   get manifestPath(): string {
     return this._manifestPath
   }
 
-  /** Get the base64url-encoded encryption key for files (43 characters). */
+  /**
+   * Get the base64url-encoded encryption key for files.
+   *
+   * Returns the 256-bit symmetric encryption key used for JWE file encryption,
+   * encoded as base64url (always 43 characters).
+   *
+   * @returns Base64url-encoded encryption key (43 characters)
+   */
   get key(): string {
     return this._key
   }
 
-  /** Get the expiration date as Epoch seconds if set. */
+  /**
+   * Get the expiration date as Unix timestamp if set.
+   *
+   * Returns the expiration time in seconds since Unix epoch (1970-01-01),
+   * suitable for use in the SHLink payload `exp` field.
+   *
+   * @returns Unix timestamp in seconds, or undefined if no expiration set
+   */
   get exp(): number | undefined {
     return this._expirationDate ? Math.floor(this._expirationDate.getTime() / 1000) : undefined
   }
 
-  /** Get the expiration date if set. */
+  /**
+   * Get the expiration date as a Date object if set.
+   *
+   * @returns Date object representing expiration time, or undefined if no expiration set
+   */
   get expirationDate(): Date | undefined {
     return this._expirationDate
   }
 
-  /** Get the SHL flags if set. */
+  /**
+   * Get the SHL flags if set.
+   *
+   * Returns the flag string indicating SHL capabilities:
+   * - `'L'`: Long-term (supports polling for updates)
+   * - `'P'`: Passcode-protected (requires passcode for access)
+   * - `'LP'`: Both long-term and passcode-protected
+   *
+   * @returns Flag string, or undefined if no flags set
+   */
   get flag(): SHLFlag | undefined {
     return this._flag
   }
 
-  /** Get the label if set. */
+  /**
+   * Get the human-readable label if set.
+   *
+   * Returns the optional short description of the shared data.
+   * Maximum length is 80 characters as per SHL specification.
+   *
+   * @returns Label string, or undefined if no label set
+   */
   get label(): string | undefined {
     return this._label
   }
 
-  /** Get the version (always 1 for v1). */
+  /**
+   * Get the SHL payload version.
+   *
+   * Always returns 1 for the current Smart Health Links v1 specification.
+   *
+   * @returns Version number (always 1)
+   */
   get version(): 1 {
     return this.v
   }
 
-  /** Check if this SHL requires a passcode (has 'P' flag). */
+  /**
+   * Check if this SHL requires a passcode for access.
+   *
+   * Returns true if the SHL has the 'P' flag, indicating that a passcode
+   * must be provided when fetching the manifest.
+   *
+   * @returns True if passcode is required, false otherwise
+   */
   get requiresPasscode(): boolean {
     return this._flag?.includes('P') ?? false
   }
 
-  /** Check if this SHL is long-term (has 'L' flag). */
+  /**
+   * Check if this SHL supports long-term access with updates.
+   *
+   * Returns true if the SHL has the 'L' flag, indicating that clients
+   * may poll the manifest URL for updates over time.
+   *
+   * @returns True if long-term access is supported, false otherwise
+   */
   get isLongTerm(): boolean {
     return this._flag?.includes('L') ?? false
   }
 
-  /** Get the SHL payload object for serialization. */
+  /**
+   * Get the complete SHL payload object for serialization.
+   *
+   * Returns the payload structure that gets base64url-encoded in the SHLink URI.
+   * Includes all fields: url, key, version, and optional exp, flag, label.
+   *
+   * @returns SHLink payload object conforming to v1 specification
+   */
   get payload(): SHLinkPayloadV1 {
     const payload: SHLinkPayloadV1 = {
       url: this.url,
@@ -173,8 +316,18 @@ export class SHL {
   }
 
   /**
-   * Static factory method to create an SHL from a parsed payload (for viewing purposes only).
-   * This is used internally by SHLViewer to reconstruct SHL objects from URIs.
+   * Static factory method to create an SHL from a parsed payload.
+   *
+   * This method is used internally by {@link SHLViewer} to reconstruct SHL objects
+   * from parsed SHLink URIs. It does not generate new keys or paths, but uses
+   * the provided values from an existing payload.
+   *
+   * @param payload - Validated SHLink payload from a parsed URI
+   * @param baseURL - Base URL extracted from the payload URL
+   * @param manifestPath - Manifest path extracted from the payload URL
+   * @returns SHL instance reconstructed from the payload
+   *
+   * @internal
    */
   static fromPayload(payload: SHLinkPayloadV1, baseURL: string, manifestPath: string): SHL {
     const args: {
@@ -197,7 +350,15 @@ export class SHL {
 
   /**
    * Static method to validate a SHLink payload structure.
-   * This is used internally by SHLViewer during URI parsing.
+   *
+   * Validates that the payload conforms to the Smart Health Links v1 specification,
+   * including required fields (url, key), optional fields (exp, flag, label, v),
+   * and format constraints (key length, label length, URL validity, flag characters).
+   *
+   * @param payload - Unknown payload object to validate
+   * @throws {@link SHLFormatError} When payload structure is invalid
+   *
+   * @internal
    */
   static validatePayload(payload: unknown): asserts payload is SHLinkPayloadV1 {
     if (!payload || typeof payload !== 'object') {

@@ -22,13 +22,13 @@ Constraints: use pnpm; library must work in both browser and Node.js.
 - [x] Public exports wired in `src/index.ts`
 
 ### In Progress Tasks
-- [ ] Documentation: README section "Smart Health Links (SHL)" with minimal examples
-- [ ] API docs: include SHL classes and types in typedoc output
-
+- [ ] Documentation: JS Docs for SHL classes and types, similar to SHC classes
+- [ ] Documentation: include SHL classes and types in typedoc output
 
 ### Future Tasks
 
 - **Library (kill-the-clipboard) v1**
+  - [ ] Documentation: README section "Smart Health Links (SHL)" with minimal examples
   - [ ] Tests: unit and integration for create/share/resolve flows (including passcode, expired, not found, decrypt/auth failures)
 
 - **Demo (Next.js + Medplum) v1**

@@ -6,13 +6,51 @@ import type { SHLFileContentType } from './types.js'
 
 /**
  * Encrypts content as JWE Compact using A256GCM direct encryption.
- * Follows SHL specification for file encryption.
  *
- * @param params.content - Content to encrypt (string)
- * @param params.key - 32-byte encryption key (base64url-encoded)
- * @param params.contentType - MIME content type for the cty header
- * @param params.enableCompression - Whether to compress with DEFLATE before encryption
- * @returns JWE Compact serialization string
+ * Follows the Smart Health Links specification for file encryption using:
+ * - Direct key agreement (alg: 'dir')
+ * - AES-256-GCM encryption (enc: 'A256GCM')
+ * - Optional raw DEFLATE compression (zip: 'DEF')
+ * - Content type in protected header (cty: contentType)
+ *
+ * The function handles compression manually since the jose library doesn't
+ * support the zip header parameter. When compression is enabled, the content
+ * is compressed first, then encrypted, and the zip header is added to the
+ * protected header after encryption.
+ *
+ * @param params.content - Content to encrypt as a UTF-8 string
+ * @param params.key - 256-bit encryption key encoded as base64url (43 characters).
+ *   Should be generated using cryptographically secure random bytes.
+ * @param params.contentType - MIME content type for the cty header.
+ *   Used by decryption to identify file format. Typically 'application/smart-health-card' or 'application/fhir+json'.
+ * @param params.enableCompression - Whether to compress content with raw DEFLATE before encryption.
+ *   Recommended for verbose content like FHIR JSON. Not recommended for already-compressed content like Smart Health Cards.
+ * @returns JWE Compact serialization string (5 base64url parts separated by dots)
+ * @throws {@link SHLError} When encryption fails due to invalid key, content, or crypto operations
+ *
+ * @example
+ * ```typescript
+ * // Encrypt FHIR resource with compression
+ * const fhirJson = JSON.stringify(myFhirBundle);
+ * const jwe = await encryptSHLFile({
+ *   content: fhirJson,
+ *   key: 'abc123...', // 43-char base64url key
+ *   contentType: 'application/fhir+json',
+ *   enableCompression: true
+ * });
+ *
+ * // Encrypt Smart Health Card without compression
+ * const shcJson = JSON.stringify({ verifiableCredential: [jwsString] });
+ * const jwe = await encryptSHLFile({
+ *   content: shcJson,
+ *   key: 'abc123...', // same key as above
+ *   contentType: 'application/smart-health-card',
+ *   enableCompression: false
+ * });
+ * ```
+ *
+ * @public
+ * @category Lower-Level API
  */
 export async function encryptSHLFile(params: {
   content: string
@@ -72,11 +110,45 @@ export async function encryptSHLFile(params: {
 
 /**
  * Decrypts JWE Compact using A256GCM direct decryption.
- * Follows SHL specification for file decryption.
  *
- * @param params.jwe - JWE Compact serialization string
- * @param params.key - 32-byte decryption key (base64url-encoded)
- * @returns Decrypted content as string
+ * Follows the Smart Health Links specification for file decryption.
+ * Handles both compressed and uncompressed content automatically based
+ * on the zip header in the JWE protected header.
+ *
+ * The function:
+ * 1. Decrypts the JWE using the provided key
+ * 2. Extracts the content type from the cty header
+ * 3. Decompresses the content if zip=DEF is present
+ * 4. Returns the plaintext content and content type
+ *
+ * @param params.jwe - JWE Compact serialization string (5 base64url parts separated by dots)
+ * @param params.key - 256-bit decryption key encoded as base64url (43 characters).
+ *   Must be the same key used for encryption.
+ * @returns Promise resolving to object with decrypted content and content type
+ * @returns returns.content - Decrypted content as UTF-8 string
+ * @returns returns.contentType - Content type from JWE cty header
+ * @throws {@link SHLDecryptionError} When JWE decryption fails due to invalid key, malformed JWE, or missing content type
+ * @throws {@link SHLDecryptionError} When decompression fails for zip=DEF content
+ *
+ * @example
+ * ```typescript
+ * // Decrypt a file
+ * const { content, contentType } = await decryptSHLFile({
+ *   jwe: 'eyJhbGciOiJkaXIiLCJlbmMiOiJBMjU2R0NNIiwiY3R5IjoiYXBwbGljYXRpb24vZmhpcitqc29uIn0...',
+ *   key: 'abc123...' // same key used for encryption
+ * });
+ *
+ * if (contentType === 'application/fhir+json') {
+ *   const fhirResource = JSON.parse(content);
+ *   console.log('Resource type:', fhirResource.resourceType);
+ * } else if (contentType === 'application/smart-health-card') {
+ *   const shcFile = JSON.parse(content);
+ *   console.log('Verifiable credentials:', shcFile.verifiableCredential);
+ * }
+ * ```
+ *
+ * @public
+ * @category Lower-Level API
  */
 export async function decryptSHLFile(params: {
   jwe: string

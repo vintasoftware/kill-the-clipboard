@@ -1,6 +1,5 @@
 // SmartHealthCard class
 
-import { FhirValidationError, InvalidBundleReferenceError } from './errors.js'
 import { FHIRBundleProcessor } from './fhir/bundle-processor.js'
 import { QRCodeGenerator } from './qr/qr-code-generator.js'
 import type { FHIRBundle, QRCodeConfigParams } from './types.js'

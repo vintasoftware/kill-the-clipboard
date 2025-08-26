@@ -1,14 +1,7 @@
 // SmartHealthCardReader class
 import { importJWK } from 'jose'
 import { SmartHealthCard } from './card.js'
-import {
-  FhirValidationError,
-  FileFormatError,
-  JWSError,
-  QRCodeError,
-  SmartHealthCardError,
-  VerificationError,
-} from './errors.js'
+import { FileFormatError, QRCodeError, SmartHealthCardError, VerificationError } from './errors.js'
 import { JWSProcessor } from './jws/jws-processor.js'
 import { QRCodeGenerator } from './qr/qr-code-generator.js'
 import type {

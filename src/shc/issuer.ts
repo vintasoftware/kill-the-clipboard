@@ -1,7 +1,6 @@
 // SmartHealthCardIssuer class
 
 import { SmartHealthCard } from './card.js'
-import { FhirValidationError, JWSError } from './errors.js'
 import { FHIRBundleProcessor } from './fhir/bundle-processor.js'
 import { JWSProcessor } from './jws/jws-processor.js'
 import type {

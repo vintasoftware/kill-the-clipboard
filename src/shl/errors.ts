@@ -4,7 +4,7 @@
  * Base error class for Smart Health Links operations.
  *
  * @public
- * @category SHL Errors
+ * @category Errors
  */
 export class SHLError extends Error {
   /** Error code for programmatic handling. */
@@ -21,7 +21,7 @@ export class SHLError extends Error {
  * Error thrown when SHL manifest operations fail.
  *
  * @public
- * @category SHL Errors
+ * @category Errors
  */
 export class SHLManifestError extends SHLError {
   constructor(message: string) {
@@ -34,7 +34,7 @@ export class SHLManifestError extends SHLError {
  * Error thrown when SHL network operations fail.
  *
  * @public
- * @category SHL Errors
+ * @category Errors
  */
 export class SHLNetworkError extends SHLError {
   constructor(message: string) {
@@ -47,7 +47,7 @@ export class SHLNetworkError extends SHLError {
  * Error thrown when SHL format parsing fails.
  *
  * @public
- * @category SHL Errors
+ * @category Errors
  */
 export class SHLFormatError extends SHLError {
   constructor(message: string) {
@@ -60,7 +60,7 @@ export class SHLFormatError extends SHLError {
  * Error thrown when SHL authentication fails.
  *
  * @public
- * @category SHL Errors
+ * @category Errors
  */
 export class SHLAuthError extends SHLError {
   constructor(message: string) {
@@ -73,7 +73,7 @@ export class SHLAuthError extends SHLError {
  * Error thrown when SHL passcode is invalid.
  *
  * @public
- * @category SHL Errors
+ * @category Errors
  */
 export class SHLInvalidPasscodeError extends SHLAuthError {
   constructor(message: string) {
@@ -87,7 +87,7 @@ export class SHLInvalidPasscodeError extends SHLAuthError {
  * Error thrown when SHL resolution fails.
  *
  * @public
- * @category SHL Errors
+ * @category Errors
  */
 export class SHLResolveError extends SHLError {
   constructor(message: string) {

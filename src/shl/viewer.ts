@@ -28,10 +28,40 @@ type SmartHealthCardReader = unknown & {
 
 /**
  * SHL Viewer handles parsing and resolving Smart Health Links.
+ *
  * This class processes SHLink URIs and fetches/decrypts the referenced content.
+ * It supports both embedded and location-based file descriptors, handles
+ * passcode authentication, and validates manifest structures according to
+ * the Smart Health Links specification.
+ *
+ * The viewer automatically handles:
+ * - SHLink URI parsing and payload validation
+ * - Manifest fetching with POST requests
+ * - File decryption using JWE with A256GCM
+ * - Content decompression when zip=DEF is used
+ * - Smart Health Card and FHIR resource extraction
+ *
+ * @example
+ * ```typescript
+ * // Create viewer with SHLink URI
+ * const viewer = new SHLViewer({
+ *   shlinkURI: 'shlink:/eyJ1cmwiOi4uLn0',
+ *   fetch: customFetch // optional custom fetch implementation
+ * });
+ *
+ * // Resolve the SHLink (fetch and decrypt content)
+ * const resolved = await viewer.resolveSHLink({
+ *   recipient: 'Dr. Smith',
+ *   passcode: 'secret123', // if P flag is set
+ *   embeddedLengthMax: 16384 // prefer embedding files under 16KB
+ * });
+ *
+ * console.log(resolved.smartHealthCards); // Array of SmartHealthCard objects
+ * console.log(resolved.fhirResources); // Array of FHIR resources
+ * ```
  *
  * @public
- * @category SHL High-Level API
+ * @category High-Level API
  */
 export class SHLViewer {
   private readonly _shl?: SHL
@@ -40,8 +70,31 @@ export class SHLViewer {
   /**
    * Create an SHL viewer.
    *
-   * @param params.shlinkURI - The SHLink URI to parse
-   * @param params.fetch - Optional fetch implementation (defaults to global fetch)
+   * The viewer can be created with or without an initial SHLink URI.
+   * If no URI is provided, you can parse one later using the shl getter
+   * after creating a viewer with a URI.
+   *
+   * @param params.shlinkURI - Optional SHLink URI to parse immediately.
+   *   Supports both bare URIs (`shlink:/...`) and viewer-prefixed URIs (`https://viewer.example/#shlink:/...`)
+   * @param params.fetch - Optional fetch implementation for network requests.
+   *   Defaults to global fetch. Useful for testing or custom network handling.
+   *
+   * @example
+   * ```typescript
+   * // Create with immediate parsing
+   * const viewer = new SHLViewer({
+   *   shlinkURI: 'shlink:/eyJ1cmwiOi4uLn0'
+   * });
+   *
+   * // Create with custom fetch
+   * const viewer = new SHLViewer({
+   *   shlinkURI: 'https://viewer.example/#shlink:/eyJ1cmwiOi4uLn0',
+   *   fetch: myCustomFetch
+   * });
+   *
+   * // Create empty viewer
+   * const viewer = new SHLViewer();
+   * ```
    */
   constructor(params?: {
     shlinkURI?: string
@@ -55,7 +108,22 @@ export class SHLViewer {
   }
 
   /**
-   * Get SHLink object from SHLink URI
+   * Get the parsed SHL object from the SHLink URI.
+   *
+   * Returns the SHL instance created from parsing the SHLink URI provided
+   * in the constructor. Use this to access SHL properties like expiration,
+   * flags, and manifest URL.
+   *
+   * @returns SHL instance with parsed payload data
+   * @throws {@link SHLFormatError} When no SHLink URI was provided to the constructor
+   *
+   * @example
+   * ```typescript
+   * const viewer = new SHLViewer({ shlinkURI: 'shlink:/...' });
+   * const shl = viewer.shl;
+   * console.log(shl.requiresPasscode); // Check if passcode needed
+   * console.log(shl.expirationDate); // Check expiration
+   * ```
    */
   get shl(): SHL {
     if (!this._shl) {
@@ -66,11 +134,62 @@ export class SHLViewer {
 
   /**
    * Resolve a SHLink URI by fetching and decrypting all referenced content.
-   * Throws errors if the SHLink is invalid, expired, or the passcode is incorrect.
    *
-   * @param params.passcode - Optional passcode for P-flagged SHLinks
-   * @param params.recipient - Required recipient identifier for manifest requests
-   * @param params.embeddedLengthMax - Optional max length for embedded content preference
+   * This method performs the complete SHL resolution workflow:
+   * 1. Validates SHL expiration and passcode requirements
+   * 2. Fetches the manifest via POST request with recipient info
+   * 3. Processes each file descriptor (embedded or location-based)
+   * 4. Decrypts files using the SHL's encryption key
+   * 5. Parses content based on type (Smart Health Cards or FHIR resources)
+   * 6. Returns structured data ready for application use
+   *
+   * @param params.recipient - Required recipient identifier sent in manifest request.
+   *   This should identify the requesting user/system (e.g., "Dr. Smith", "Patient Portal")
+   * @param params.passcode - Optional passcode for P-flagged SHLinks.
+   *   Required when SHL has 'P' flag, ignored otherwise.
+   * @param params.embeddedLengthMax - Optional preference for embedded vs location files.
+   *   Files smaller than this size (in bytes) will be embedded in manifest response.
+   *   Defaults to server's preference if not specified. Typical values: 4096-16384.
+   *
+   * @returns Promise resolving to structured content with manifest and decrypted files
+   * @throws {@link SHLExpiredError} When SHL has expired (exp field < current time)
+   * @throws {@link SHLInvalidPasscodeError} When P-flagged SHL requires passcode but none provided, or passcode is incorrect
+   * @throws {@link SHLManifestNotFoundError} When manifest URL returns 404
+   * @throws {@link SHLManifestRateLimitError} When requests are rate limited (429)
+   * @throws {@link SHLNetworkError} When network requests fail
+   * @throws {@link SHLDecryptionError} When file decryption fails
+   * @throws {@link SHLManifestError} When manifest structure is invalid or file content is malformed
+   *
+   * @example
+   * ```typescript
+   * const viewer = new SHLViewer({ shlinkURI: 'shlink:/...' });
+   *
+   * try {
+   *   const resolved = await viewer.resolveSHLink({
+   *     recipient: 'Dr. Smith - General Practice',
+   *     passcode: viewer.shl.requiresPasscode ? 'user-provided-passcode' : undefined,
+   *     embeddedLengthMax: 8192 // Prefer embedding files under 8KB
+   *   });
+   *
+   *   // Process Smart Health Cards
+   *   for (const shc of resolved.smartHealthCards) {
+   *     console.log('SHC issuer:', shc.issuer);
+   *     console.log('SHC data:', shc.fhirBundle);
+   *   }
+   *
+   *   // Process FHIR resources
+   *   for (const resource of resolved.fhirResources) {
+   *     console.log('Resource type:', resource.resourceType);
+   *   }
+   * } catch (error) {
+   *   if (error instanceof SHLExpiredError) {
+   *     console.error('SHL has expired');
+   *   } else if (error instanceof SHLInvalidPasscodeError) {
+   *     console.error('Invalid or missing passcode');
+   *   }
+   *   // Handle other error types...
+   * }
+   * ```
    */
   async resolveSHLink(params: {
     passcode?: string
@@ -154,8 +273,13 @@ export class SHLViewer {
 
           // Use SmartHealthCardReader to properly decode the JWS and extract the FHIR Bundle
           const reader = new SmartHealthCardReader({ verifyExpiration: false })
-          const smartHealthCard = await reader.fromJWS(jws)
-          smartHealthCards.push(smartHealthCard)
+          try {
+            const smartHealthCard = await reader.fromJWS(jws)
+            smartHealthCards.push(smartHealthCard)
+          } catch (error) {
+            const message = error instanceof Error ? error.message : String(error)
+            throw new SHLManifestError(`Invalid SMART Health Card file: ${message}`)
+          }
         }
       } else if (fileDescriptor.contentType === 'application/fhir+json') {
         // Parse FHIR resource
@@ -182,7 +306,20 @@ export class SHLViewer {
   }
 
   /**
-   * Parse a SHLink URI into an SHL object
+   * Parse a SHLink URI into an SHL object.
+   *
+   * Handles both bare SHLink URIs and viewer-prefixed URIs:
+   * - `shlink:/eyJ1cmwiOi4uLn0` (bare)
+   * - `https://viewer.example/#shlink:/eyJ1cmwiOi4uLn0` (viewer-prefixed)
+   *
+   * Validates URI format, decodes base64url payload, parses JSON,
+   * and validates payload structure according to SHL specification.
+   *
+   * @param shlinkURI - SHLink URI to parse
+   * @returns SHL instance with parsed payload data
+   * @throws {@link SHLFormatError} When URI format is invalid, payload cannot be decoded, or payload structure is invalid
+   *
+   * @private
    */
   private parseSHLinkURI(shlinkURI: string): SHL {
     try {
@@ -243,7 +380,23 @@ export class SHLViewer {
 
   /**
    * Fetch a manifest from the given URL.
-   * Handles passcode challenges automatically if passcode is provided.
+   *
+   * Makes a POST request to the manifest URL with a JSON body containing
+   * recipient information and optional passcode/embedding preferences.
+   * Handles HTTP error responses and validates the returned manifest structure.
+   *
+   * @param params.url - Manifest URL from SHL payload
+   * @param params.recipient - Recipient identifier for the manifest request
+   * @param params.passcode - Optional passcode for P-flagged SHLinks
+   * @param params.embeddedLengthMax - Optional preference for embedded file size limit
+   * @returns Promise resolving to validated manifest object
+   * @throws {@link SHLInvalidPasscodeError} When server returns 401 (invalid/missing passcode)
+   * @throws {@link SHLManifestNotFoundError} When server returns 404 (manifest not found)
+   * @throws {@link SHLManifestRateLimitError} When server returns 429 (rate limited)
+   * @throws {@link SHLNetworkError} When other HTTP errors occur or network fails
+   * @throws {@link SHLManifestError} When manifest response is not valid JSON or has invalid structure
+   *
+   * @private
    */
   private async fetchManifest(params: {
     url: string
@@ -310,7 +463,16 @@ export class SHLViewer {
   }
 
   /**
-   * Validates a SHL manifest structure
+   * Validates a SHL manifest structure against the specification.
+   *
+   * Ensures the manifest has the required `files` array and that each
+   * file descriptor has valid contentType and either embedded or location
+   * (but not both). Validates content types and URL formats.
+   *
+   * @param manifest - Unknown manifest object to validate
+   * @throws {@link SHLManifestError} When manifest structure is invalid
+   *
+   * @private
    */
   private validateManifest(manifest: unknown): asserts manifest is SHLManifestV1 {
     if (!manifest || typeof manifest !== 'object') {
@@ -375,6 +537,19 @@ export class SHLViewer {
 
   /**
    * Fetch and decrypt a file using the provided key.
+   *
+   * Downloads an encrypted file from a location URL and decrypts it
+   * using the SHL's encryption key. Handles HTTP errors and decryption failures.
+   *
+   * @param params.url - HTTPS URL to the encrypted JWE file
+   * @param params.key - Base64url-encoded encryption key from SHL
+   * @returns Promise resolving to decrypted file content and content type
+   * @throws {@link SHLManifestNotFoundError} When file URL returns 404
+   * @throws {@link SHLManifestRateLimitError} When file requests are rate limited (429)
+   * @throws {@link SHLNetworkError} When other HTTP errors occur or network fails
+   * @throws {@link SHLDecryptionError} When JWE decryption fails
+   *
+   * @private
    */
   private async fetchAndDecryptFile(params: {
     url: string
