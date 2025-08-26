@@ -8,7 +8,7 @@ export default defineConfig({
     exclude: ['node_modules', 'dist'],
     typecheck: {
       enabled: true,
-      tsconfig: './tsconfig.json',
+      tsconfig: './test/tsconfig.json',
     },
     coverage: {
       reporter: ['text', 'html', 'lcov', 'json-summary', 'json'],

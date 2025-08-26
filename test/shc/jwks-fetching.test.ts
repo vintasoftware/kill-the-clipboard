@@ -1,3 +1,4 @@
+// biome-ignore-all lint/suspicious/noExplicitAny: The test needs to use `any` to mock the fetch function
 import { describe, expect, it, vi } from 'vitest'
 import { SmartHealthCardIssuer, SmartHealthCardReader, VerificationError } from '@/index'
 import { createValidFHIRBundle, testPrivateKeyPKCS8, testPublicKeySPKI } from '../helpers'

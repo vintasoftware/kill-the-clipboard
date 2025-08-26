@@ -1,10 +1,5 @@
 import { beforeEach, describe, expect, it } from 'vitest'
-import {
-  type FHIRBundle,
-  JWSProcessor,
-  SmartHealthCardIssuer,
-  SmartHealthCardReader,
-} from '@/index'
+import { type FHIRBundle, SmartHealthCardIssuer, SmartHealthCardReader } from '@/index'
 import { createValidFHIRBundle, testPrivateKeyPKCS8, testPublicKeySPKI } from '../helpers'
 
 describe('Compression Features', () => {

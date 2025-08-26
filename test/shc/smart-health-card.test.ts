@@ -1,3 +1,4 @@
+// biome-ignore-all lint/suspicious/noExplicitAny: The test needs to use `any` to test error cases
 import { beforeEach, describe, expect, it } from 'vitest'
 import {
   type FHIRBundle,
