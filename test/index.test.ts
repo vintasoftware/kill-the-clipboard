@@ -1,6 +1,7 @@
 // biome-ignore-all lint/suspicious/noExplicitAny: The test needs to use `any` to check validation errors
 
 import type { Bundle, Immunization, Patient } from '@medplum/fhirtypes'
+import * as jose from 'jose'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import {
   type FHIRBundle,
@@ -14,10 +15,8 @@ import {
   QRCodeGenerator,
   // SHL imports
   SHL,
-  SHLError,
   SHLFormatError,
   SHLManifestBuilder,
-  type SHLManifestV1,
   SHLViewer,
   type SmartHealthCardConfig,
   type SmartHealthCardConfigParams,
@@ -2028,7 +2027,7 @@ EQqQipjEJazEpNXKUbJ4GV0zYi4qZqIOC5tBTyAYas7JJ9RW6mFuNysgJA==
       const jwks = { keys: [{ ...jwk, kid }] }
 
       const originalFetch = globalThis.fetch
-      const fetchMock = vi.fn(async (url: string) => {
+      const fetchMock = vi.fn(async () => {
         // Basic shape of a Response-like object
         return {
           ok: true,
@@ -2681,48 +2680,332 @@ EQqQipjEJazEpNXKUbJ4GV0zYi4qZqIOC5tBTyAYas7JJ9RW6mFuNysgJA==
       })
     })
 
-    describe('SHLViewer URI Parsing', () => {
-      it('should parse valid SHLink URIs', () => {
-        const originalSHL = SHL.generate({
-          baseURL: 'https://shl.example.org',
-          label: 'Original',
+    describe('SHLViewer', () => {
+      describe('URI Parsing', () => {
+        it('should parse valid SHLink URIs', () => {
+          const originalSHL = SHL.generate({
+            baseURL: 'https://shl.example.org',
+            label: 'Original',
+          })
+
+          const uri = originalSHL.generateSHLinkURI()
+          const viewer = new SHLViewer({ shlinkURI: uri })
+          const parsedSHL = viewer.shl
+
+          expect(parsedSHL.baseURL).toBe('https://shl.example.org')
+          expect(parsedSHL.label).toBe('Original')
+          expect(parsedSHL.key).toBe(originalSHL.key)
         })
 
-        const uri = originalSHL.generateSHLinkURI()
-        const viewer = new SHLViewer({ shlinkURI: uri })
-        const parsedSHL = viewer.shl
+        it('should parse viewer-prefixed URIs', () => {
+          const originalSHL = SHL.generate({
+            baseURL: 'https://shl.example.org',
+            label: 'Test Card',
+          })
 
-        expect(parsedSHL.baseURL).toBe('https://shl.example.org')
-        expect(parsedSHL.label).toBe('Original')
-        expect(parsedSHL.key).toBe(originalSHL.key)
-      })
+          const uri = originalSHL.generateSHLinkURI()
+          const viewerPrefixedURI = `https://viewer.example.com/#${uri}`
 
-      it('should parse viewer-prefixed URIs', () => {
-        const originalSHL = SHL.generate({
-          baseURL: 'https://shl.example.org',
-          label: 'Test Card',
+          const viewer = new SHLViewer({ shlinkURI: viewerPrefixedURI })
+          const parsedSHL = viewer.shl
+
+          expect(parsedSHL.baseURL).toBe('https://shl.example.org')
+          expect(parsedSHL.label).toBe('Test Card')
         })
 
-        const uri = originalSHL.generateSHLinkURI()
-        const viewerPrefixedURI = `https://viewer.example.com/#${uri}`
+        it('should throw error for invalid URI format', () => {
+          expect(() => {
+            new SHLViewer({ shlinkURI: 'invalid://uri' })
+          }).toThrow(SHLFormatError)
+        })
 
-        const viewer = new SHLViewer({ shlinkURI: viewerPrefixedURI })
-        const parsedSHL = viewer.shl
-
-        expect(parsedSHL.baseURL).toBe('https://shl.example.org')
-        expect(parsedSHL.label).toBe('Test Card')
+        it('should throw error for malformed payload', () => {
+          expect(() => {
+            new SHLViewer({ shlinkURI: 'shlink:/invalid-base64' })
+          }).toThrow(SHLFormatError)
+        })
       })
 
-      it('should throw error for invalid URI format', () => {
-        expect(() => {
-          new SHLViewer({ shlinkURI: 'invalid://uri' })
-        }).toThrow(SHLFormatError)
-      })
+      describe('resolveSHLink', () => {
+        it('resolves embedded file manifests', async () => {
+          const shl = SHL.generate({ baseURL: 'https://shl.example.org', label: 'Embedded' })
 
-      it('should throw error for malformed payload', () => {
-        expect(() => {
-          new SHLViewer({ shlinkURI: 'shlink:/invalid-base64' })
-        }).toThrow(SHLFormatError)
+          // Build a manifest with embedded file
+          const uploaded = new Map<string, string>()
+          const builder = new SHLManifestBuilder({
+            shl,
+            uploadFile: async (content: string) => {
+              const id = `file-${uploaded.size + 1}`
+              uploaded.set(id, content)
+              return id
+            },
+            getFileURL: (path: string) => `https://files.example.org/${path}`,
+            loadFile: async (path: string) => uploaded.get(path) as string,
+          })
+
+          await builder.addFHIRResource({
+            content: createValidFHIRBundle(),
+            enableCompression: false,
+          })
+          const manifest = await builder.buildManifest({ embeddedLengthMax: 1000000 })
+
+          const shlinkURI = shl.generateSHLinkURI()
+
+          // Mock fetch: POST manifest -> JSON, no file GET needed (embedded)
+          const fetchMock = vi.fn(async (url: string, init?: RequestInit) => {
+            if (init?.method === 'POST' && url === shl.url) {
+              return {
+                ok: true,
+                status: 200,
+                statusText: 'OK',
+                text: async () => JSON.stringify(manifest),
+              } as Response
+            }
+            return {
+              ok: false,
+              status: 404,
+              statusText: 'Not Found',
+              text: async () => '',
+            } as Response
+          })
+
+          const result = await new SHLViewer({ shlinkURI, fetch: fetchMock }).resolveSHLink({
+            recipient: 'did:example:alice',
+          })
+
+          expect(result.smartHealthCards.length + result.fhirResources.length).toBe(1)
+          expect(fetchMock).toHaveBeenCalled()
+        })
+
+        it('resolves location file manifests', async () => {
+          const shl = SHL.generate({ baseURL: 'https://shl.example.org', label: 'Location' })
+
+          // Build a manifest with location reference
+          const uploaded = new Map<string, string>()
+          const builder = new SHLManifestBuilder({
+            shl,
+            uploadFile: async (content: string) => {
+              const id = `file-${uploaded.size + 1}`
+              uploaded.set(id, content)
+              return id
+            },
+            getFileURL: (path: string) => `https://files.example.org/${path}`,
+            loadFile: async (path: string) => uploaded.get(path) as string,
+          })
+
+          await builder.addFHIRResource({
+            content: createValidFHIRBundle(),
+            enableCompression: false,
+          })
+          const manifest = await builder.buildManifest({ embeddedLengthMax: 1 }) // force location
+          const fileLocation = (
+            'location' in manifest.files[0] ? manifest.files[0].location : ''
+          ) as string
+          const ciphertext = uploaded.values().next().value as string
+
+          const shlinkURI = shl.generateSHLinkURI()
+
+          // Mock fetch: POST manifest -> JSON, GET location -> ciphertext
+          const fetchMock = vi.fn(async (url: string, init?: RequestInit) => {
+            if (init?.method === 'POST' && url === shl.url) {
+              return {
+                ok: true,
+                status: 200,
+                statusText: 'OK',
+                text: async () => JSON.stringify(manifest),
+              } as Response
+            }
+            if (init?.method === 'GET' && url === fileLocation) {
+              return {
+                ok: true,
+                status: 200,
+                statusText: 'OK',
+                text: async () => ciphertext,
+              } as Response
+            }
+            return {
+              ok: false,
+              status: 404,
+              statusText: 'Not Found',
+              text: async () => '',
+            } as Response
+          })
+
+          const result = await new SHLViewer({ shlinkURI, fetch: fetchMock }).resolveSHLink({
+            recipient: 'did:example:alice',
+          })
+
+          expect(result.smartHealthCards.length + result.fhirResources.length).toBe(1)
+          expect(fetchMock).toHaveBeenCalled()
+        })
+
+        it('handles manifest HTTP errors and invalid JSON/validation', async () => {
+          const shl = SHL.generate({ baseURL: 'https://shl.example.org' })
+          const shlinkURI = shl.generateSHLinkURI()
+
+          // 401 invalid passcode
+          const fetch401 = vi.fn(
+            async () =>
+              ({
+                ok: false,
+                status: 401,
+                statusText: 'Unauthorized',
+                text: async () => '',
+              }) as Response
+          )
+          await expect(
+            new SHLViewer({ shlinkURI, fetch: fetch401 }).resolveSHLink({
+              recipient: 'r',
+              passcode: 'p',
+            })
+          ).rejects.toThrow('Invalid or missing passcode')
+
+          // 404 not found
+          const fetch404 = vi.fn(
+            async () =>
+              ({
+                ok: false,
+                status: 404,
+                statusText: 'Not Found',
+                text: async () => '',
+              }) as Response
+          )
+          await expect(
+            new SHLViewer({ shlinkURI, fetch: fetch404 }).resolveSHLink({ recipient: 'r' })
+          ).rejects.toThrow('SHL manifest not found')
+
+          // 429 rate limit
+          const fetch429 = vi.fn(
+            async () =>
+              ({
+                ok: false,
+                status: 429,
+                statusText: 'Too Many Requests',
+                text: async () => '',
+              }) as Response
+          )
+          await expect(
+            new SHLViewer({ shlinkURI, fetch: fetch429 }).resolveSHLink({ recipient: 'r' })
+          ).rejects.toThrow('Too many requests to SHL manifest')
+
+          // 200 but invalid JSON
+          const fetchInvalidJson = vi.fn(
+            async () =>
+              ({
+                ok: true,
+                status: 200,
+                statusText: 'OK',
+                text: async () => 'not-json',
+              }) as Response
+          )
+          await expect(
+            new SHLViewer({ shlinkURI, fetch: fetchInvalidJson }).resolveSHLink({ recipient: 'r' })
+          ).rejects.toThrow('Invalid manifest response: not valid JSON')
+
+          // 200 JSON but invalid structure
+          const invalidManifest = { files: [{ contentType: 'application/unknown' }] }
+          const fetchInvalidManifest = vi.fn(
+            async () =>
+              ({
+                ok: true,
+                status: 200,
+                statusText: 'OK',
+                text: async () => JSON.stringify(invalidManifest),
+              }) as Response
+          )
+          await expect(
+            new SHLViewer({ shlinkURI, fetch: fetchInvalidManifest }).resolveSHLink({
+              recipient: 'r',
+            })
+          ).rejects.toThrow('unsupported content type')
+        })
+
+        it('file fetch errors propagate correctly', async () => {
+          const shl = SHL.generate({ baseURL: 'https://shl.example.org' })
+
+          // Build a manifest that references a location URL
+          const uploaded = new Map<string, string>()
+          const builder = new SHLManifestBuilder({
+            shl,
+            uploadFile: async (content: string) => {
+              const id = `file-${uploaded.size + 1}`
+              uploaded.set(id, content)
+              return id
+            },
+            getFileURL: (path: string) => `https://files.example.org/${path}`,
+            loadFile: async (path: string) => uploaded.get(path) as string,
+          })
+
+          await builder.addFHIRResource({ content: createValidFHIRBundle() })
+          const manifest = await builder.buildManifest({ embeddedLengthMax: 1 })
+          const fileLocation = (
+            'location' in manifest.files[0] ? manifest.files[0].location : ''
+          ) as string
+
+          const shlinkURI = shl.generateSHLinkURI()
+
+          // Mock fetch: manifest OK, file 404
+          const fetchFile404 = vi.fn(async (url: string, init?: RequestInit) => {
+            if (init?.method === 'POST') {
+              return {
+                ok: true,
+                status: 200,
+                statusText: 'OK',
+                text: async () => JSON.stringify(manifest),
+              } as Response
+            }
+            if (init?.method === 'GET' && url === fileLocation) {
+              return {
+                ok: false,
+                status: 404,
+                statusText: 'Not Found',
+                text: async () => '',
+              } as Response
+            }
+            return { ok: false, status: 500, statusText: 'Err', text: async () => '' } as Response
+          })
+
+          await expect(
+            new SHLViewer({ shlinkURI, fetch: fetchFile404 }).resolveSHLink({ recipient: 'r' })
+          ).rejects.toThrow('SHL file not found')
+        })
+
+        it('throws SHLDecryptionError for invalid JWE ciphertext', async () => {
+          const shl = SHL.generate({ baseURL: 'https://shl.example.org' })
+
+          // Create manifest referencing a file location
+          const manifest = {
+            files: [
+              { contentType: 'application/fhir+json', location: 'https://files.example.org/f' },
+            ],
+          }
+
+          // Mock fetch to return manifest and an invalid JWE ciphertext to trigger decryption error
+          const fetchMock = vi.fn(async (_url: string, init?: RequestInit) => {
+            if (init?.method === 'POST') {
+              return {
+                ok: true,
+                status: 200,
+                statusText: 'OK',
+                text: async () => JSON.stringify(manifest),
+              } as Response
+            }
+            if (init?.method === 'GET') {
+              return {
+                ok: true,
+                status: 200,
+                statusText: 'OK',
+                text: async () => 'not-a-valid-jwe',
+              } as Response
+            }
+            return { ok: false, status: 500, statusText: 'Err', text: async () => '' } as Response
+          })
+
+          const v2 = new SHLViewer({ shlinkURI: shl.generateSHLinkURI(), fetch: fetchMock })
+          await expect(v2.resolveSHLink({ recipient: 'r' })).rejects.toThrow(
+            'JWE decryption failed'
+          )
+        })
       })
     })
 
@@ -2740,12 +3023,17 @@ EQqQipjEJazEpNXKUbJ4GV0zYi4qZqIOC5tBTyAYas7JJ9RW6mFuNysgJA==
 
         manifestBuilder = new SHLManifestBuilder({
           shl,
-          uploadFile: async (content: string, contentType?: string) => {
+          uploadFile: async (content: string) => {
             const fileId = `file-${uploadedFiles.size + 1}`
             uploadedFiles.set(fileId, content)
             return fileId
           },
           getFileURL: (path: string) => `https://files.example.org/${path}`,
+          loadFile: async (path: string) => {
+            const content = uploadedFiles.get(path)
+            if (!content) throw new Error(`File not found: ${path}`)
+            return content
+          },
         })
       })
 
@@ -2761,7 +3049,8 @@ EQqQipjEJazEpNXKUbJ4GV0zYi4qZqIOC5tBTyAYas7JJ9RW6mFuNysgJA==
 
         expect(manifestBuilder.files).toHaveLength(1)
         expect(manifestBuilder.files[0]?.type).toBe('application/smart-health-card')
-        expect(manifestBuilder.files[0]?.jwe).toMatch(/^eyJ[A-Za-z0-9_-]+\.\./) // JWE format
+        expect(manifestBuilder.files[0]?.storagePath).toMatch(/^file-\d+$/)
+        expect(manifestBuilder.files[0]?.ciphertextLength).toBeGreaterThan(0)
       })
 
       it('should add FHIR resources to manifest', async () => {
@@ -2770,7 +3059,8 @@ EQqQipjEJazEpNXKUbJ4GV0zYi4qZqIOC5tBTyAYas7JJ9RW6mFuNysgJA==
 
         expect(manifestBuilder.files).toHaveLength(1)
         expect(manifestBuilder.files[0]?.type).toBe('application/fhir+json')
-        expect(manifestBuilder.files[0]?.jwe).toMatch(/^eyJ[A-Za-z0-9_-]+\.\./) // JWE format
+        expect(manifestBuilder.files[0]?.storagePath).toMatch(/^file-\d+$/)
+        expect(manifestBuilder.files[0]?.ciphertextLength).toBeGreaterThan(0)
       })
 
       it('should build manifest with embedded files for small content', async () => {
@@ -2780,8 +3070,10 @@ EQqQipjEJazEpNXKUbJ4GV0zYi4qZqIOC5tBTyAYas7JJ9RW6mFuNysgJA==
         const manifest = await manifestBuilder.buildManifest({ embeddedLengthMax: 50000 })
 
         expect(manifest.files).toHaveLength(1)
-        expect('embedded' in manifest.files[0]!).toBe(true)
-        expect('location' in manifest.files[0]!).toBe(false)
+        const firstFile = manifest.files[0]
+        expect(firstFile).toBeDefined()
+        expect('embedded' in firstFile).toBe(true)
+        expect('location' in firstFile).toBe(false)
       })
 
       it('should build manifest with location files for large content', async () => {
@@ -2791,12 +3083,328 @@ EQqQipjEJazEpNXKUbJ4GV0zYi4qZqIOC5tBTyAYas7JJ9RW6mFuNysgJA==
         const manifest = await manifestBuilder.buildManifest({ embeddedLengthMax: 100 })
 
         expect(manifest.files).toHaveLength(1)
-        expect('location' in manifest.files[0]!).toBe(true)
-        expect('embedded' in manifest.files[0]!).toBe(false)
+        const firstFile = manifest.files[0]
+        expect(firstFile).toBeDefined()
+        expect('location' in firstFile).toBe(true)
+        expect('embedded' in firstFile).toBe(false)
 
-        if ('location' in manifest.files[0]!) {
-          expect(manifest.files[0].location).toMatch(/^https:\/\/files\.example\.org\/file-\d+$/)
+        if ('location' in firstFile) {
+          expect(firstFile.location).toMatch(/^https:\/\/files\.example\.org\/file-\d+$/)
         }
+      })
+
+      it('should use default loadFile implementation when not provided', async () => {
+        // Create a builder without loadFile to test default implementation
+        const mockFetch = vi.fn(async (url: string) => {
+          const fileId = url.split('/').pop()
+          if (!fileId) {
+            return {
+              ok: false,
+              status: 404,
+              statusText: 'Not Found',
+              text: async () => '',
+            } as Response
+          }
+          const content = uploadedFiles.get(fileId)
+          if (!content) {
+            return {
+              ok: false,
+              status: 404,
+              statusText: 'Not Found',
+              text: async () => '',
+            } as Response
+          }
+          return { ok: true, status: 200, statusText: 'OK', text: async () => content } as Response
+        })
+
+        const builderWithoutLoadFile = new SHLManifestBuilder({
+          shl,
+          uploadFile: async (content: string) => {
+            const fileId = `file-${uploadedFiles.size + 1}`
+            uploadedFiles.set(fileId, content)
+            return fileId
+          },
+          getFileURL: (path: string) => `https://files.example.org/${path}`,
+          fetch: mockFetch,
+        })
+
+        const fhirResource = createValidFHIRBundle()
+        await builderWithoutLoadFile.addFHIRResource({ content: fhirResource })
+
+        // Build manifest with small embeddedLengthMax to trigger default loadFile
+        const manifest = await builderWithoutLoadFile.buildManifest({ embeddedLengthMax: 50000 })
+
+        expect(manifest.files).toHaveLength(1)
+        const firstFile = manifest.files[0]
+        expect(firstFile).toBeDefined()
+        expect('embedded' in firstFile).toBe(true)
+        expect(mockFetch).toHaveBeenCalled()
+      })
+
+      it('should handle loadFile errors gracefully in default implementation', async () => {
+        const mockFetch = vi.fn(async () => {
+          return {
+            ok: false,
+            status: 404,
+            statusText: 'Not Found',
+            text: async () => '',
+          } as Response
+        })
+
+        const builderWithFailingLoadFile = new SHLManifestBuilder({
+          shl,
+          uploadFile: async (content: string) => {
+            const fileId = `file-${uploadedFiles.size + 1}`
+            uploadedFiles.set(fileId, content)
+            return fileId
+          },
+          getFileURL: (path: string) => `https://files.example.org/${path}`,
+          fetch: mockFetch,
+        })
+
+        const fhirResource = createValidFHIRBundle()
+        await builderWithFailingLoadFile.addFHIRResource({ content: fhirResource })
+
+        // Should throw error when trying to embed file that can't be loaded
+        await expect(
+          builderWithFailingLoadFile.buildManifest({ embeddedLengthMax: 50000 })
+        ).rejects.toThrow('File not found at storage path')
+      })
+
+      it('should serialize and deserialize builder state correctly', async () => {
+        const issuer = new SmartHealthCardIssuer({
+          issuer: 'https://example.com',
+          privateKey: testPrivateKeyPKCS8,
+          publicKey: testPublicKeySPKI,
+        })
+
+        const healthCard = await issuer.issue(createValidFHIRBundle())
+        const fhirResource = createValidFHIRBundle()
+
+        // Add files to builder
+        await manifestBuilder.addHealthCard({ shc: healthCard })
+        await manifestBuilder.addFHIRResource({ content: fhirResource })
+
+        // Serialize builder state
+        const serialized = manifestBuilder.serialize()
+        expect(serialized.shl).toBeDefined()
+        expect(serialized.files).toHaveLength(2)
+        expect(serialized.files[0]?.type).toBe('application/smart-health-card')
+        expect(serialized.files[1]?.type).toBe('application/fhir+json')
+
+        // Deserialize builder state
+        const deserializedBuilder = SHLManifestBuilder.deserialize({
+          data: serialized,
+          uploadFile: async (content: string) => {
+            const fileId = `file-${uploadedFiles.size + 1}`
+            uploadedFiles.set(fileId, content)
+            return fileId
+          },
+          getFileURL: (path: string) => `https://files.example.org/${path}`,
+          loadFile: async (path: string) => {
+            const content = uploadedFiles.get(path)
+            if (!content) throw new Error(`File not found: ${path}`)
+            return content
+          },
+        })
+
+        // Verify deserialized builder has same state
+        expect(deserializedBuilder.files).toHaveLength(2)
+        expect(deserializedBuilder.shl.baseURL).toBe(shl.baseURL)
+        expect(deserializedBuilder.shl.key).toBe(shl.key)
+        expect(deserializedBuilder.files[0]?.type).toBe('application/smart-health-card')
+        expect(deserializedBuilder.files[1]?.type).toBe('application/fhir+json')
+      })
+
+      it('should build fresh manifests with short-lived URLs on each request', async () => {
+        let urlCounter = 0
+        const builderWithDynamicUrls = new SHLManifestBuilder({
+          shl,
+          uploadFile: async (content: string) => {
+            const fileId = `file-${uploadedFiles.size + 1}`
+            uploadedFiles.set(fileId, content)
+            return fileId
+          },
+          getFileURL: (path: string) => `https://files.example.org/${path}?token=${++urlCounter}`,
+          loadFile: async (path: string) => {
+            const content = uploadedFiles.get(path)
+            if (!content) throw new Error(`File not found: ${path}`)
+            return content
+          },
+        })
+
+        const fhirResource = createValidFHIRBundle()
+        await builderWithDynamicUrls.addFHIRResource({ content: fhirResource })
+
+        // Build manifest multiple times - should get fresh URLs each time
+        const manifest1 = await builderWithDynamicUrls.buildManifest({ embeddedLengthMax: 100 })
+        const manifest2 = await builderWithDynamicUrls.buildManifest({ embeddedLengthMax: 100 })
+
+        expect(manifest1.files).toHaveLength(1)
+        expect(manifest2.files).toHaveLength(1)
+
+        const file1 = manifest1.files[0]
+        const file2 = manifest2.files[0]
+        if (file1 && file2 && 'location' in file1 && 'location' in file2) {
+          expect(file1.location).toContain('token=1')
+          expect(file2.location).toContain('token=2')
+          expect(file1.location).not.toBe(file2.location)
+        }
+      })
+
+      it('should handle different embeddedLengthMax values per request', async () => {
+        const fhirResource = createValidFHIRBundle()
+        await manifestBuilder.addFHIRResource({ content: fhirResource })
+
+        // Request with large embeddedLengthMax - should embed
+        const manifestEmbedded = await manifestBuilder.buildManifest({ embeddedLengthMax: 50000 })
+        const embeddedFile = manifestEmbedded.files[0]
+        expect(embeddedFile).toBeDefined()
+        expect('embedded' in embeddedFile).toBe(true)
+
+        // Request with small embeddedLengthMax - should use location
+        const manifestLocation = await manifestBuilder.buildManifest({ embeddedLengthMax: 100 })
+        const locationFile = manifestLocation.files[0]
+        expect(locationFile).toBeDefined()
+        expect('location' in locationFile).toBe(true)
+      })
+
+      it('should handle compression options for different file types', async () => {
+        const issuer = new SmartHealthCardIssuer({
+          issuer: 'https://example.com',
+          privateKey: testPrivateKeyPKCS8,
+          publicKey: testPublicKeySPKI,
+        })
+
+        const healthCard = await issuer.issue(createValidFHIRBundle())
+        const fhirResource = createValidFHIRBundle()
+
+        // Add files with different compression settings
+        await manifestBuilder.addHealthCard({
+          shc: healthCard,
+          enableCompression: true, // Override default for SHC
+        })
+        await manifestBuilder.addFHIRResource({
+          content: fhirResource,
+          enableCompression: false, // Override default for FHIR
+        })
+
+        expect(manifestBuilder.files).toHaveLength(2)
+        expect(manifestBuilder.files[0]?.type).toBe('application/smart-health-card')
+        expect(manifestBuilder.files[1]?.type).toBe('application/fhir+json')
+      })
+
+      it('should handle string JWS input for addHealthCard', async () => {
+        const issuer = new SmartHealthCardIssuer({
+          issuer: 'https://example.com',
+          privateKey: testPrivateKeyPKCS8,
+          publicKey: testPublicKeySPKI,
+        })
+
+        const healthCard = await issuer.issue(createValidFHIRBundle())
+        const jwsString = healthCard.asJWS()
+
+        // Add using string JWS instead of SmartHealthCard object
+        await manifestBuilder.addHealthCard({ shc: jwsString })
+
+        expect(manifestBuilder.files).toHaveLength(1)
+        expect(manifestBuilder.files[0]?.type).toBe('application/smart-health-card')
+        expect(manifestBuilder.files[0]?.storagePath).toMatch(/^file-\d+$/)
+      })
+
+      it('should properly encrypt and store file metadata', async () => {
+        const fhirResource = createValidFHIRBundle()
+        await manifestBuilder.addFHIRResource({ content: fhirResource })
+
+        const fileMetadata = manifestBuilder.files[0]
+        expect(fileMetadata).toBeDefined()
+        expect(fileMetadata?.type).toBe('application/fhir+json')
+        expect(fileMetadata?.storagePath).toMatch(/^file-\d+$/)
+        expect(fileMetadata?.ciphertextLength).toBeGreaterThan(0)
+
+        // Verify that actual JWE content was uploaded
+        const uploadedContent = uploadedFiles.get(fileMetadata?.storagePath || '')
+        expect(uploadedContent).toBeDefined()
+        expect(uploadedContent).toMatch(/^eyJ[A-Za-z0-9_-]+\.\./) // JWE format
+      })
+
+      it('should handle builder deserialization without optional parameters', async () => {
+        const issuer = new SmartHealthCardIssuer({
+          issuer: 'https://example.com',
+          privateKey: testPrivateKeyPKCS8,
+          publicKey: testPublicKeySPKI,
+        })
+
+        const healthCard = await issuer.issue(createValidFHIRBundle())
+        await manifestBuilder.addHealthCard({ shc: healthCard })
+
+        const serialized = manifestBuilder.serialize()
+
+        // Deserialize without loadFile - should use default implementation
+        const mockFetch = vi.fn(async (url: string) => {
+          const fileId = url.split('/').pop()
+          if (!fileId) {
+            return {
+              ok: false,
+              status: 404,
+              statusText: 'Not Found',
+              text: async () => '',
+            } as Response
+          }
+          const content = uploadedFiles.get(fileId)
+          if (!content) {
+            return {
+              ok: false,
+              status: 404,
+              statusText: 'Not Found',
+              text: async () => '',
+            } as Response
+          }
+          return { ok: true, status: 200, statusText: 'OK', text: async () => content } as Response
+        })
+
+        const deserializedBuilder = SHLManifestBuilder.deserialize({
+          data: serialized,
+          uploadFile: async () => 'new-file',
+          getFileURL: (path: string) => `https://example.org/${path}`,
+          fetch: mockFetch,
+        })
+
+        expect(deserializedBuilder.files).toHaveLength(1)
+        expect(deserializedBuilder.shl.baseURL).toBe(shl.baseURL)
+      })
+
+      it('sets zip=DEF when compression enabled and omits otherwise', async () => {
+        // FHIR default is compression=true; also add a SHC with compression disabled
+        await manifestBuilder.addFHIRResource({
+          content: createValidFHIRBundle(),
+          enableCompression: true,
+        })
+        await manifestBuilder.addFHIRResource({
+          content: createValidFHIRBundle(),
+          enableCompression: false,
+        })
+
+        const jwes = Array.from(uploadedFiles.values())
+        expect(jwes).toHaveLength(2)
+
+        const headers = jwes.map(jwe => {
+          const [protectedHeaderB64u] = jwe.split('.')
+          const json = new TextDecoder().decode(
+            globalThis.atob
+              ? Uint8Array.from(
+                  globalThis.atob(protectedHeaderB64u.replace(/-/g, '+').replace(/_/g, '/')),
+                  c => c.charCodeAt(0)
+                )
+              : jose.base64url.decode(protectedHeaderB64u)
+          )
+          return JSON.parse(json) as Record<string, unknown>
+        })
+
+        const hasZip = headers.some(h => h.zip === 'DEF')
+        const hasNoZip = headers.some(h => !('zip' in h))
+        expect(hasZip).toBe(true)
+        expect(hasNoZip).toBe(true)
       })
     })
 
@@ -2819,6 +3427,11 @@ EQqQipjEJazEpNXKUbJ4GV0zYi4qZqIOC5tBTyAYas7JJ9RW6mFuNysgJA==
             return fileId
           },
           getFileURL: (path: string) => `https://files.example.org/${path}`,
+          loadFile: async (path: string) => {
+            const content = uploadedFiles.get(path)
+            if (!content) throw new Error(`File not found: ${path}`)
+            return content
+          },
         })
 
         // Add content

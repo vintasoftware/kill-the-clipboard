@@ -58,6 +58,14 @@ This separation ensures that the SHLink payload/URI (the "pointer") is independe
 
 It's also necessary to implement a server-side request handler that serves the manifest its encrypted files. A POST request handler must process a `SHLManifestRequestV1` and return a `SHLManifestV1`. This is left for the demo applications (see Part 2).
 
+#### Persistence and serving model (short‑lived URLs)
+
+- The server SHALL persist the SHL content as the state of `SHLManifestBuilder` (the "builder state"), not as an `SHLManifestV1` document. On each POST to the manifest URL, the server will load the builder state, then call `buildManifest({ embeddedLengthMax })` to produce a fresh `SHLManifestV1` response with up‑to‑date short‑lived file URLs (`location`).
+- The builder state includes the immutable `SHL` core fields and the list of paths of encrypted files (ciphertexts) that have already been persisted to storage. Short‑lived URLs (e.g., S3 signed URLs) MUST NOT be stored; they are minted per request by calling `getFileURL(storagePath)`.
+- The `embeddedLengthMax` value MAY differ per client request. The server MUST honor the provided value for that single response only.
+- On file addition (`addHealthCard`, `addFHIRResource`), the implementation SHALL: encrypt the file (JWE compact, A256GCM, optional zip=DEF), upload/persist the ciphertext with `uploadFile(...)` exactly once, and retain in the builder state: `type`, `ciphertextLength`, and the returned `storagePath`.
+- On manifest build, for each file: if `ciphertextLength <= embeddedLengthMax` and ciphertext is present in the builder state, embed it; otherwise generate a short‑lived URL by calling `getFileURL(storagePath)` and return a `location` descriptor.
+
 ### Cryptographic profile (v1)
 
 - File encryption: JWE Compact Serialization with direct symmetric key
@@ -129,6 +137,21 @@ export interface SHLResolvedContent {
   smartHealthCards: SmartHealthCard[];
   /** FHIR resources extracted from application/fhir+json files */
   fhirResources: Resource[];
+}
+
+// Serialized builder state persisted in DB (NOT the manifest response)
+export interface SerializedSHLManifestBuilderFile {
+    /** Content type. */
+    type: SHLFileContentType;
+    /** Storage path or object key where ciphertext is persisted (for signing on demand). */
+    storagePath: string;
+    /** Total JWE compact length, used to decide embedding vs. location quickly. */
+    ciphertextLength: number;
+}
+
+export interface SerializedSHLManifestBuilder {
+  shl: SHLinkPayloadV1;
+  files: SerializedSHLManifestBuilderFile[];
 }
 
 ```
@@ -222,13 +245,13 @@ export class SHLManifestBuilder {
   private readonly shl: SHL;
   private readonly uploadFile: (content: string, contentType?: SHLFileContentType) => Promise<string>;
   private readonly getFileURL: (path: string) => string;
-  private readonly files: SHLFileJWE[] = [];
+  private readonly files: SerializedSHLManifestBuilderFile[] = [];
 
   /**
    * Create a manifest builder for the given SHL.
    * 
    * @param params.shl - The immutable SHL instance this builder manages
-   * @param params.uploadFile - Function to upload encrypted files to the server. Returns the path segment of the file in the server to be used by `getFileURL`.
+   * @param params.uploadFile - Function to upload encrypted files to the server. Returns the path of the file in the server to be used by `getFileURL`.
    * @param params.getFileURL - Function to get the URL of a file that is already uploaded to the server. Per spec, this URL SHALL be short-lived and intended for single use.
    */
   constructor(params: {
@@ -254,10 +277,25 @@ export class SHLManifestBuilder {
   }): Promise<void>;
   
   /** Get the current list of files in the manifest. */
-  get files(): SHLFileJWE[];
+  get files(): SerializedSHLManifestBuilderFile[];
 
   /** Build the manifest as JSON. Considers embedded vs location files based on size thresholds. */
   buildManifest(params: { embeddedLengthMax?: number }): Promise<SHLManifestV1>;
+
+  /**
+   * Return serialized builder state for persistence (NOT SHLManifestV1).
+   * Server stores this JSON in DB and reconstructs the builder on demand.
+   */
+  serialize(): SerializedSHLManifestBuilder;
+
+  /**
+   * Reconstruct a builder from serialized state.
+   */
+  static deserialize(params: {
+    data: SerializedSHLManifestBuilder;
+    uploadFile: (content: string, contentType?: SHLFileContentType) => Promise<string>;
+    getFileURL: (path: string) => string;
+  }): SHLManifestBuilder;
 
   // Encrypt a file into JWE (A256GCM, zip=DEF) using the SHL's encryption key
   private encryptFile(params: {
@@ -414,8 +452,8 @@ The app will also act as the SHL hosting server for the manifest and encrypted f
 - Client-side route to resolve the SHLink (handles a viewer-prefixed SHLink URI)
 - Storage:
   - `MedplumClient` for FHIR datastore access
-  - Medplum `createBinary` to store encrypted files (S3-compatible storage)
-  - Supabase for storing passcode hashes and generated manifests
+  - [Medplum `createBinary`](https://www.medplum.com/docs/fhir-datastore/binary-data) to store encrypted files (S3-compatible storage); `getFileURL` MUST mint short‑lived signed URLs per request
+  - Supabase + Prisma ORM for storing passcode hashes and serialized SHL builder state (`SerializedSHLManifestBuilder`)
 - Vercel for hosting
 
 ### Sharing flow
