@@ -14,22 +14,20 @@ Constraints: use pnpm; library must work in both browser and Node.js.
 - [x] Implement `SHLManifestBuilder` scaffolding (encrypt JWE A256GCM dir, optional `zip: "DEF"`, upload hooks, manifest builder with embedded vs location threshold ≤ 16 KiB)
 - [x] Implement `SHLViewer` scaffolding (parse URI, manifest POST per spec, passcode handling, decrypt files, long‑term `L` polling)
 - [x] Prepare initial implementation scaffolding and API boundaries in `src/index.ts`
+- [x] Implement JWE encryption/decryption with A256GCM and optional DEFLATE compression
+- [x] Implement SHLink URI parsing and validation
+- [x] Implement manifest fetching with passcode handling
+- [x] Implement file fetching and decryption
+- [x] Add crypto/compression helpers using `jose` and `CompressionStream`/`DecompressionStream`; ensure Node 18+ compatibility without browser‑unfriendly APIs
 
 ### In Progress Tasks
 
-- [ ] Public exports wired in src/index.ts
-- [ ] Documentation: README section Smart Health Links (SHL) with minimal examples
 
 ### Future Tasks
 
 - **Library (kill-the-clipboard) v1**
-  - [x] Implement JWE encryption/decryption with A256GCM and optional DEFLATE compression
-  - [x] Implement SHLink URI parsing and validation
-  - [x] Implement manifest fetching with passcode handling
-  - [x] Implement file fetching and decryption
-  - [x] Add crypto/compression helpers using `jose` and `CompressionStream`/`DecompressionStream`; ensure Node 18+ compatibility without browser‑unfriendly APIs
   - [ ] Public exports wired in `src/index.ts`
-  - [x] Tests: unit and integration for create/share/resolve flows (including passcode, expired, not found, decrypt/auth failures)
+  - [ ] Tests: unit and integration for create/share/resolve flows (including passcode, expired, not found, decrypt/auth failures)
   - [ ] Documentation: README section "Smart Health Links (SHL)" with minimal examples
   - [ ] API docs: include SHL classes and types in typedoc output
 

@@ -1,0 +1,261 @@
+// SmartHealthCardReader class
+import { importJWK } from 'jose'
+import { SmartHealthCard } from './card.js'
+import {
+  FhirValidationError,
+  FileFormatError,
+  JWSError,
+  QRCodeError,
+  SmartHealthCardError,
+  VerificationError,
+} from './errors.js'
+import { JWSProcessor } from './jws/jws-processor.js'
+import { QRCodeGenerator } from './qr/qr-code-generator.js'
+import type {
+  SmartHealthCardReaderConfig,
+  SmartHealthCardReaderConfigParams,
+  VerifiableCredential,
+} from './types.js'
+import { VerifiableCredentialProcessor } from './types.js'
+
+/**
+ * Reads and verifies SMART Health Cards from various sources.
+ *
+ * @public
+ * @category High-Level API
+ */
+export class SmartHealthCardReader {
+  private config: SmartHealthCardReaderConfig
+  private vcProcessor: VerifiableCredentialProcessor
+  private jwsProcessor: JWSProcessor
+
+  /**
+   * Creates a new SmartHealthCardReader instance.
+   *
+   * @param config - Configuration parameters for the reader
+   *
+   * @example
+   * ```typescript
+   * const reader = new SmartHealthCardReader({
+   *   publicKey: publicKeySPKIString, // ES256 public key in SPKI format
+   * });
+   * ```
+   */
+  constructor(config: SmartHealthCardReaderConfigParams) {
+    this.config = {
+      ...config,
+      enableQROptimization: config.enableQROptimization ?? true,
+      strictReferences: config.strictReferences ?? true,
+      verifyExpiration: config.verifyExpiration ?? true,
+    }
+
+    this.vcProcessor = new VerifiableCredentialProcessor()
+    this.jwsProcessor = new JWSProcessor()
+  }
+
+  /**
+   * Read and verify a SMART Health Card from file content.
+   *
+   * @param fileContent - File content as string or Blob from .smart-health-card files
+   * @returns Promise resolving to verified SmartHealthCard object
+   * @throws {@link FileFormatError} If the file is not valid JSON or missing the `verifiableCredential` array
+   * @throws {@link JWSError} If the embedded JWS is malformed or signature verification fails (propagated from {@link fromJWS})
+   * @throws {@link FhirValidationError} If the decoded VC payload or embedded FHIR Bundle is invalid (propagated from {@link fromJWS})
+   * @throws {@link VerificationError} For unexpected errors during verification (propagated from {@link fromJWS})
+   */
+  async fromFileContent(fileContent: string | Blob): Promise<SmartHealthCard> {
+    let contentString: string
+
+    if (fileContent instanceof Blob) {
+      // Read text from Blob
+      contentString = await fileContent.text()
+    } else {
+      contentString = fileContent
+    }
+
+    // Parse the JWS content
+    const contentToParse = contentString
+    let jws: string
+
+    try {
+      // Try to parse as JSON wrapper format first
+      const parsed = JSON.parse(contentToParse)
+
+      if (parsed.verifiableCredential && Array.isArray(parsed.verifiableCredential)) {
+        // New JSON wrapper format
+        if (parsed.verifiableCredential.length === 0) {
+          throw new FileFormatError('File contains empty verifiableCredential array')
+        }
+        jws = parsed.verifiableCredential[0]
+      } else {
+        throw new FileFormatError('File does not contain expected verifiableCredential array')
+      }
+    } catch (error) {
+      if (error instanceof SmartHealthCardError) {
+        throw error
+      }
+      const errorMessage = error instanceof Error ? error.message : String(error)
+      throw new FileFormatError(
+        `Invalid file format - expected JSON with verifiableCredential array: ${errorMessage}`
+      )
+    }
+
+    // Verify and return SmartHealthCard object
+    return await this.fromJWS(jws)
+  }
+
+  /**
+   * Read and verify a SMART Health Card JWS.
+   *
+   * @param jws - JWS string to verify
+   * @returns Promise resolving to verified SmartHealthCard object
+   * @throws {@link JWSError} If the JWS is malformed, signature verification fails, or the public key cannot be imported
+   * @throws {@link FhirValidationError} If the decoded VC payload or embedded FHIR Bundle is invalid
+   * @throws {@link VerificationError} For unexpected errors during verification
+   */
+  async fromJWS(jws: string): Promise<SmartHealthCard> {
+    try {
+      // Resolve public key if not provided via issuer JWKS based on JWS header/payload
+      let publicKeyToUse = this.config.publicKey
+      if (!publicKeyToUse) {
+        publicKeyToUse = await this.resolvePublicKeyFromJWKS(jws)
+      }
+
+      // Step 1: Verify JWS signature and extract payload (decompression handled automatically)
+      const payload = await this.jwsProcessor.verify(jws, publicKeyToUse, {
+        verifyExpiration: this.config.verifyExpiration,
+      })
+
+      // Step 2: Validate the VC
+      const vc: VerifiableCredential = { vc: payload.vc }
+      this.vcProcessor.validate(vc)
+
+      // Step 3: Extract and return the original FHIR Bundle
+      const originalBundle = vc.vc.credentialSubject.fhirBundle
+
+      return new SmartHealthCard(jws, originalBundle)
+    } catch (error) {
+      if (error instanceof SmartHealthCardError) {
+        throw error
+      }
+      const errorMessage = error instanceof Error ? error.message : String(error)
+      throw new VerificationError(`Failed to verify SMART Health Card: ${errorMessage}`)
+    }
+  }
+
+  /**
+   * Resolves the public key for a JWS using the issuer's well-known JWKS endpoint when no key is provided.
+   * @throws {@link VerificationError} when the key cannot be resolved
+   */
+  private async resolvePublicKeyFromJWKS(jws: string): Promise<CryptoKey | Uint8Array | string> {
+    try {
+      // Decode without verification to obtain header.kid and payload.iss
+      const { header, payload } = await this.jwsProcessor.parseUnverified(jws)
+
+      if (!payload.iss || typeof payload.iss !== 'string') {
+        throw new VerificationError("Cannot resolve JWKS: missing 'iss' in payload")
+      }
+      if (!header.kid || typeof header.kid !== 'string') {
+        throw new VerificationError("Cannot resolve JWKS: missing 'kid' in JWS header")
+      }
+
+      // Build JWKS URL from issuer origin
+      const issuerUrl = new URL(payload.iss)
+      const jwksUrl = `${issuerUrl.origin}/.well-known/jwks.json`
+
+      // Fetch JWKS
+      const response = await fetch(jwksUrl)
+      if (!response.ok) {
+        throw new VerificationError(
+          `Failed to fetch JWKS from issuer (${jwksUrl}): ${response.status} ${response.statusText}`
+        )
+      }
+      const jwks = (await response.json()) as { keys?: Array<Record<string, unknown>> }
+      if (!jwks || !Array.isArray(jwks.keys)) {
+        throw new VerificationError('Invalid JWKS format: missing keys array')
+      }
+
+      // Find matching key by kid
+      const matching = jwks.keys.find(k => (k as Record<string, unknown>).kid === header.kid)
+      if (!matching) {
+        throw new VerificationError(`No matching key found in JWKS for kid '${header.kid}'`)
+      }
+
+      // Import JWK as CryptoKey
+      const cryptoKey = await importJWK(matching as JsonWebKey, 'ES256')
+      return cryptoKey
+    } catch (error) {
+      if (error instanceof SmartHealthCardError) {
+        throw error
+      }
+      const message = error instanceof Error ? error.message : String(error)
+      throw new VerificationError(`Unable to resolve public key via JWKS: ${message}`)
+    }
+  }
+
+  /**
+   * Read and verify a SMART Health Card from QR numeric data.
+   *
+   * @param qrNumeric - Single QR code numeric string (format: `shc:/...`)
+   * @returns Promise resolving to verified SmartHealthCard object
+   * @throws {@link QRCodeError} If the QR numeric string is malformed, contains out-of-range digit pairs, or decoding fails
+   * @throws {@link JWSError} If the reconstructed JWS is malformed or signature verification fails (propagated from {@link fromJWS})
+   * @throws {@link FhirValidationError} If the decoded VC payload or embedded FHIR Bundle is invalid (propagated from {@link fromJWS})
+   * @throws {@link VerificationError} For unexpected errors during verification (propagated from {@link fromJWS})
+   *
+   * @example
+   * ```typescript
+   * // Single QR code
+   * const qrNumeric = 'shc:/56762959532654603460292540772804336028...';
+   * const healthCard = await reader.fromQRNumeric(qrNumeric);
+   * ```
+   */
+  async fromQRNumeric(qrNumeric: string): Promise<SmartHealthCard>
+
+  /**
+   * Read and verify a SMART Health Card from chunked QR numeric data.
+   *
+   * @param qrNumericChunks - Array of chunked QR code numeric strings (format: `shc:/index/total/...`)
+   * @returns Promise resolving to verified SmartHealthCard object
+   * @throws {@link QRCodeError} If any chunk has invalid prefix, index/total, missing parts, out-of-range digit pairs, or decoding fails
+   * @throws {@link JWSError} If the reconstructed JWS is malformed or signature verification fails (propagated from {@link fromJWS})
+   * @throws {@link FhirValidationError} If the decoded VC payload or embedded FHIR Bundle is invalid (propagated from {@link fromJWS})
+   * @throws {@link VerificationError} For unexpected errors during verification (propagated from {@link fromJWS})
+   *
+   * @example
+   * ```typescript
+   * // Chunked QR codes
+   * const chunkedQR = [
+   *   'shc:/1/2/567629595326546034602925',
+   *   'shc:/2/2/407728043360287028647167'
+   * ];
+   * const healthCard = await reader.fromQRNumeric(chunkedQR);
+   * ```
+   */
+  async fromQRNumeric(qrNumericChunks: string[]): Promise<SmartHealthCard>
+
+  /** @internal */
+  async fromQRNumeric(qrData: string | string[]): Promise<SmartHealthCard> {
+    try {
+      // Create QR generator instance to decode the QR data
+      const qrGenerator = new QRCodeGenerator()
+
+      // Convert to array format for consistent handling
+      const qrDataArray = Array.isArray(qrData) ? qrData : [qrData]
+
+      // Decode QR data to JWS
+      const jws = await qrGenerator.decodeQR(qrDataArray)
+
+      // Use existing JWS verification method
+      return await this.fromJWS(jws)
+    } catch (error) {
+      if (error instanceof SmartHealthCardError) {
+        throw error
+      }
+      const errorMessage = error instanceof Error ? error.message : String(error)
+      throw new QRCodeError(
+        `Failed to read SMART Health Card from QR numeric data: ${errorMessage}`
+      )
+    }
+  }
+}
