@@ -12,6 +12,13 @@ import {
   JWSProcessor,
   QRCodeError,
   QRCodeGenerator,
+  // SHL imports
+  SHL,
+  SHLError,
+  SHLFormatError,
+  SHLManifestBuilder,
+  type SHLManifestV1,
+  SHLViewer,
   type SmartHealthCardConfig,
   type SmartHealthCardConfigParams,
   SmartHealthCardError,
@@ -2600,6 +2607,240 @@ EQqQipjEJazEpNXKUbJ4GV0zYi4qZqIOC5tBTyAYas7JJ9RW6mFuNysgJA==
         expect(error.name).toBe('VerificationError')
         expect(error.message).toBe('Verification failed')
         expect(error.code).toBe('VERIFICATION_ERROR')
+      })
+    })
+  })
+
+  // Smart Health Links (SHL) Integration Tests
+  describe('Smart Health Links (SHL)', () => {
+    // Test keys for SHL tests
+    const testPrivateKeyPKCS8 = `-----BEGIN PRIVATE KEY-----
+MIGHAgEAMBMGByqGSM49AgEGCCqGSM49AwEHBG0wawIBAQQgF+y5n2Nu3g2hwBj+
+uVYulsHxb7VQg+0yIHMBgD0dLwyhRANCAAScrWM5QO21TdhCZpZhRwlD8LzgTYkR
+CpCKmMQlrMSk1cpRsngZXTNiLipmog4Lm0FPIBhqzskn1FbqYW43KyAk
+-----END PRIVATE KEY-----`
+
+    const testPublicKeySPKI = `-----BEGIN PUBLIC KEY-----
+MFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAEnK1jOUDttU3YQmaWYUcJQ/C84E2J
+EQqQipjEJazEpNXKUbJ4GV0zYi4qZqIOC5tBTyAYas7JJ9RW6mFuNysgJA==
+-----END PUBLIC KEY-----`
+    describe('SHL Class', () => {
+      it('should create a valid SHL with basic properties', () => {
+        const shl = SHL.generate({
+          baseURL: 'https://shl.example.org',
+          label: 'Test Health Card',
+        })
+
+        expect(shl.baseURL).toBe('https://shl.example.org')
+        expect(shl.label).toBe('Test Health Card')
+        expect(shl.version).toBe(1)
+        expect(shl.requiresPasscode).toBe(false)
+        expect(shl.isLongTerm).toBe(false)
+        expect(shl.key).toHaveLength(43) // 32 bytes base64url-encoded
+        expect(shl.manifestPath).toMatch(/^\/manifests\/[A-Za-z0-9_-]{43}\/manifest\.json$/)
+      })
+
+      it('should create a valid SHL with flags and expiration', () => {
+        const expirationDate = new Date('2025-12-31T23:59:59Z')
+        const shl = SHL.generate({
+          baseURL: 'https://shl.example.org',
+          flag: 'LP',
+          expirationDate,
+          label: 'Long-term protected health card',
+        })
+
+        expect(shl.flag).toBe('LP')
+        expect(shl.requiresPasscode).toBe(true)
+        expect(shl.isLongTerm).toBe(true)
+        expect(shl.expirationDate).toEqual(expirationDate)
+        expect(shl.exp).toBe(Math.floor(expirationDate.getTime() / 1000))
+      })
+
+      it('should generate valid SHLink URIs', () => {
+        const shl = SHL.generate({
+          baseURL: 'https://shl.example.org',
+          label: 'Test Card',
+        })
+
+        const uri = shl.generateSHLinkURI()
+        expect(uri).toMatch(/^shlink:\/[A-Za-z0-9_-]+$/)
+
+        // Should be parseable by SHLViewer
+        const viewer = new SHLViewer({ shlinkURI: uri })
+        expect(viewer.shl.baseURL).toBe('https://shl.example.org')
+        expect(viewer.shl.label).toBe('Test Card')
+      })
+
+      it('should throw error for invalid label length', () => {
+        expect(() => {
+          SHL.generate({
+            baseURL: 'https://shl.example.org',
+            label: 'x'.repeat(81),
+          })
+        }).toThrowError('Label must be 80 characters or less')
+      })
+    })
+
+    describe('SHLViewer URI Parsing', () => {
+      it('should parse valid SHLink URIs', () => {
+        const originalSHL = SHL.generate({
+          baseURL: 'https://shl.example.org',
+          label: 'Original',
+        })
+
+        const uri = originalSHL.generateSHLinkURI()
+        const viewer = new SHLViewer({ shlinkURI: uri })
+        const parsedSHL = viewer.shl
+
+        expect(parsedSHL.baseURL).toBe('https://shl.example.org')
+        expect(parsedSHL.label).toBe('Original')
+        expect(parsedSHL.key).toBe(originalSHL.key)
+      })
+
+      it('should parse viewer-prefixed URIs', () => {
+        const originalSHL = SHL.generate({
+          baseURL: 'https://shl.example.org',
+          label: 'Test Card',
+        })
+
+        const uri = originalSHL.generateSHLinkURI()
+        const viewerPrefixedURI = `https://viewer.example.com/#${uri}`
+
+        const viewer = new SHLViewer({ shlinkURI: viewerPrefixedURI })
+        const parsedSHL = viewer.shl
+
+        expect(parsedSHL.baseURL).toBe('https://shl.example.org')
+        expect(parsedSHL.label).toBe('Test Card')
+      })
+
+      it('should throw error for invalid URI format', () => {
+        expect(() => {
+          new SHLViewer({ shlinkURI: 'invalid://uri' })
+        }).toThrow(SHLFormatError)
+      })
+
+      it('should throw error for malformed payload', () => {
+        expect(() => {
+          new SHLViewer({ shlinkURI: 'shlink:/invalid-base64' })
+        }).toThrow(SHLFormatError)
+      })
+    })
+
+    describe('SHLManifestBuilder', () => {
+      let shl: SHL
+      let uploadedFiles: Map<string, string>
+      let manifestBuilder: SHLManifestBuilder
+
+      beforeEach(() => {
+        shl = SHL.generate({
+          baseURL: 'https://shl.example.org',
+        })
+
+        uploadedFiles = new Map()
+
+        manifestBuilder = new SHLManifestBuilder({
+          shl,
+          uploadFile: async (content: string, contentType?: string) => {
+            const fileId = `file-${uploadedFiles.size + 1}`
+            uploadedFiles.set(fileId, content)
+            return fileId
+          },
+          getFileURL: (path: string) => `https://files.example.org/${path}`,
+        })
+      })
+
+      it('should add SMART Health Cards to manifest', async () => {
+        const issuer = new SmartHealthCardIssuer({
+          issuer: 'https://example.com',
+          privateKey: testPrivateKeyPKCS8,
+          publicKey: testPublicKeySPKI,
+        })
+
+        const healthCard = await issuer.issue(createValidFHIRBundle())
+        await manifestBuilder.addHealthCard({ shc: healthCard })
+
+        expect(manifestBuilder.files).toHaveLength(1)
+        expect(manifestBuilder.files[0]?.type).toBe('application/smart-health-card')
+        expect(manifestBuilder.files[0]?.jwe).toMatch(/^eyJ[A-Za-z0-9_-]+\.\./) // JWE format
+      })
+
+      it('should add FHIR resources to manifest', async () => {
+        const fhirResource = createValidFHIRBundle()
+        await manifestBuilder.addFHIRResource({ content: fhirResource })
+
+        expect(manifestBuilder.files).toHaveLength(1)
+        expect(manifestBuilder.files[0]?.type).toBe('application/fhir+json')
+        expect(manifestBuilder.files[0]?.jwe).toMatch(/^eyJ[A-Za-z0-9_-]+\.\./) // JWE format
+      })
+
+      it('should build manifest with embedded files for small content', async () => {
+        const fhirResource = createValidFHIRBundle()
+        await manifestBuilder.addFHIRResource({ content: fhirResource })
+
+        const manifest = await manifestBuilder.buildManifest({ embeddedLengthMax: 50000 })
+
+        expect(manifest.files).toHaveLength(1)
+        expect('embedded' in manifest.files[0]!).toBe(true)
+        expect('location' in manifest.files[0]!).toBe(false)
+      })
+
+      it('should build manifest with location files for large content', async () => {
+        const fhirResource = createValidFHIRBundle()
+        await manifestBuilder.addFHIRResource({ content: fhirResource })
+
+        const manifest = await manifestBuilder.buildManifest({ embeddedLengthMax: 100 })
+
+        expect(manifest.files).toHaveLength(1)
+        expect('location' in manifest.files[0]!).toBe(true)
+        expect('embedded' in manifest.files[0]!).toBe(false)
+
+        if ('location' in manifest.files[0]!) {
+          expect(manifest.files[0].location).toMatch(/^https:\/\/files\.example\.org\/file-\d+$/)
+        }
+      })
+    })
+
+    describe('End-to-End SHL Workflow', () => {
+      it('should handle complete SHL creation and URI generation workflow', async () => {
+        // Create SHL
+        const shl = SHL.generate({
+          baseURL: 'https://shl.example.org',
+          label: 'Complete Test Card',
+          flag: 'L',
+        })
+
+        // Create manifest builder
+        const uploadedFiles = new Map<string, string>()
+        const manifestBuilder = new SHLManifestBuilder({
+          shl,
+          uploadFile: async (content: string) => {
+            const fileId = `file-${uploadedFiles.size + 1}`
+            uploadedFiles.set(fileId, content)
+            return fileId
+          },
+          getFileURL: (path: string) => `https://files.example.org/${path}`,
+        })
+
+        // Add content
+        const fhirBundle = createValidFHIRBundle()
+        await manifestBuilder.addFHIRResource({ content: fhirBundle })
+
+        // Build manifest
+        const manifest = await manifestBuilder.buildManifest()
+        expect(manifest.files).toHaveLength(1)
+
+        // Generate SHLink URI
+        const shlinkURI = shl.generateSHLinkURI()
+        expect(shlinkURI).toMatch(/^shlink:\/[A-Za-z0-9_-]+$/)
+
+        // Parse URI with viewer
+        const viewer = new SHLViewer({ shlinkURI })
+        const parsedSHL = viewer.shl
+
+        expect(parsedSHL.baseURL).toBe('https://shl.example.org')
+        expect(parsedSHL.label).toBe('Complete Test Card')
+        expect(parsedSHL.flag).toBe('L')
+        expect(parsedSHL.isLongTerm).toBe(true)
       })
     })
   })

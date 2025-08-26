@@ -153,7 +153,6 @@ export class SHL {
   private readonly flag?: SHLFlag;
   private readonly label?: string;
   private readonly v: 1;
-  private readonly hashedPasscode?: string; // optional, for P flag, salted and hashed passcode
 
   /**
    * Create an immutable SHL representing a Smart Health Link payload and URI.
@@ -256,9 +255,6 @@ export class SHLManifestBuilder {
   
   /** Get the current list of files in the manifest. */
   get files(): SHLFileJWE[];
-
-  /** Get the number of files currently in the manifest. */
-  get fileCount(): number;
 
   /** Build the manifest as JSON. Considers embedded vs location files based on size thresholds. */
   buildManifest(params: { embeddedLengthMax?: number }): Promise<SHLManifestV1>;

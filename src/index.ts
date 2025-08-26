@@ -2,11 +2,13 @@
 // Implementation of SMART Health Cards Framework specification
 // https://spec.smarthealth.cards/
 
-import type { Bundle } from '@medplum/fhirtypes'
+import type { Bundle, Resource } from '@medplum/fhirtypes'
 import {
   base64url,
+  CompactEncrypt,
   CompactSign,
   calculateJwkThumbprint,
+  compactDecrypt,
   compactVerify,
   decodeProtectedHeader,
   exportJWK,
@@ -24,6 +26,42 @@ const V22_MAX_JWS_BY_EC_LEVEL = {
   Q: 670, // Quartile error correction
   H: 519, // High error correction
 } as const
+
+// =============================================================================
+// Shared Compression Utilities
+// =============================================================================
+
+/**
+ * Raw DEFLATE compression helper for both SHC and SHL implementations.
+ * Uses browser/Node.js native CompressionStream.
+ */
+async function compressDeflateRaw(data: Uint8Array): Promise<Uint8Array> {
+  const readable = new ReadableStream<Uint8Array>({
+    start(controller) {
+      controller.enqueue(data)
+      controller.close()
+    },
+  })
+  const compressedStream = readable.pipeThrough(new CompressionStream('deflate-raw'))
+  const compressedBuffer = await new Response(compressedStream).arrayBuffer()
+  return new Uint8Array(compressedBuffer)
+}
+
+/**
+ * Raw DEFLATE decompression helper for both SHC and SHL implementations.
+ * Uses browser/Node.js native DecompressionStream.
+ */
+async function decompressDeflateRaw(data: Uint8Array): Promise<Uint8Array> {
+  const readable = new ReadableStream<Uint8Array>({
+    start(controller) {
+      controller.enqueue(data)
+      controller.close()
+    },
+  })
+  const decompressedStream = readable.pipeThrough(new DecompressionStream('deflate-raw'))
+  const decompressedBuffer = await new Response(decompressedStream).arrayBuffer()
+  return new Uint8Array(decompressedBuffer)
+}
 
 /**
  * FHIR R4 Bundle type re-exported from @medplum/fhirtypes for convenience.
@@ -1300,36 +1338,6 @@ export class VerifiableCredentialProcessor {
  */
 export class JWSProcessor {
   /**
-   * Raw DEFLATE compression helper
-   */
-  private async deflateRaw(data: Uint8Array): Promise<Uint8Array> {
-    const readable = new ReadableStream<Uint8Array>({
-      start(controller) {
-        controller.enqueue(data)
-        controller.close()
-      },
-    })
-    const compressedStream = readable.pipeThrough(new CompressionStream('deflate-raw'))
-    const compressedBuffer = await new Response(compressedStream).arrayBuffer()
-    return new Uint8Array(compressedBuffer)
-  }
-
-  /**
-   * Raw DEFLATE decompression helper
-   */
-  private async inflateRaw(data: Uint8Array): Promise<Uint8Array> {
-    const readable = new ReadableStream<Uint8Array>({
-      start(controller) {
-        controller.enqueue(data)
-        controller.close()
-      },
-    })
-    const decompressedStream = readable.pipeThrough(new DecompressionStream('deflate-raw'))
-    const decompressedBuffer = await new Response(decompressedStream).arrayBuffer()
-    return new Uint8Array(decompressedBuffer)
-  }
-
-  /**
    * Signs a JWT payload using ES256 algorithm.
    *
    * @param payload - JWT payload to sign
@@ -1367,7 +1375,7 @@ export class JWSProcessor {
       // Compress the payload BEFORE signing using raw DEFLATE (zip: "DEF")
       const enableCompression = config.enableCompression ?? true
       if (enableCompression) {
-        payloadBytes = await this.deflateRaw(payloadBytes)
+        payloadBytes = await compressDeflateRaw(payloadBytes)
         header.zip = 'DEF'
       }
 
@@ -1447,7 +1455,7 @@ export class JWSProcessor {
       // Decompress payload if zip: 'DEF'
       let payloadBytes = payload
       if (protectedHeader.zip === 'DEF') {
-        payloadBytes = await this.inflateRaw(payload)
+        payloadBytes = await decompressDeflateRaw(payload)
       }
 
       // Parse JSON
@@ -1533,7 +1541,8 @@ export class JWSProcessor {
       const payloadB64u = parts[1] as string
       const payloadBytes = base64url.decode(payloadB64u)
 
-      const decompressed = header.zip === 'DEF' ? await this.inflateRaw(payloadBytes) : payloadBytes
+      const decompressed =
+        header.zip === 'DEF' ? await decompressDeflateRaw(payloadBytes) : payloadBytes
       const json = new TextDecoder().decode(decompressed)
       const payload = JSON.parse(json) as SmartHealthCardJWT
 
@@ -1902,5 +1911,1168 @@ export class QRCodeGenerator {
         return String.fromCharCode(asciiCode)
       })
       .join('')
+  }
+}
+
+// =============================================================================
+// Smart Health Links (SHL) Implementation
+// =============================================================================
+
+/**
+ * Encrypts content as JWE Compact using A256GCM direct encryption.
+ * Follows SHL specification for file encryption.
+ *
+ * @param params.content - Content to encrypt (string)
+ * @param params.key - 32-byte encryption key (base64url-encoded)
+ * @param params.contentType - MIME content type for the cty header
+ * @param params.enableCompression - Whether to compress with DEFLATE before encryption
+ * @returns JWE Compact serialization string
+ */
+async function encryptSHLFile(params: {
+  content: string
+  key: string
+  contentType: SHLFileContentType
+  enableCompression?: boolean
+}): Promise<string> {
+  try {
+    // Convert content to bytes
+    const encoder = new TextEncoder()
+    let contentBytes = encoder.encode(params.content)
+
+    // Compress if enabled
+    if (params.enableCompression) {
+      contentBytes = await compressDeflateRaw(contentBytes)
+    }
+
+    // Decode the base64url key to raw bytes
+    const keyBytes = base64url.decode(params.key)
+
+    // Encrypt using jose CompactEncrypt
+    // Note: jose library doesn't support zip header, so we handle compression manually
+    const protectedHeader = {
+      alg: 'dir',
+      enc: 'A256GCM',
+      cty: params.contentType,
+    }
+    const jwe = await new CompactEncrypt(contentBytes)
+      .setProtectedHeader(protectedHeader)
+      .encrypt(keyBytes)
+
+    // If compression was used, we need to manually add the zip header to the JWE
+    if (params.enableCompression) {
+      // Parse the JWE to add the zip header
+      const parts = jwe.split('.')
+      if (parts.length !== 5) {
+        throw new SHLError('Invalid JWE format from jose library', 'SHL_ENCRYPTION_ERROR')
+      }
+      const partsTuple = parts as [string, string, string, string, string]
+
+      // Decode, modify, and re-encode the protected header
+      const originalHeader = JSON.parse(new TextDecoder().decode(base64url.decode(partsTuple[0])))
+      const modifiedHeader = { ...originalHeader, zip: 'DEF' }
+      const newHeaderB64u = base64url.encode(
+        new TextEncoder().encode(JSON.stringify(modifiedHeader))
+      )
+
+      return `${newHeaderB64u}.${partsTuple[1]}.${partsTuple[2]}.${partsTuple[3]}.${partsTuple[4]}`
+    }
+
+    return jwe
+  } catch (error) {
+    const errorMessage = error instanceof Error ? error.message : String(error)
+    throw new SHLError(`JWE encryption failed: ${errorMessage}`, 'SHL_ENCRYPTION_ERROR')
+  }
+}
+
+/**
+ * Decrypts JWE Compact using A256GCM direct decryption.
+ * Follows SHL specification for file decryption.
+ *
+ * @param params.jwe - JWE Compact serialization string
+ * @param params.key - 32-byte decryption key (base64url-encoded)
+ * @returns Decrypted content as string
+ */
+async function decryptSHLFile(params: {
+  jwe: string
+  key: string
+}): Promise<{ content: string; contentType: string }> {
+  try {
+    // Decode the base64url key to raw bytes
+    const keyBytes = base64url.decode(params.key)
+
+    // Decrypt using jose compactDecrypt
+    const { plaintext, protectedHeader } = await compactDecrypt(params.jwe, keyBytes)
+
+    // Extract content type from protected header
+    const contentType = protectedHeader.cty as string
+    if (!contentType) {
+      throw new SHLDecryptionError('Missing content type (cty) in JWE protected header')
+    }
+
+    // Decompress if zip header indicates DEFLATE compression
+    let contentBytes = plaintext
+    if (protectedHeader.zip === 'DEF') {
+      contentBytes = await decompressDeflateRaw(plaintext)
+    }
+
+    // Convert bytes back to string
+    const decoder = new TextDecoder()
+    const content = decoder.decode(contentBytes)
+
+    return { content, contentType }
+  } catch (error) {
+    if (error instanceof SHLError) {
+      throw error
+    }
+    const errorMessage = error instanceof Error ? error.message : String(error)
+    throw new SHLDecryptionError(`JWE decryption failed: ${errorMessage}`)
+  }
+}
+
+/**
+ * FHIR R4 Resource type re-exported from @medplum/fhirtypes for convenience.
+ *
+ * @public
+ * @category SHL Types
+ */
+export type FHIRResource = Resource
+
+/**
+ * SHL flags supported by this implementation.
+ *
+ * @public
+ * @category SHL Types
+ */
+export type SHLFlag = 'L' | 'P' | 'LP'
+
+/**
+ * Content types supported for SHL files.
+ *
+ * @public
+ * @category SHL Types
+ */
+export type SHLFileContentType = 'application/smart-health-card' | 'application/fhir+json'
+
+/**
+ * SHLink Payload structure (v1).
+ *
+ * @public
+ * @category SHL Types
+ */
+export interface SHLinkPayloadV1 {
+  /** Manifest URL for this SHLink */
+  url: string
+  /** Symmetric key (43 characters, base64url-encoded) */
+  key: string
+  /** Optional expiration time in Epoch seconds */
+  exp?: number
+  /** Optional flag string (concatenated single-character flags) */
+  flag?: SHLFlag
+  /** Optional short description (max 80 characters) */
+  label?: string
+  /** Optional version (defaults to 1) */
+  v?: 1
+}
+
+/**
+ * Manifest request structure (v1).
+ *
+ * @public
+ * @category SHL Types
+ */
+export interface SHLManifestRequestV1 {
+  /** Required recipient display string */
+  recipient: string
+  /** Conditional when 'P' flag is present */
+  passcode?: string
+  /** Optional upper bound for embedded payload sizes */
+  embeddedLengthMax?: number
+}
+
+/**
+ * Manifest file descriptor for embedded content.
+ *
+ * @public
+ * @category SHL Types
+ */
+export interface SHLManifestV1EmbeddedDescriptor {
+  contentType: SHLFileContentType
+  /** JWE Compact serialized encrypted file */
+  embedded: string
+}
+
+/**
+ * Manifest file descriptor for external content.
+ *
+ * @public
+ * @category SHL Types
+ */
+export interface SHLManifestV1LocationDescriptor {
+  contentType: SHLFileContentType
+  /** HTTPS URL to encrypted JWE file */
+  location: string
+}
+
+/**
+ * Union type for manifest file descriptors.
+ *
+ * @public
+ * @category SHL Types
+ */
+export type SHLManifestFileDescriptor =
+  | SHLManifestV1EmbeddedDescriptor
+  | SHLManifestV1LocationDescriptor
+
+/**
+ * SHL Manifest structure (v1).
+ *
+ * @public
+ * @category SHL Types
+ */
+export interface SHLManifestV1 {
+  files: SHLManifestFileDescriptor[]
+}
+
+/**
+ * Internal structure for encrypted files.
+ *
+ * @public
+ * @category SHL Types
+ */
+export interface SHLFileJWE {
+  type: SHLFileContentType
+  jwe: string
+}
+
+/**
+ * Resolved SHL content containing the manifest and all decrypted files.
+ *
+ * @public
+ * @category SHL Types
+ */
+export interface SHLResolvedContent {
+  /** The fetched manifest */
+  manifest: SHLManifestV1
+  /** Smart Health Cards extracted from application/smart-health-card files */
+  smartHealthCards: SmartHealthCard[]
+  /** FHIR resources extracted from application/fhir+json files */
+  fhirResources: Resource[]
+}
+
+// SHL Error Classes
+
+/**
+ * Base error class for Smart Health Links operations.
+ *
+ * @public
+ * @category SHL Errors
+ */
+export class SHLError extends Error {
+  /** Error code for programmatic handling. */
+  public code: string
+
+  constructor(message: string, code: string) {
+    super(message)
+    this.name = 'SHLError'
+    this.code = code
+  }
+}
+
+/**
+ * Error thrown when SHL manifest operations fail.
+ *
+ * @public
+ * @category SHL Errors
+ */
+export class SHLManifestError extends SHLError {
+  constructor(message: string) {
+    super(message, 'SHL_MANIFEST_ERROR')
+    this.name = 'SHLManifestError'
+  }
+}
+
+/**
+ * Error thrown when SHL network operations fail.
+ *
+ * @public
+ * @category SHL Errors
+ */
+export class SHLNetworkError extends SHLError {
+  constructor(message: string) {
+    super(message, 'SHL_NETWORK_ERROR')
+    this.name = 'SHLNetworkError'
+  }
+}
+
+/**
+ * Error thrown when SHL format parsing fails.
+ *
+ * @public
+ * @category SHL Errors
+ */
+export class SHLFormatError extends SHLError {
+  constructor(message: string) {
+    super(message, 'SHL_FORMAT_ERROR')
+    this.name = 'SHLFormatError'
+  }
+}
+
+/**
+ * Error thrown when SHL authentication fails.
+ *
+ * @public
+ * @category SHL Errors
+ */
+export class SHLAuthError extends SHLError {
+  constructor(message: string) {
+    super(message, 'SHL_AUTH_ERROR')
+    this.name = 'SHLAuthError'
+  }
+}
+
+/**
+ * Error thrown when SHL passcode is invalid.
+ *
+ * @public
+ * @category SHL Errors
+ */
+export class SHLInvalidPasscodeError extends SHLAuthError {
+  constructor(message: string) {
+    super(message)
+    this.code = 'SHL_INVALID_PASSCODE_ERROR'
+    this.name = 'SHLInvalidPasscodeError'
+  }
+}
+
+/**
+ * Error thrown when SHL resolution fails.
+ *
+ * @public
+ * @category SHL Errors
+ */
+export class SHLResolveError extends SHLError {
+  constructor(message: string) {
+    super(message, 'SHL_RESOLVE_ERROR')
+    this.name = 'SHLResolveError'
+  }
+}
+
+/**
+ * Error thrown when SHL decryption fails.
+ *
+ * @public
+ * @category SHL Errors
+ */
+export class SHLDecryptionError extends SHLResolveError {
+  constructor(message: string) {
+    super(message)
+    this.code = 'SHL_DECRYPTION_ERROR'
+    this.name = 'SHLDecryptionError'
+  }
+}
+
+/**
+ * Error thrown when SHL manifest is not found.
+ *
+ * @public
+ * @category SHL Errors
+ */
+export class SHLManifestNotFoundError extends SHLResolveError {
+  constructor(message: string) {
+    super(message)
+    this.code = 'SHL_MANIFEST_NOT_FOUND_ERROR'
+    this.name = 'SHLManifestNotFoundError'
+  }
+}
+
+/**
+ * Error thrown when SHL manifest requests are rate limited.
+ *
+ * @public
+ * @category SHL Errors
+ */
+export class SHLManifestRateLimitError extends SHLResolveError {
+  constructor(message: string) {
+    super(message)
+    this.code = 'SHL_RATE_LIMIT_ERROR'
+    this.name = 'SHLManifestRateLimitError'
+  }
+}
+
+/**
+ * Error thrown when SHL has expired.
+ *
+ * @public
+ * @category SHL Errors
+ */
+export class SHLExpiredError extends SHLResolveError {
+  constructor(message: string) {
+    super(message)
+    this.code = 'SHL_EXPIRED_ERROR'
+    this.name = 'SHLExpiredError'
+  }
+}
+
+// SHL Classes - Scaffolding Only
+
+/**
+ * Immutable SHL class representing a Smart Health Link payload and URI.
+ * This class only handles the SHLink "pointer" - the payload containing url, key, flags, etc.
+ * Use SHLManifestBuilder to manage the manifest and files referenced by this SHL.
+ *
+ * @public
+ * @category SHL High-Level API
+ */
+export class SHL {
+  private readonly _baseURL: string
+  private readonly _manifestPath: string
+  private readonly _key: string
+  private readonly _expirationDate: Date | undefined
+  private readonly _flag: SHLFlag | undefined
+  private readonly _label: string | undefined
+  private readonly v: 1 = 1
+
+  /**
+   * Private constructor for internal instantiation. Use SHL.generate to create new instances.
+   */
+  private constructor(core: {
+    baseURL: string
+    manifestPath: string
+    key: string
+    expirationDate?: Date
+    flag?: SHLFlag
+    label?: string
+  }) {
+    this._baseURL = core.baseURL
+    this._manifestPath = core.manifestPath
+    this._key = core.key
+    this._expirationDate = core.expirationDate
+    this._flag = core.flag
+    this._label = core.label
+  }
+
+  /**
+   * Create an immutable SHL representing a Smart Health Link payload and URI.
+   * Generates manifest path and encryption symmetric key automatically.
+   *
+   * @param params.baseURL - Base URL for constructing manifest URLs (e.g., 'https://shl.example.org/manifests/')
+   * @param params.expirationDate - Optional expiration date for the SHLink, will fill the `exp` field in the SHLink payload.
+   * @param params.flag - Optional flag for the SHLink: `L` (long-term), `P` (passcode), `LP` (long-term + passcode).
+   * @param params.label - Optional label that provides a short description of the data behind the SHLink. Max length of 80 chars.
+   */
+  static generate(params: {
+    baseURL: string
+    expirationDate?: Date
+    flag?: SHLFlag
+    label?: string
+  }): SHL {
+    const expirationDate = params.expirationDate
+    const flag = params.flag
+    const label = params.label
+
+    // Validate label length
+    if (label && label.length > 80) {
+      throw new SHLFormatError('Label must be 80 characters or less')
+    }
+
+    // Generate 32 random bytes for manifest path (43 chars base64url-encoded)
+    const pathEntropy = new Uint8Array(32)
+    crypto.getRandomValues(pathEntropy)
+    const manifestPath = `/manifests/${base64url.encode(pathEntropy)}/manifest.json`
+
+    // Generate 32 random bytes for encryption key (43 chars base64url-encoded)
+    const keyEntropy = new Uint8Array(32)
+    crypto.getRandomValues(keyEntropy)
+    const key = base64url.encode(keyEntropy)
+
+    const args: {
+      baseURL: string
+      manifestPath: string
+      key: string
+      expirationDate?: Date
+      flag?: SHLFlag
+      label?: string
+    } = {
+      baseURL: params.baseURL,
+      manifestPath,
+      key,
+    }
+    if (expirationDate !== undefined) args.expirationDate = expirationDate
+    if (flag !== undefined) args.flag = flag
+    if (label !== undefined) args.label = label
+    return new SHL(args)
+  }
+
+  /** Generate the SHLink URI respecting the "Construct a SHLink Payload" section of the spec. */
+  generateSHLinkURI(): string {
+    const payload = this.payload
+    const payloadJson = JSON.stringify(payload)
+    const payloadB64u = base64url.encode(new TextEncoder().encode(payloadJson))
+    return `shlink:/${payloadB64u}`
+  }
+
+  /** Get the full manifest URL that servers must handle (POST requests as per spec). */
+  get url(): string {
+    return this._baseURL.replace(/\/$/, '') + this._manifestPath
+  }
+
+  /** Get the base URL used for constructing manifest URLs. */
+  get baseURL(): string {
+    return this._baseURL
+  }
+
+  /** Get the manifest path. */
+  get manifestPath(): string {
+    return this._manifestPath
+  }
+
+  /** Get the base64url-encoded encryption key for files (43 characters). */
+  get key(): string {
+    return this._key
+  }
+
+  /** Get the expiration date as Epoch seconds if set. */
+  get exp(): number | undefined {
+    return this._expirationDate ? Math.floor(this._expirationDate.getTime() / 1000) : undefined
+  }
+
+  /** Get the expiration date if set. */
+  get expirationDate(): Date | undefined {
+    return this._expirationDate
+  }
+
+  /** Get the SHL flags if set. */
+  get flag(): SHLFlag | undefined {
+    return this._flag
+  }
+
+  /** Get the label if set. */
+  get label(): string | undefined {
+    return this._label
+  }
+
+  /** Get the version (always 1 for v1). */
+  get version(): 1 {
+    return this.v
+  }
+
+  /** Check if this SHL requires a passcode (has 'P' flag). */
+  get requiresPasscode(): boolean {
+    return this._flag?.includes('P') ?? false
+  }
+
+  /** Check if this SHL is long-term (has 'L' flag). */
+  get isLongTerm(): boolean {
+    return this._flag?.includes('L') ?? false
+  }
+
+  /** Get the SHL payload object for serialization. */
+  get payload(): SHLinkPayloadV1 {
+    const payload: SHLinkPayloadV1 = {
+      url: this.url,
+      key: this.key,
+      v: this.v,
+    }
+    if (this.exp) {
+      payload.exp = this.exp
+    }
+    if (this._flag) {
+      payload.flag = this._flag
+    }
+    if (this._label) {
+      payload.label = this._label
+    }
+    return payload
+  }
+
+  /**
+   * Static factory method to create an SHL from a parsed payload (for viewing purposes only).
+   * This is used internally by SHLViewer to reconstruct SHL objects from URIs.
+   */
+  static fromPayload(payload: SHLinkPayloadV1, baseURL: string, manifestPath: string): SHL {
+    const args: {
+      baseURL: string
+      manifestPath: string
+      key: string
+      expirationDate?: Date
+      flag?: SHLFlag
+      label?: string
+    } = {
+      baseURL,
+      manifestPath,
+      key: payload.key,
+    }
+    if (payload.exp !== undefined) args.expirationDate = new Date(payload.exp * 1000)
+    if (payload.flag !== undefined) args.flag = payload.flag
+    if (payload.label !== undefined) args.label = payload.label
+    return new SHL(args)
+  }
+
+  /**
+   * Static method to validate a SHLink payload structure.
+   * This is used internally by SHLViewer during URI parsing.
+   */
+  static validatePayload(payload: unknown): asserts payload is SHLinkPayloadV1 {
+    if (!payload || typeof payload !== 'object') {
+      throw new SHLFormatError('Invalid SHLink payload: must be an object')
+    }
+
+    const p = payload as Record<string, unknown>
+
+    // Required fields
+    if (!p.url || typeof p.url !== 'string') {
+      throw new SHLFormatError('Invalid SHLink payload: missing or invalid "url" field')
+    }
+
+    if (!p.key || typeof p.key !== 'string') {
+      throw new SHLFormatError('Invalid SHLink payload: missing or invalid "key" field')
+    }
+
+    // Validate key length (should be 43 characters for base64url-encoded 32 bytes)
+    if (p.key.length !== 43) {
+      throw new SHLFormatError('Invalid SHLink payload: "key" field must be 43 characters')
+    }
+
+    // Optional fields validation
+    if (p.exp !== undefined && (typeof p.exp !== 'number' || p.exp <= 0)) {
+      throw new SHLFormatError('Invalid SHLink payload: "exp" field must be a positive number')
+    }
+
+    if (p.flag !== undefined && typeof p.flag !== 'string') {
+      throw new SHLFormatError('Invalid SHLink payload: "flag" field must be a string')
+    }
+
+    if (p.label !== undefined && (typeof p.label !== 'string' || p.label.length > 80)) {
+      throw new SHLFormatError(
+        'Invalid SHLink payload: "label" field must be a string of 80 characters or less'
+      )
+    }
+
+    if (p.v !== undefined && p.v !== 1) {
+      throw new SHLFormatError('Invalid SHLink payload: unsupported version')
+    }
+
+    // Validate URL format
+    try {
+      new URL(p.url)
+    } catch {
+      throw new SHLFormatError('Invalid SHLink payload: "url" field is not a valid URL')
+    }
+
+    // Validate flag format if present
+    if (p.flag && !/^[LP]+$/.test(p.flag)) {
+      throw new SHLFormatError('Invalid SHLink payload: "flag" field contains invalid characters')
+    }
+  }
+}
+
+/**
+ * Class that builds the manifest and files for a Smart Health Link.
+ * This class handles file encryption and manifest building.
+ *
+ * @public
+ * @category SHL High-Level API
+ */
+export class SHLManifestBuilder {
+  private readonly _shl: SHL
+  private readonly uploadFile: (
+    content: string,
+    contentType?: SHLFileContentType
+  ) => Promise<string>
+  private readonly getFileURL: (path: string) => string
+  private readonly _files: SHLFileJWE[] = []
+
+  /**
+   * Create a manifest builder for the given SHL.
+   *
+   * @param params.shl - The immutable SHL instance this builder manages
+   * @param params.uploadFile - Function to upload encrypted files to the server. Returns the path segment of the file in the server to be used by `getFileURL`.
+   * @param params.getFileURL - Function to get the URL of a file that is already uploaded to the server. Per spec, this URL SHALL be short-lived and intended for single use.
+   */
+  constructor(params: {
+    shl: SHL
+    uploadFile: (content: string, contentType?: SHLFileContentType) => Promise<string>
+    getFileURL: (path: string) => string
+  }) {
+    this._shl = params.shl
+    this.uploadFile = params.uploadFile
+    this.getFileURL = params.getFileURL
+  }
+
+  /** Add a SMART Health Card file to the manifest. Encrypts and uploads the file as JWE to the server. */
+  async addHealthCard(params: {
+    /** SMART Health Card JWS string or SmartHealthCard object */
+    shc: SmartHealthCard | string
+    /** Optional: Enable compression (default: false, as SHC is already compressed by default) */
+    enableCompression?: boolean
+  }): Promise<void> {
+    const jwsString = typeof params.shc === 'string' ? params.shc : params.shc.asJWS()
+    const fileContent = JSON.stringify({ verifiableCredential: [jwsString] })
+
+    const encryptedFile = await this.encryptFile({
+      content: fileContent,
+      type: 'application/smart-health-card',
+      enableCompression: params.enableCompression ?? false,
+    })
+
+    this._files.push(encryptedFile)
+  }
+
+  /** Add a FHIR JSON file to the manifest. Encrypts and uploads the file as JWE to the server. */
+  async addFHIRResource(params: {
+    /** FHIR resource object */
+    content: Resource
+    /** Optional: Enable compression (default: true) */
+    enableCompression?: boolean
+  }): Promise<void> {
+    const fileContent = JSON.stringify(params.content)
+
+    const encryptedFile = await this.encryptFile({
+      content: fileContent,
+      type: 'application/fhir+json',
+      enableCompression: params.enableCompression ?? true,
+    })
+
+    this._files.push(encryptedFile)
+  }
+
+  /** Get the SHL instance used by this builder. */
+  get shl(): SHL {
+    return this._shl
+  }
+
+  /** Get the current list of files in the manifest. */
+  get files(): SHLFileJWE[] {
+    return [...this._files]
+  }
+
+  /** Build the manifest as JSON. Considers embedded vs location files based on size thresholds. */
+  async buildManifest(params: { embeddedLengthMax?: number } = {}): Promise<SHLManifestV1> {
+    const embeddedLengthMax = params.embeddedLengthMax ?? 16384 // 16 KiB default
+
+    const manifestFiles: SHLManifestFileDescriptor[] = []
+
+    for (const file of this._files) {
+      if (file.jwe.length <= embeddedLengthMax) {
+        // Embed the file directly
+        manifestFiles.push({
+          contentType: file.type,
+          embedded: file.jwe,
+        })
+      } else {
+        // Upload the file and reference by location
+        const filePath = await this.uploadFile(file.jwe, file.type)
+        const fileURL = this.getFileURL(filePath)
+
+        manifestFiles.push({
+          contentType: file.type,
+          location: fileURL,
+        })
+      }
+    }
+
+    return { files: manifestFiles }
+  }
+
+  /** Encrypt a file into JWE (A256GCM, zip=DEF) using the SHL's encryption key */
+  private async encryptFile(params: {
+    content: string
+    type: SHLFileContentType
+    enableCompression?: boolean
+  }): Promise<SHLFileJWE> {
+    const jwe = await encryptSHLFile({
+      content: params.content,
+      key: this._shl.key,
+      contentType: params.type,
+      enableCompression: params.enableCompression ?? false,
+    })
+
+    return {
+      type: params.type,
+      jwe,
+    }
+  }
+}
+
+/**
+ * SHL Viewer handles parsing and resolving Smart Health Links.
+ * This class processes SHLink URIs and fetches/decrypts the referenced content.
+ *
+ * @public
+ * @category SHL High-Level API
+ */
+export class SHLViewer {
+  private readonly _shl?: SHL
+  private readonly fetchImpl: (url: string, options?: RequestInit) => Promise<Response>
+
+  /**
+   * Create an SHL viewer.
+   *
+   * @param params.shlinkURI - The SHLink URI to parse
+   * @param params.fetch - Optional fetch implementation (defaults to global fetch)
+   */
+  constructor(params?: {
+    shlinkURI?: string
+    fetch?: (url: string, options?: RequestInit) => Promise<Response>
+  }) {
+    this.fetchImpl = params?.fetch ?? fetch
+
+    if (params?.shlinkURI) {
+      this._shl = this.parseSHLinkURI(params.shlinkURI)
+    }
+  }
+
+  /**
+   * Get SHLink object from SHLink URI
+   */
+  get shl(): SHL {
+    if (!this._shl) {
+      throw new SHLFormatError('No SHLink URI provided to viewer')
+    }
+    return this._shl
+  }
+
+  /**
+   * Resolve a SHLink URI by fetching and decrypting all referenced content.
+   * Throws errors if the SHLink is invalid, expired, or the passcode is incorrect.
+   *
+   * @param params.passcode - Optional passcode for P-flagged SHLinks
+   * @param params.recipient - Required recipient identifier for manifest requests
+   * @param params.embeddedLengthMax - Optional max length for embedded content preference
+   */
+  async resolveSHLink(params: {
+    passcode?: string
+    recipient: string
+    embeddedLengthMax?: number
+  }): Promise<SHLResolvedContent> {
+    const shl = this.shl
+
+    // Check expiration
+    if (shl.exp && shl.exp < Math.floor(Date.now() / 1000)) {
+      throw new SHLExpiredError('SHL has expired')
+    }
+
+    // Validate passcode requirement
+    if (shl.requiresPasscode && !params.passcode) {
+      throw new SHLInvalidPasscodeError('SHL requires a passcode')
+    }
+
+    // Fetch manifest
+    const manifest = await this.fetchManifest({
+      url: shl.url,
+      recipient: params.recipient,
+      ...(params.passcode && { passcode: params.passcode }),
+      ...(params.embeddedLengthMax !== undefined && {
+        embeddedLengthMax: params.embeddedLengthMax,
+      }),
+    })
+
+    // Process all files in the manifest
+    const smartHealthCards: SmartHealthCard[] = []
+    const fhirResources: Resource[] = []
+
+    for (const fileDescriptor of manifest.files) {
+      let decryptedFile: { content: string; contentType: string }
+
+      if ('embedded' in fileDescriptor) {
+        // Decrypt embedded file
+        decryptedFile = await decryptSHLFile({
+          jwe: fileDescriptor.embedded,
+          key: shl.key,
+        })
+      } else {
+        // Fetch and decrypt external file
+        decryptedFile = await this.fetchAndDecryptFile({
+          url: fileDescriptor.location,
+          key: shl.key,
+        })
+      }
+
+      // Verify content type matches
+      if (decryptedFile.contentType !== fileDescriptor.contentType) {
+        throw new SHLManifestError(
+          `Content type mismatch: expected ${fileDescriptor.contentType}, got ${decryptedFile.contentType}`
+        )
+      }
+
+      // Process based on content type
+      if (fileDescriptor.contentType === 'application/smart-health-card') {
+        // Parse SMART Health Card file
+        let fileContent: { verifiableCredential: string[] }
+        try {
+          fileContent = JSON.parse(decryptedFile.content) as { verifiableCredential: string[] }
+        } catch {
+          throw new SHLManifestError('Invalid SMART Health Card file: not valid JSON')
+        }
+
+        if (!Array.isArray(fileContent.verifiableCredential)) {
+          throw new SHLManifestError(
+            'Invalid SMART Health Card file: missing verifiableCredential array'
+          )
+        }
+
+        // Create SmartHealthCard objects for each JWS
+        for (const jws of fileContent.verifiableCredential) {
+          // Use SmartHealthCardReader to properly decode the JWS and extract the FHIR Bundle
+          const reader = new SmartHealthCardReader({ verifyExpiration: false })
+          const smartHealthCard = await reader.fromJWS(jws)
+          smartHealthCards.push(smartHealthCard)
+        }
+      } else if (fileDescriptor.contentType === 'application/fhir+json') {
+        // Parse FHIR resource
+        let fhirResource: Resource
+        try {
+          fhirResource = JSON.parse(decryptedFile.content) as Resource
+        } catch {
+          throw new SHLManifestError('Invalid FHIR JSON file: not valid JSON')
+        }
+
+        if (!fhirResource.resourceType) {
+          throw new SHLManifestError('Invalid FHIR JSON file: missing resourceType')
+        }
+
+        fhirResources.push(fhirResource)
+      }
+    }
+
+    return {
+      manifest,
+      smartHealthCards,
+      fhirResources,
+    }
+  }
+
+  /**
+   * Parse a SHLink URI into an SHL object
+   */
+  private parseSHLinkURI(shlinkURI: string): SHL {
+    try {
+      // Remove viewer prefix if present (ends with #)
+      let uriToParse = shlinkURI
+      const hashIndex = shlinkURI.indexOf('#shlink:/')
+      if (hashIndex !== -1) {
+        uriToParse = shlinkURI.substring(hashIndex + 1)
+      }
+
+      // Validate shlink:/ prefix
+      if (!uriToParse.startsWith('shlink:/')) {
+        throw new SHLFormatError('Invalid SHLink URI: must start with "shlink:/"')
+      }
+
+      // Extract and decode the payload
+      const payloadB64u = uriToParse.substring('shlink:/'.length)
+      if (!payloadB64u) {
+        throw new SHLFormatError('Invalid SHLink URI: missing payload')
+      }
+
+      // Decode base64url payload
+      let payloadBytes: Uint8Array
+      try {
+        payloadBytes = base64url.decode(payloadB64u)
+      } catch {
+        throw new SHLFormatError('Invalid SHLink URI: payload is not valid base64url')
+      }
+
+      // Parse JSON payload
+      const payloadJson = new TextDecoder().decode(payloadBytes)
+      let payload: SHLinkPayloadV1
+      try {
+        payload = JSON.parse(payloadJson) as SHLinkPayloadV1
+      } catch {
+        throw new SHLFormatError('Invalid SHLink URI: payload is not valid JSON')
+      }
+
+      // Validate payload structure
+      SHL.validatePayload(payload)
+
+      // Extract base URL from the manifest URL
+      const manifestURL = new URL(payload.url)
+      // For SHL, the base URL is typically just the origin
+      // e.g., https://shl.example.org/manifests/abc123/manifest.json -> https://shl.example.org
+      const baseURL = manifestURL.origin
+
+      // Create a reconstructed SHL object using the static factory method
+      return SHL.fromPayload(payload, baseURL, manifestURL.pathname)
+    } catch (error) {
+      if (error instanceof SHLError) {
+        throw error
+      }
+      const errorMessage = error instanceof Error ? error.message : String(error)
+      throw new SHLFormatError(`Failed to parse SHLink URI: ${errorMessage}`)
+    }
+  }
+
+  /**
+   * Fetch a manifest from the given URL.
+   * Handles passcode challenges automatically if passcode is provided.
+   */
+  private async fetchManifest(params: {
+    url: string
+    recipient: string
+    passcode?: string
+    embeddedLengthMax?: number
+  }): Promise<SHLManifestV1> {
+    try {
+      // Build manifest request per SHL spec
+      const manifestRequest: SHLManifestRequestV1 = {
+        recipient: params.recipient,
+      }
+
+      if (params.passcode) {
+        manifestRequest.passcode = params.passcode
+      }
+
+      if (params.embeddedLengthMax !== undefined) {
+        manifestRequest.embeddedLengthMax = params.embeddedLengthMax
+      }
+
+      // Make POST request to manifest URL per SHL spec
+      const response = await this.fetchImpl(params.url, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(manifestRequest),
+      })
+
+      // Handle HTTP error responses
+      if (!response.ok) {
+        if (response.status === 401) {
+          throw new SHLInvalidPasscodeError('Invalid or missing passcode')
+        } else if (response.status === 404) {
+          throw new SHLManifestNotFoundError('SHL manifest not found')
+        } else if (response.status === 429) {
+          throw new SHLManifestRateLimitError('Too many requests to SHL manifest')
+        } else {
+          throw new SHLNetworkError(`HTTP ${response.status}: ${response.statusText}`)
+        }
+      }
+
+      // Parse manifest response
+      let manifest: SHLManifestV1
+      try {
+        const manifestJson = await response.text()
+        manifest = JSON.parse(manifestJson) as SHLManifestV1
+      } catch (error) {
+        throw new SHLManifestError('Invalid manifest response: not valid JSON')
+      }
+
+      // Validate manifest structure
+      this.validateManifest(manifest)
+
+      return manifest
+    } catch (error) {
+      if (error instanceof SHLError) {
+        throw error
+      }
+      const errorMessage = error instanceof Error ? error.message : String(error)
+      throw new SHLNetworkError(`Failed to fetch SHL manifest: ${errorMessage}`)
+    }
+  }
+
+  /**
+   * Validates a SHL manifest structure
+   */
+  private validateManifest(manifest: unknown): asserts manifest is SHLManifestV1 {
+    if (!manifest || typeof manifest !== 'object') {
+      throw new SHLManifestError('Invalid manifest: must be an object')
+    }
+
+    const m = manifest as Record<string, unknown>
+
+    if (!Array.isArray(m.files)) {
+      throw new SHLManifestError('Invalid manifest: missing or invalid "files" array')
+    }
+
+    // Validate each file descriptor
+    for (const [index, file] of m.files.entries()) {
+      if (!file || typeof file !== 'object') {
+        throw new SHLManifestError(`Invalid manifest: file[${index}] must be an object`)
+      }
+
+      const f = file as Record<string, unknown>
+
+      if (!f.contentType || typeof f.contentType !== 'string') {
+        throw new SHLManifestError(`Invalid manifest: file[${index}] missing "contentType"`)
+      }
+
+      // Validate content type
+      const validContentTypes: SHLFileContentType[] = [
+        'application/smart-health-card',
+        'application/fhir+json',
+      ]
+      if (!validContentTypes.includes(f.contentType as SHLFileContentType)) {
+        throw new SHLManifestError(`Invalid manifest: file[${index}] has unsupported content type`)
+      }
+
+      // Must have either embedded or location, but not both
+      const hasEmbedded = typeof f.embedded === 'string'
+      const hasLocation = typeof f.location === 'string'
+
+      if (hasEmbedded && hasLocation) {
+        throw new SHLManifestError(
+          `Invalid manifest: file[${index}] cannot have both "embedded" and "location"`
+        )
+      }
+
+      if (!hasEmbedded && !hasLocation) {
+        throw new SHLManifestError(
+          `Invalid manifest: file[${index}] must have either "embedded" or "location"`
+        )
+      }
+
+      // Validate location URL if present
+      if (hasLocation) {
+        try {
+          new URL(f.location as string)
+        } catch {
+          throw new SHLManifestError(
+            `Invalid manifest: file[${index}] "location" is not a valid URL`
+          )
+        }
+      }
+    }
+  }
+
+  /**
+   * Fetch and decrypt a file using the provided key.
+   */
+  private async fetchAndDecryptFile(params: {
+    url: string
+    key: string
+  }): Promise<{ content: string; contentType: string }> {
+    try {
+      // Fetch the encrypted file
+      const response = await this.fetchImpl(params.url, {
+        method: 'GET',
+      })
+
+      if (!response.ok) {
+        if (response.status === 404) {
+          throw new SHLManifestNotFoundError('SHL file not found')
+        } else if (response.status === 429) {
+          throw new SHLManifestRateLimitError('Too many requests to SHL file')
+        } else {
+          throw new SHLNetworkError(`HTTP ${response.status}: ${response.statusText}`)
+        }
+      }
+
+      // Get JWE content
+      const jwe = await response.text()
+
+      // Decrypt the file
+      const decrypted = await decryptSHLFile({
+        jwe,
+        key: params.key,
+      })
+
+      return decrypted
+    } catch (error) {
+      if (error instanceof SHLError) {
+        throw error
+      }
+      const errorMessage = error instanceof Error ? error.message : String(error)
+      throw new SHLNetworkError(`Failed to fetch and decrypt SHL file: ${errorMessage}`)
+    }
   }
 }
