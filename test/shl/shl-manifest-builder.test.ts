@@ -167,7 +167,7 @@ describe('SHLManifestBuilder', () => {
     })
 
     expect(deserializedBuilder.files).toHaveLength(2)
-    expect(deserializedBuilder.shl.baseURL).toBe(shl.baseURL)
+    expect(deserializedBuilder.shl.url).toBe(shl.url)
     expect(deserializedBuilder.shl.key).toBe(shl.key)
     expect(deserializedBuilder.files[0]?.type).toBe('application/smart-health-card')
     expect(deserializedBuilder.files[1]?.type).toBe('application/fhir+json')
@@ -264,6 +264,23 @@ describe('SHLManifestBuilder', () => {
     expect(uploadedContent).toMatch(/^eyJ[A-Za-z0-9_-]+\..+/)
   })
 
+  it('should provide manifest ID from SHL URL', () => {
+    const manifestId = manifestBuilder.manifestId
+
+    // The manifest ID should be a 43-character base64url string
+    expect(manifestId).toHaveLength(43)
+    expect(manifestId).toMatch(/^[A-Za-z0-9_-]{43}$/)
+
+    // The manifest ID should be part of the SHL's manifest URL
+    expect(shl.url).toContain(manifestId)
+
+    // The manifest ID should be the entropy segment in the URL path
+    const url = new URL(shl.url)
+    const pathSegments = url.pathname.split('/').filter(segment => segment.length > 0)
+    const expectedEntropySegment = pathSegments[pathSegments.length - 2]
+    expect(manifestId).toBe(expectedEntropySegment)
+  })
+
   it('should handle builder deserialization without optional parameters', async () => {
     const issuer = new SmartHealthCardIssuer({
       issuer: 'https://example.com',
@@ -292,7 +309,7 @@ describe('SHLManifestBuilder', () => {
     })
 
     expect(deserializedBuilder.files).toHaveLength(1)
-    expect(deserializedBuilder.shl.baseURL).toBe(shl.baseURL)
+    expect(deserializedBuilder.shl.url).toBe(shl.url)
   })
 
   it('sets zip=DEF when compression enabled and omits otherwise', async () => {

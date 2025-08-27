@@ -308,6 +308,64 @@ export class SHLManifestBuilder {
   }
 
   /**
+   * Get the manifest ID for the SHL instance used by this builder.
+   *
+   * Useful for storing the SHL and its manifest in a database with a unique identifier.
+   *
+   * The manifest ID is the 43-character base64url-encoded entropy segment
+   * that uniquely identifies this SHL's manifest URL. This ID is extracted
+   * from the manifest URL path and can be used as a database key or identifier.
+   *
+   * For example, if the manifest URL is:
+   * 'https://shl.example.org/manifests/abc123def456.../manifest.json'
+   * The manifest ID would be: 'abc123def456...'
+   *
+   * @returns The 43-character manifest ID string
+   * @throws {SHLManifestError} If the manifest URL cannot be parsed to extract the ID
+   *
+   * @example
+   * ```typescript
+   * const manifestId = builder.manifestId;
+   * console.log('Database key:', manifestId); // 'abc123def456...'
+   * ```
+   */
+  get manifestId(): string {
+    const manifestURL = this._shl.url
+
+    // Extract the entropy segment from the manifest URL
+    // Expected format: https://domain/path/to/entropy/manifest.json
+    // We need to find the second-to-last path segment (the entropy)
+    const url = new URL(manifestURL)
+    const pathSegments = url.pathname.split('/').filter(segment => segment.length > 0)
+
+    if (pathSegments.length < 2) {
+      throw new SHLManifestError(`Invalid manifest URL format: ${manifestURL}`)
+    }
+
+    // The entropy is the second-to-last segment
+    const entropySegment = pathSegments[pathSegments.length - 2]
+
+    // Check if the segment exists
+    if (!entropySegment) {
+      throw new SHLManifestError(`Could not find entropy segment in path: ${url.pathname}`)
+    }
+
+    // Validate that it's a 43-character base64url string
+    if (entropySegment.length !== 43) {
+      throw new SHLManifestError(
+        `Invalid entropy segment length: expected 43, got ${entropySegment.length}`
+      )
+    }
+
+    // Basic validation that it looks like base64url (alphanumeric, -, _)
+    if (!/^[A-Za-z0-9_-]{43}$/.test(entropySegment)) {
+      throw new SHLManifestError(`Invalid entropy segment format: ${entropySegment}`)
+    }
+
+    return entropySegment
+  }
+
+  /**
    * Get the current list of files in the manifest.
    *
    * Returns metadata about all files that have been added to the builder.
