@@ -20,10 +20,10 @@ Constraints: use pnpm; library must work in both browser and Node.js.
 - [x] Implement file fetching and decryption
 - [x] Add crypto/compression helpers using `jose` and `CompressionStream`/`DecompressionStream`; ensure Node 18+ compatibility without browser‑unfriendly APIs
 - [x] Public exports wired in `src/index.ts`
+- [x] Documentation: JS Docs for SHL classes and types, similar to SHC classes
+- [x] Documentation: include SHL classes and types in typedoc output
 
 ### In Progress Tasks
-- [ ] Documentation: JS Docs for SHL classes and types, similar to SHC classes
-- [ ] Documentation: include SHL classes and types in typedoc output
 
 ### Future Tasks
 
@@ -42,40 +42,3 @@ Constraints: use pnpm; library must work in both browser and Node.js.
   - [ ] CORS and `Cache-Control` headers (manifest `no-store`; files short‑lived)
   - [ ] Vercel deployment configuration and environment variables
   - [ ] Security: avoid logging keys, passcodes, or decrypted PHI; HTTPS only
-
-### Implementation Plan
-
-- **Phase 1: Library v1**
-  - Define types and error classes
-  - Implement `SHL` → `SHLManifestBuilder` → `SHLViewer`
-  - Add crypto/compression utilities and exports
-  - Add tests (positive/negative cases), README, and typedoc
-
-- **Phase 2: Demo v1**
-  - Scaffold app and routes; configure storage and keys
-  - Implement SHC signing and FHIR Bundle assembly
-  - Wire SHL creation and manifest/file serving
-  - Build viewer UX (passcode + recipient prompts, long‑term polling)
-  - Deploy and validate end‑to‑end
-
-### Relevant Files
-
-- `SHL_SPEC.md` — Feature spec and scope (✅)
-- `src/index.ts` — New SHL classes, types, error exports
-- `test/index.test.ts` — Unit/integration tests for SHL APIs
-- `README.md` — Add SHL overview and examples
-- `typedoc.json` — Ensure new APIs are included
-- `vitest.config.ts` — Test setup (browser/Node compat as needed)
-- `rollup.config.js` — Build config; ensure universal output
-- `demo/` — Minimal demo; separate Next.js demo app to be created per plan
-
-### Environment Configuration (Demo)
-
-- `SHC_PRIVATE_KEY` — ES256 private key (PEM/SPKI as needed)
-- `SHC_PUBLIC_KEY` — ES256 public key (for `kid` derivation/verification)
-- `SHL_BASE_URL` — Base URL for manifest paths (e.g., `https://example.org/shl/manifests/`)
-- `SHL_PASSCODE_PEPPER` — Global pepper used with Argon2
-- Medplum credentials — For FHIR datastore access
-- Supabase credentials — For manifests and passcode hashes
-
-

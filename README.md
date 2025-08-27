@@ -30,11 +30,11 @@ This aligns with the [CMS Interoperability Framework](https://www.cms.gov/health
 
 ## Demo
 
-<a href="https://vintasoftware.github.io/kill-the-clipboard/demo/"><img height="200" alt="Kill the Clipboard JavaScript / TypeScript library - Smart Health Cards demo" src="https://github.com/user-attachments/assets/5e820583-9a23-4ff4-aa37-112254c8bfa5" /></a>
+<a href="https://vintasoftware.github.io/kill-the-clipboard/demo/shc/"><img height="200" alt="Kill the Clipboard JavaScript / TypeScript library - Smart Health Cards demo" src="https://github.com/user-attachments/assets/5e820583-9a23-4ff4-aa37-112254c8bfa5" /></a>
 
 **USE FOR TESTING PURPOSES ONLY - NOT FOR REAL HEALTH DATA.**
 
-Want to see the library in action? Try our interactive browser demo that showcases QR code generation and camera-based scanning: https://vintasoftware.github.io/kill-the-clipboard/demo/
+Want to see the library in action? Try our interactive browser demo that showcases QR code generation and camera-based scanning: https://vintasoftware.github.io/kill-the-clipboard/demo/shc/
 
 ## Installation
 

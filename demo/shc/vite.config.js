@@ -20,7 +20,7 @@ export default defineConfig({
   },
   resolve: {
     alias: {
-      "kill-the-clipboard": resolve(__dirname, "../dist/index.esm.js"),
+      "kill-the-clipboard": resolve(__dirname, "../../dist/index.esm.js"),
     },
   },
   define: {

@@ -113,12 +113,12 @@ jobs:
           destination_dir: ${{ steps.ref.outputs.ref_name }}
           keep_files: true
 
-      - name: Deploy to gh-pages (demo/)
+      - name: Deploy to gh-pages (demo/shc/)
         if: github.ref == 'refs/heads/main'
         uses: peaceiris/actions-gh-pages@v4
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           publish_branch: gh-pages
-          publish_dir: demo/dist
-          destination_dir: demo
+          publish_dir: demo/shc/dist
+          destination_dir: demo/shc
           keep_files: true
