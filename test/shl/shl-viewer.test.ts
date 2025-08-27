@@ -5,25 +5,35 @@ import { createValidFHIRBundle } from '../helpers'
 describe('SHLViewer', () => {
   describe('URI Parsing', () => {
     it('should parse valid SHLink URIs', () => {
-      const originalSHL = SHL.generate({ baseURL: 'https://shl.example.org', label: 'Original' })
+      const originalSHL = SHL.generate({
+        baseManifestURL: 'https://shl.example.org/manifests/',
+        manifestPath: '/manifest.json',
+        label: 'Original',
+      })
       const uri = originalSHL.generateSHLinkURI()
       const viewer = new SHLViewer({ shlinkURI: uri })
       const parsedSHL = viewer.shl
 
-      expect(parsedSHL.baseURL).toBe('https://shl.example.org')
+      // ... assert URL
       expect(parsedSHL.label).toBe('Original')
       expect(parsedSHL.key).toBe(originalSHL.key)
     })
 
     it('should parse viewer-prefixed URIs', () => {
-      const originalSHL = SHL.generate({ baseURL: 'https://shl.example.org', label: 'Test Card' })
+      const originalSHL = SHL.generate({
+        baseManifestURL: 'https://shl.example.org',
+        manifestPath: '/manifest.json',
+        label: 'Test Card',
+      })
       const uri = originalSHL.generateSHLinkURI()
       const viewerPrefixedURI = `https://viewer.example.com/#${uri}`
 
       const viewer = new SHLViewer({ shlinkURI: viewerPrefixedURI })
       const parsedSHL = viewer.shl
 
-      expect(parsedSHL.baseURL).toBe('https://shl.example.org')
+      expect(parsedSHL.url).toMatch(
+        /^https:\/\/shl\.example\.org\/[A-Za-z0-9_-]{43}\/manifest\.json$/
+      )
       expect(parsedSHL.label).toBe('Test Card')
     })
 
@@ -38,7 +48,7 @@ describe('SHLViewer', () => {
 
   describe('resolveSHLink', () => {
     it('resolves embedded file manifests', async () => {
-      const shl = SHL.generate({ baseURL: 'https://shl.example.org', label: 'Embedded' })
+      const shl = SHL.generate({ baseManifestURL: 'https://shl.example.org', label: 'Embedded' })
 
       const uploaded = new Map<string, string>()
       const builder = new SHLManifestBuilder({
@@ -76,7 +86,7 @@ describe('SHLViewer', () => {
     })
 
     it('resolves location file manifests', async () => {
-      const shl = SHL.generate({ baseURL: 'https://shl.example.org', label: 'Location' })
+      const shl = SHL.generate({ baseManifestURL: 'https://shl.example.org', label: 'Location' })
 
       const uploaded = new Map<string, string>()
       const builder = new SHLManifestBuilder({
@@ -92,9 +102,9 @@ describe('SHLViewer', () => {
 
       await builder.addFHIRResource({ content: createValidFHIRBundle(), enableCompression: false })
       const manifest = await builder.buildManifest({ embeddedLengthMax: 1 })
-      const fileLocation = (
-        'location' in manifest.files[0] ? manifest.files[0].location : ''
-      ) as string
+      const fileLocation =
+        // biome-ignore lint/style/noNonNullAssertion: files available
+        ('location' in manifest.files[0]! ? manifest.files[0]!.location : '') as string
       const ciphertext = uploaded.values().next().value as string
 
       const shlinkURI = shl.generateSHLinkURI()
@@ -126,7 +136,7 @@ describe('SHLViewer', () => {
     })
 
     it('handles manifest HTTP errors and invalid JSON/validation', async () => {
-      const shl = SHL.generate({ baseURL: 'https://shl.example.org' })
+      const shl = SHL.generate({ baseManifestURL: 'https://shl.example.org' })
       const shlinkURI = shl.generateSHLinkURI()
 
       const fetch401 = vi.fn(
@@ -185,7 +195,7 @@ describe('SHLViewer', () => {
     })
 
     it('file fetch errors propagate correctly', async () => {
-      const shl = SHL.generate({ baseURL: 'https://shl.example.org' })
+      const shl = SHL.generate({ baseManifestURL: 'https://shl.example.org' })
 
       const uploaded = new Map<string, string>()
       const builder = new SHLManifestBuilder({
@@ -201,9 +211,9 @@ describe('SHLViewer', () => {
 
       await builder.addFHIRResource({ content: createValidFHIRBundle() })
       const manifest = await builder.buildManifest({ embeddedLengthMax: 1 })
-      const fileLocation = (
-        'location' in manifest.files[0] ? manifest.files[0].location : ''
-      ) as string
+      const fileLocation =
+        // biome-ignore lint/style/noNonNullAssertion: files available
+        ('location' in manifest.files[0]! ? manifest.files[0]!.location : '') as string
 
       const shlinkURI = shl.generateSHLinkURI()
       const fetchFile404 = vi.fn(async (url: string, init?: RequestInit) => {
@@ -232,7 +242,7 @@ describe('SHLViewer', () => {
     })
 
     it('throws SHLDecryptionError for invalid JWE ciphertext', async () => {
-      const shl = SHL.generate({ baseURL: 'https://shl.example.org' })
+      const shl = SHL.generate({ baseManifestURL: 'https://shl.example.org' })
       const manifest = {
         files: [{ contentType: 'application/fhir+json', location: 'https://files.example.org/f' }],
       }

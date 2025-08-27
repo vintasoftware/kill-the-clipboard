@@ -8,7 +8,10 @@ describe('SHLManifestBuilder', () => {
   let manifestBuilder: SHLManifestBuilder
 
   beforeEach(() => {
-    shl = SHL.generate({ baseURL: 'https://shl.example.org' })
+    shl = SHL.generate({
+      baseManifestURL: 'https://shl.example.org/manifests/',
+      manifestPath: '/manifest.json',
+    })
     uploadedFiles = new Map()
     manifestBuilder = new SHLManifestBuilder({
       shl,

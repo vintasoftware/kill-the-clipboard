@@ -5,7 +5,8 @@ import { createValidFHIRBundle } from '../helpers'
 describe('End-to-End SHL Workflow', () => {
   it('should handle complete SHL creation and URI generation workflow', async () => {
     const shl = SHL.generate({
-      baseURL: 'https://shl.example.org',
+      baseManifestURL: 'https://shl.example.org/manifests/',
+      manifestPath: '/manifest.json',
       label: 'Complete Test Card',
       flag: 'L',
     })

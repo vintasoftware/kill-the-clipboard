@@ -36,7 +36,11 @@ type SmartHealthCard = unknown & { asJWS(): string }
  * @example
  * ```typescript
  * // Create SHL and builder
- * const shl = SHL.generate({ baseURL: 'https://shl.example.org' });
+ * const shl = SHL.generate({
+ *   baseManifestURL: 'https://shl.example.org/manifests/',
+ *   manifestPath: '/manifest.json',
+ *   flag: 'P'
+ * });
  * const builder = new SHLManifestBuilder({
  *   shl,
  *   uploadFile: async (content) => {
@@ -449,13 +453,8 @@ export class SHLManifestBuilder {
     loadFile?: (path: string) => Promise<string>
     fetch?: (url: string, options?: RequestInit) => Promise<Response>
   }): SHLManifestBuilder {
-    // Extract base URL and manifest path from the payload URL
-    const manifestURL = new URL(params.data.shl.url)
-    const baseURL = manifestURL.origin
-    const manifestPath = manifestURL.pathname
-
     // Reconstruct the SHL instance
-    const shl = SHL.fromPayload(params.data.shl, baseURL, manifestPath)
+    const shl = SHL.fromPayload(params.data.shl)
 
     // Create the builder
     const builder = new SHLManifestBuilder({

@@ -58,6 +58,19 @@ This separation ensures that the SHLink payload/URI (the "pointer") is independe
 
 It's also necessary to implement a server-side request handler that serves the manifest its encrypted files. A POST request handler must process a `SHLManifestRequestV1` and return a `SHLManifestV1`. This is left for the demo applications (see Part 2).
 
+#### Manifest URL Construction
+
+The SHL class automatically constructs the manifest URL by combining:
+1. **Base URL**: The `baseManifestURL` parameter (e.g., 'https://shl.example.org/manifests/')
+2. **Path Entropy**: 32 random bytes encoded as base64url (43 characters) for security
+3. **Manifest Path**: Optional `manifestPath` parameter (e.g., '/manifest.json')
+
+The final manifest URL follows the pattern: `${baseManifestURL}/${pathEntropy}/${manifestPath}`
+
+For example: `https://shl.example.org/manifests/abc123def456.../manifest.json`
+
+This approach ensures each SHL has a unique, unpredictable manifest URL while maintaining a consistent structure that servers can easily parse and route.
+
 #### Persistence and serving model (short‑lived URLs)
 
 - The server SHALL persist the SHL content as the state of `SHLManifestBuilder` (the "builder state"), not as an `SHLManifestV1` document. On each POST to the manifest URL, the server will load the builder state, then call `buildManifest({ embeddedLengthMax })` to produce a fresh `SHLManifestV1` response with up‑to‑date short‑lived file URLs (`location`).
@@ -65,6 +78,7 @@ It's also necessary to implement a server-side request handler that serves the m
 - The `embeddedLengthMax` value MAY differ per client request. The server MUST honor the provided value for that single response only.
 - On file addition (`addHealthCard`, `addFHIRResource`), the implementation SHALL: encrypt the file (JWE compact, A256GCM, optional zip=DEF), upload/persist the ciphertext with `uploadFile(...)` exactly once, and retain in the builder state: `type`, `ciphertextLength`, and the returned `storagePath`.
 - On manifest build, for each file: if `ciphertextLength <= embeddedLengthMax` and ciphertext is present in the builder state, embed it; otherwise generate a short‑lived URL by calling `getFileURL(storagePath)` and return a `location` descriptor.
+- Canonical identifier: The server should extract the 43‑character base64url entropy segment from the manifest URL path to use as the primary key for persisting and retrieving the builder state and related metadata (e.g., passcode hashes). This entropy segment is generated automatically by the SHL class and embedded in the manifest URL.
 
 ### Cryptographic profile (v1)
 
@@ -167,48 +181,44 @@ New module exports to add to `src/index.ts` (signatures only here):
  * Immutable SHL class representing a Smart Health Link payload and URI.
  * This class only handles the SHLink "pointer" - the payload containing url, key, flags, etc.
  * Use SHLManifestBuilder to manage the manifest and files referenced by this SHL.
+ * 
+ * Note: This class uses a static factory pattern. Use `SHL.generate()` to create new instances
+ * rather than calling the constructor directly.
  */
 export class SHL {
-  private readonly baseUrl: string;
-  private readonly manifestPath: string; // prefix, 32 random bytes base64url-encoded as a path segment, suffix, i.e., `/manifests/<43-char>/manifest.json`
-  private readonly key: string;  // 32 random bytes base64url-encoded (becomes 43 chars in the SHLink)
-  private readonly expirationDate?: Date;
-  private readonly flag?: SHLFlag;
-  private readonly label?: string;
+  private readonly _manifestURL: string;
+  private readonly _key: string;
+  private readonly _expirationDate?: Date;
+  private readonly _flag?: SHLFlag;
+  private readonly _label?: string;
   private readonly v: 1;
 
   /**
    * Create an immutable SHL representing a Smart Health Link payload and URI.
    * Generates manifest path and encryption symmetric key automatically.
    * 
-   * @param params.baseUrl - Base URL for constructing manifest URLs (e.g., 'https://shl.example.org/manifests/')
+   * @param params.baseManifestURL - Base URL for constructing manifest URLs (e.g., 'https://shl.example.org/manifests/')
+   * @param params.manifestPath - Optional manifestPath for constructing manifest URLs (e.g., '/manifest.json')
    * @param params.expirationDate - Optional expiration date for the SHLink, will fill the `exp` field in the SHLink payload.
    * @param params.flag - Optional flag for the SHLink: `L` (long-term), `P` (passcode), `LP` (long-term + passcode).
-   * @param params.passcode - Optional passcode for the SHLink (mandatory if `P` flag is set). Will be salted and hashed.
    * @param params.label - Optional label that provides a short description of the data behind the SHLink. Max length of 80 chars.
    */
-  constructor(params: {
-    baseUrl: string,
+  static generate(params: {
+    baseManifestURL: string,
+    manifestPath?: string,
     expirationDate?: Date,
     flag?: SHLFlag,
-    passcode?: string,
     label?: string,
-  });
+  }): SHL;
 
   /** Generate the SHLink URI respecting the "Construct a SHLink Payload" section of the spec. */
   generateSHLinkURI(): string;
 
   /** Get the full manifest URL that servers must handle (POST requests as per spec). */
-  get manifestURL(): string;
+  get url(): string;
 
   /** Get the base64url-encoded encryption key for files (43 characters). */
   get key(): string;
-
-  /** Get the manifest path segment. */
-  get manifestPath(): string;
-
-  /** Get the base URL used for constructing manifest URLs. */
-  get baseURL(): string;
 
   /** Get the expiration date if set. */
   get expirationDate(): Date | undefined;
@@ -231,8 +241,12 @@ export class SHL {
   /** Get the SHL payload object for serialization. */
   get payload(): SHLinkPayloadV1;
 
-  /** Verify the passcode for this SHL. */
-  verifyPasscode(passcode: string): boolean;
+  /** Get the expiration date as Unix timestamp if set. */
+  get exp(): number | undefined;
+
+  // Note: The implementation does not expose getters for baseManifestURL or manifestPath
+  // as these are internal implementation details. The manifest URL is constructed
+  // automatically and accessible via the `url` getter.
 
   // Private methods...
 }
@@ -448,7 +462,7 @@ The app will also act as the SHL hosting server for the manifest and encrypted f
 - Next.js (App Router; server components preferred)
 - Server-side routes to build and serve:
   - Create SHL: `POST /shl`
-  - Retrieve Manifest: `POST /shl/manifests/:entropy/manifest.json`
+  - Retrieve Manifest: `POST /shl/manifests/:pathEntropy/manifest.json` (where `:pathEntropy` is the 43‑character base64url entropy segment extracted from the manifest URL; this value SHOULD be used as the database key)
 - Client-side route to resolve the SHLink (handles a viewer-prefixed SHLink URI)
 - Storage:
   - `MedplumClient` for FHIR datastore access
@@ -467,7 +481,7 @@ Flow to create an SHLink:
   - FHIR `Bundle` assembled from Medplum queries (Patient + Allergies + Conditions + Medications + Observations)`
   - A SMART Health Card JWS signed on the server using ES256 private key in env var (at Vercel)
 5. Server uses `kill-the-clipboard` SHL APIs to:
-  - Create SHL instance with payload
+  - Create SHL instance using `SHL.generate()` with `baseManifestURL` and optional `manifestPath`
   - Create SHL manifest with the SHL and the files
 6. Server returns the SHLink URI to the browser
 7. UI renders QR of the SHLink URI and a copyable link (viewer-prefixed URI)
@@ -505,7 +519,7 @@ Flow to resolve and display an SHLink:
 - Env vars (Vercel):
   - `SHC_PRIVATE_KEY`
   - `SHC_PUBLIC_KEY`
-  - `SHL_BASE_URL` (e.g., `https://example.org/shl/manifests/`) to construct manifest URLs
+  - `SHL_BASE_URL` (e.g., `https://example.org/shl/manifests/`) to use as `baseManifestURL` parameter
   - Medplum credentials as required by the SDK
 
 

@@ -17,9 +17,10 @@ import type { SHLFlag, SHLinkPayloadV1 } from './types.js'
  * ```typescript
  * // Generate a new SHL
  * const shl = SHL.generate({
- *   baseURL: 'https://shl.example.org',
+ *   baseManifestURL: 'https://shl.example.org/manifests/',
+ *   manifestPath: '/manifest.json',
  *   expirationDate: new Date('2024-12-31'),
- *   flag: 'P', // Requires passcode
+ *   flag: 'P',
  *   label: 'COVID-19 Vaccination Record'
  * });
  *
@@ -32,8 +33,7 @@ import type { SHLFlag, SHLinkPayloadV1 } from './types.js'
  * @category High-Level API
  */
 export class SHL {
-  private readonly _baseURL: string
-  private readonly _manifestPath: string
+  private readonly _manifestURL: string
   private readonly _key: string
   private readonly _expirationDate: Date | undefined
   private readonly _flag: SHLFlag | undefined
@@ -49,15 +49,13 @@ export class SHL {
    * @param core - Core SHL properties
    */
   private constructor(core: {
-    baseURL: string
-    manifestPath: string
+    manifestURL: string
     key: string
     expirationDate?: Date
     flag?: SHLFlag
     label?: string
   }) {
-    this._baseURL = core.baseURL
-    this._manifestPath = core.manifestPath
+    this._manifestURL = core.manifestURL
     this._key = core.key
     this._expirationDate = core.expirationDate
     this._flag = core.flag
@@ -71,7 +69,8 @@ export class SHL {
    * The manifest path uses 32 random bytes encoded as base64url (43 characters).
    * The encryption key uses 32 random bytes encoded as base64url (43 characters).
    *
-   * @param params.baseURL - Base URL for constructing manifest URLs (e.g., 'https://shl.example.org')
+   * @param params.baseManifestURL - Base URL for constructing manifest URLs (e.g., 'https://shl.example.org/manifests/')
+   * @param params.manifestPath - Optional manifestPath for constructing manifest URLs (e.g., '/manifest.json')
    * @param params.expirationDate - Optional expiration date for the SHLink. When set, fills the `exp` field in the SHLink payload with Unix timestamp.
    * @param params.flag - Optional flag for the SHLink:
    *   - `'L'`: Long-term (allows polling for updates)
@@ -83,14 +82,10 @@ export class SHL {
    *
    * @example
    * ```typescript
-   * // Simple SHL
-   * const shl = SHL.generate({
-   *   baseURL: 'https://shl.example.org'
-   * });
-   *
    * // SHL with expiration and passcode protection
-   * const protectedShl = SHL.generate({
-   *   baseURL: 'https://shl.example.org',
+   * const shl = SHL.generate({
+   *   baseManifestURL: 'https://shl.example.org',
+   *   manifestPath: '/manifest.json',
    *   expirationDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000), // 30 days
    *   flag: 'P',
    *   label: 'Lab Results - Valid for 30 days'
@@ -98,7 +93,8 @@ export class SHL {
    * ```
    */
   static generate(params: {
-    baseURL: string
+    baseManifestURL: string
+    manifestPath?: string
     expirationDate?: Date
     flag?: SHLFlag
     label?: string
@@ -112,10 +108,12 @@ export class SHL {
       throw new SHLFormatError('Label must be 80 characters or less')
     }
 
+    const baseManifestURL = params.baseManifestURL.replace(/\/$/, '')
+    const manifestPath = params.manifestPath?.replace(/^\//, '') ?? ''
     // Generate 32 random bytes for manifest path (43 chars base64url-encoded)
     const pathEntropy = new Uint8Array(32)
     crypto.getRandomValues(pathEntropy)
-    const manifestPath = `/manifests/${base64url.encode(pathEntropy)}/manifest.json`
+    const manifestURL = `${baseManifestURL}/${base64url.encode(pathEntropy)}/${manifestPath}`
 
     // Generate 32 random bytes for encryption key (43 chars base64url-encoded)
     const keyEntropy = new Uint8Array(32)
@@ -123,15 +121,13 @@ export class SHL {
     const key = base64url.encode(keyEntropy)
 
     const args: {
-      baseURL: string
-      manifestPath: string
+      manifestURL: string
       key: string
       expirationDate?: Date
       flag?: SHLFlag
       label?: string
     } = {
-      baseURL: params.baseURL,
-      manifestPath,
+      manifestURL,
       key,
     }
     if (expirationDate !== undefined) args.expirationDate = expirationDate
@@ -150,7 +146,15 @@ export class SHL {
    *
    * @example
    * ```typescript
-   * const shl = SHL.generate({ baseURL: 'https://shl.example.org' });
+   * // SHL with expiration and passcode protection
+   * const shl = SHL.generate({
+   *   baseManifestURL: 'https://shl.example.org',
+   *   manifestPath: '/manifest.json',
+   *   expirationDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000), // 30 days
+   *   flag: 'P',
+   *   label: 'Lab Results - Valid for 30 days'
+   * });
+   * // Generate the SHLink URI
    * const uri = shl.generateSHLinkURI();
    * // Returns: shlink:/eyJ1cmwiOiJodHRwczovL3NobC5leGFtcGxlLm9yZy9tYW5pZmVzdHMvLi4uXCIsXCJrZXlcIjpcIi4uLlwiLFwidlwiOjF9
    * ```
@@ -171,28 +175,7 @@ export class SHL {
    * @returns Complete manifest URL (e.g., 'https://shl.example.org/manifests/abc123.../manifest.json')
    */
   get url(): string {
-    return this._baseURL.replace(/\/$/, '') + this._manifestPath
-  }
-
-  /**
-   * Get the base URL used for constructing manifest URLs.
-   *
-   * @returns Base URL without trailing slash (e.g., 'https://shl.example.org')
-   */
-  get baseURL(): string {
-    return this._baseURL
-  }
-
-  /**
-   * Get the manifest path segment.
-   *
-   * Returns the path portion of the manifest URL, including the random entropy
-   * and filename (e.g., '/manifests/abc123.../manifest.json').
-   *
-   * @returns Manifest path starting with '/'
-   */
-  get manifestPath(): string {
-    return this._manifestPath
+    return this._manifestURL
   }
 
   /**
@@ -323,23 +306,19 @@ export class SHL {
    * the provided values from an existing payload.
    *
    * @param payload - Validated SHLink payload from a parsed URI
-   * @param baseURL - Base URL extracted from the payload URL
-   * @param manifestPath - Manifest path extracted from the payload URL
    * @returns SHL instance reconstructed from the payload
    *
    * @internal
    */
-  static fromPayload(payload: SHLinkPayloadV1, baseURL: string, manifestPath: string): SHL {
+  static fromPayload(payload: SHLinkPayloadV1): SHL {
     const args: {
-      baseURL: string
-      manifestPath: string
+      manifestURL: string
       key: string
       expirationDate?: Date
       flag?: SHLFlag
       label?: string
     } = {
-      baseURL,
-      manifestPath,
+      manifestURL: payload.url,
       key: payload.key,
     }
     if (payload.exp !== undefined) args.expirationDate = new Date(payload.exp * 1000)

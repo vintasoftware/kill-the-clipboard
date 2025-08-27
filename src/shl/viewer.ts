@@ -361,14 +361,8 @@ export class SHLViewer {
       // Validate payload structure
       SHL.validatePayload(payload)
 
-      // Extract base URL from the manifest URL
-      const manifestURL = new URL(payload.url)
-      // For SHL, the base URL is typically just the origin
-      // e.g., https://shl.example.org/manifests/abc123/manifest.json -> https://shl.example.org
-      const baseURL = manifestURL.origin
-
       // Create a reconstructed SHL object using the static factory method
-      return SHL.fromPayload(payload, baseURL, manifestURL.pathname)
+      return SHL.fromPayload(payload)
     } catch (error) {
       if (error instanceof SHLError) {
         throw error
