@@ -383,6 +383,7 @@ export class SHLManifestBuilder {
    * Files are either embedded directly in the manifest or referenced by
    * location URLs based on the size threshold. Location URLs are generated
    * fresh each time to ensure security and proper access control.
+   * `embeddedLengthMax` may vary per request.
    *
    * @param params.embeddedLengthMax - Maximum size in bytes for embedded files.
    *   Files with ciphertext length ≤ this value will be embedded directly in the manifest.

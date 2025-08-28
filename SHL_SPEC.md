@@ -244,6 +244,13 @@ export class SHL {
   /** Get the expiration date as Unix timestamp if set. */
   get exp(): number | undefined;
 
+  /**
+   * Static factory method to create an SHL from a parsed payload.
+   * Used internally by SHLViewer to reconstruct SHL objects from parsed SHLink URIs.
+   * @internal
+   */
+  static fromPayload(payload: SHLinkPayloadV1): SHL;
+
   // Note: The implementation does not expose getters for baseManifestURL or manifestPath
   // as these are internal implementation details. The manifest URL is constructed
   // automatically and accessible via the `url` getter.
@@ -353,11 +360,13 @@ export class SHLViewer {
    * @param params.passcode - Optional passcode for P-flagged SHLinks
    * @param params.recipient - Required recipient identifier for manifest requests
    * @param params.embeddedLengthMax - Optional max length for embedded content preference
+   * @param params.shcReaderConfig - Optional configuration for Smart Health Card verification (e.g. public key)
    */
   async resolveSHLink(params: {
     passcode?: string;
     recipient: string;
     embeddedLengthMax?: number;
+    shcReaderConfig?: SmartHealthCardReaderConfigParams;
   }): Promise<SHLResolvedContent>;
 
   /**
@@ -407,6 +416,7 @@ export class SHLDecryptionError extends SHLResolveError { /* code: 'SHL_DECRYPTI
 export class SHLManifestNotFoundError extends SHLResolveError { /* code: 'SHL_MANIFEST_NOT_FOUND_ERROR' */ }
 export class SHLManifestRateLimitError extends SHLResolveError { /* code: 'SHL_RATE_LIMIT_ERROR' */ }
 export class SHLExpiredError extends SHLResolveError { /* code: 'SHL_EXPIRED_ERROR' */ }
+export class SHLViewerError extends SHLError { /* code: 'SHL_VIEWER_ERROR' */ }
 ```
 
 Guidelines:
@@ -422,6 +432,7 @@ Guidelines:
   - SHL Manifest URL not found → `SHLManifestNotFoundError`
   - Rate limit exceeded → `SHLManifestRateLimitError`
   - Expired SHLinks → `SHLExpiredError`
+  - Viewer initialization errors → `SHLViewerError`
   - Generic viewing errors → `SHLResolveError`
 
 ### Runtime compatibility

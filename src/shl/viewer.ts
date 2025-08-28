@@ -62,7 +62,7 @@ import type {
  * @category High-Level API
  */
 export class SHLViewer {
-  private readonly _shl?: SHL
+  private readonly _shl: SHL
   private readonly fetchImpl: (url: string, options?: RequestInit) => Promise<Response>
 
   /**
@@ -72,7 +72,7 @@ export class SHLViewer {
    * If no URI is provided, you can parse one later using the shl getter
    * after creating a viewer with a URI.
    *
-   * @param params.shlinkURI - Optional SHLink URI to parse immediately.
+   * @param params.shlinkURI - SHLink URI to parse.
    *   Supports both bare URIs (`shlink:/...`) and viewer-prefixed URIs (`https://viewer.example/#shlink:/...`)
    * @param params.fetch - Optional fetch implementation for network requests.
    *   Defaults to global fetch. Useful for testing or custom network handling.
@@ -89,13 +89,10 @@ export class SHLViewer {
    *   shlinkURI: 'https://viewer.example/#shlink:/eyJ1cmwiOi4uLn0',
    *   fetch: myCustomFetch
    * });
-   *
-   * // Create empty viewer
-   * const viewer = new SHLViewer();
    * ```
    */
-  constructor(params?: {
-    shlinkURI?: string
+  constructor(params: {
+    shlinkURI: string
     fetch?: (url: string, options?: RequestInit) => Promise<Response>
   }) {
     // Bind fetch to the global object to avoid "Illegal invocation" when called as a bare function
@@ -111,20 +108,17 @@ export class SHLViewer {
       )
     }
 
-    if (params?.shlinkURI) {
-      this._shl = this.parseSHLinkURI(params.shlinkURI)
-    }
+    this._shl = this.parseSHLinkURI(params.shlinkURI)
   }
 
   /**
    * Get the parsed SHL object from the SHLink URI.
    *
    * Returns the SHL instance created from parsing the SHLink URI provided
-   * in the constructor. Use this to access SHL properties like expiration,
+   * to the constructor. Use this to access SHL properties like expiration,
    * flags, and manifest URL.
    *
    * @returns SHL instance with parsed payload data
-   * @throws {@link SHLFormatError} When no SHLink URI was provided to the constructor
    *
    * @example
    * ```typescript
@@ -135,9 +129,6 @@ export class SHLViewer {
    * ```
    */
   get shl(): SHL {
-    if (!this._shl) {
-      throw new SHLFormatError('No SHLink URI provided to viewer')
-    }
     return this._shl
   }
 
@@ -158,7 +149,9 @@ export class SHLViewer {
    *   Required when SHL has 'P' flag, ignored otherwise.
    * @param params.embeddedLengthMax - Optional preference for embedded vs location files.
    *   Files smaller than this size (in bytes) will be embedded in manifest response.
-   *   Defaults to server's preference if not specified. Typical values: 4096-16384.
+   *   Servers may honor or cap this value per request. Typical values: 4096-16384.
+   *
+   * @param params.shcReaderConfig - Optional configuration for Smart Health Card verification (e.g. public key)
    *
    * @returns Promise resolving to structured content with manifest and decrypted files
    * @throws {@link SHLExpiredError} When SHL has expired (exp field < current time)

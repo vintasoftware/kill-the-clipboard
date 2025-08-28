@@ -65,9 +65,10 @@ export class SHL {
   /**
    * Create an immutable SHL representing a Smart Health Link payload and URI.
    *
-   * Generates a cryptographically secure manifest path and 256-bit encryption key automatically.
-   * The manifest path uses 32 random bytes encoded as base64url (43 characters).
-   * The encryption key uses 32 random bytes encoded as base64url (43 characters).
+   * The SHL payload contains a cryptographically secure manifest URL and encryption key.
+   * The manifest URL is constructed as: `${baseManifestURL}/${entropy}/${manifestPath}` where `entropy` is a
+   * 32-byte base64url string (43 chars). The encryption key is a separate 32-byte base64url string (43 chars)
+   * placed in the SHLink payload `key`.
    *
    * @param params.baseManifestURL - Base URL for constructing manifest URLs (e.g., 'https://shl.example.org/manifests/')
    * @param params.manifestPath - Optional manifestPath for constructing manifest URLs (e.g., '/manifest.json')
@@ -77,7 +78,7 @@ export class SHL {
    *   - `'P'`: Passcode-protected (requires passcode for access)
    *   - `'LP'`: Both long-term and passcode-protected
    * @param params.label - Optional short description of the shared data. Maximum 80 characters.
-   * @returns New SHL instance with generated manifest path and encryption key
+   * @returns New SHL instance with generated full manifest URL and encryption key
    * @throws {@link SHLFormatError} When label exceeds 80 characters
    *
    * @example
