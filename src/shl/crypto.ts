@@ -155,11 +155,38 @@ export async function decryptSHLFile(params: {
   key: string
 }): Promise<{ content: string; contentType: string }> {
   try {
+    // Check if the JWE has a zip header and handle it manually
+    // since jose library doesn't support zip headers
+    let jweToDecrypt = params.jwe
+    let hasZipHeader = false
+
+    try {
+      const parts = jweToDecrypt.split('.')
+      if (parts.length === 5) {
+        const headerPart = parts[0]
+        if (headerPart) {
+          const header = JSON.parse(new TextDecoder().decode(base64url.decode(headerPart)))
+          if (header.zip === 'DEF') {
+            hasZipHeader = true
+            // Remove the zip header before passing to jose
+            const { zip, ...headerWithoutZip } = header
+            const newHeaderB64u = base64url.encode(
+              new TextEncoder().encode(JSON.stringify(headerWithoutZip))
+            )
+            jweToDecrypt = `${newHeaderB64u}.${parts[1]}.${parts[2]}.${parts[3]}.${parts[4]}`
+          }
+        }
+      }
+    } catch (headerError) {
+      // If we can't parse the header, continue with original JWE
+      // jose will handle the error appropriately
+    }
+
     // Decode the base64url key to raw bytes
     const keyBytes = base64url.decode(params.key)
 
     // Decrypt using jose compactDecrypt
-    const { plaintext, protectedHeader } = await compactDecrypt(params.jwe, keyBytes)
+    const { plaintext, protectedHeader } = await compactDecrypt(jweToDecrypt, keyBytes)
 
     // Extract content type from protected header
     const contentType = protectedHeader.cty as string
@@ -167,9 +194,9 @@ export async function decryptSHLFile(params: {
       throw new SHLDecryptionError('Missing content type (cty) in JWE protected header')
     }
 
-    // Decompress if zip header indicates DEFLATE compression
+    // Decompress if zip header was present in original JWE
     let contentBytes = plaintext
-    if (protectedHeader.zip === 'DEF') {
+    if (hasZipHeader) {
       contentBytes = await decompressDeflateRaw(plaintext)
     }
 

@@ -70,7 +70,7 @@ export class SHLManifestBuilder {
     content: string,
     contentType?: SHLFileContentType
   ) => Promise<string>
-  private readonly getFileURL: (path: string) => string
+  private readonly getFileURL: (path: string) => Promise<string>
   private readonly loadFile: (path: string) => Promise<string>
   private readonly _files: SerializedSHLManifestBuilderFile[] = []
 
@@ -108,7 +108,7 @@ export class SHLManifestBuilder {
    *     await s3.putObject({ Key: key, Body: content, ContentType: 'application/jose' });
    *     return key;
    *   },
-   *   getFileURL: (path) => {
+   *   getFileURL: async (path) => {
    *     return s3.getSignedUrl('getObject', { Key: path, Expires: 3600 });
    *   },
    *   loadFile: async (path) => {
@@ -121,7 +121,7 @@ export class SHLManifestBuilder {
   constructor(params: {
     shl: SHL
     uploadFile: (content: string, contentType?: SHLFileContentType) => Promise<string>
-    getFileURL: (path: string) => string
+    getFileURL: (path: string) => Promise<string>
     loadFile?: (path: string) => Promise<string>
     fetch?: (url: string, options?: RequestInit) => Promise<Response>
   }) {
@@ -151,7 +151,7 @@ export class SHLManifestBuilder {
     return async (storagePath: string): Promise<string> => {
       try {
         // Get the URL for the file
-        const fileURL = this.getFileURL(storagePath)
+        const fileURL = await this.getFileURL(storagePath)
 
         // Fetch the file content
         const response = await fetchImpl(fileURL, {
@@ -422,7 +422,7 @@ export class SHLManifestBuilder {
         })
       } else {
         // Reference file by location with fresh short-lived URL
-        const fileURL = this.getFileURL(file.storagePath)
+        const fileURL = await this.getFileURL(file.storagePath)
 
         manifestFiles.push({
           contentType: file.type,
@@ -496,7 +496,7 @@ export class SHLManifestBuilder {
    * const builder = SHLManifestBuilder.deserialize({
    *   data: savedState,
    *   uploadFile: async (content) => await storage.upload(content),
-   *   getFileURL: (path) => storage.getSignedURL(path),
+   *   getFileURL: async (path) => await storage.getSignedURL(path),
    *   loadFile: async (path) => await storage.download(path)
    * });
    *
@@ -507,7 +507,7 @@ export class SHLManifestBuilder {
   static deserialize(params: {
     data: SerializedSHLManifestBuilder
     uploadFile: (content: string, contentType?: SHLFileContentType) => Promise<string>
-    getFileURL: (path: string) => string
+    getFileURL: (path: string) => Promise<string>
     loadFile?: (path: string) => Promise<string>
     fetch?: (url: string, options?: RequestInit) => Promise<Response>
   }): SHLManifestBuilder {

@@ -1,5 +1,7 @@
 import type { Resource } from '@medplum/fhirtypes'
 import { base64url } from 'jose'
+import type { SmartHealthCard } from '../shc/card.js'
+import { SmartHealthCardReader } from '../shc/reader.js'
 import { decryptSHLFile } from './crypto.js'
 import {
   SHLError,
@@ -10,6 +12,7 @@ import {
   SHLManifestNotFoundError,
   SHLManifestRateLimitError,
   SHLNetworkError,
+  SHLViewerError,
 } from './errors.js'
 import { SHL } from './shl.js'
 import type {
@@ -19,12 +22,6 @@ import type {
   SHLManifestV1,
   SHLResolvedContent,
 } from './types.js'
-
-// Import types to avoid circular imports
-type SmartHealthCard = unknown
-type SmartHealthCardReader = unknown & {
-  fromJWS(jws: string): Promise<SmartHealthCard>
-}
 
 /**
  * SHL Viewer handles parsing and resolving Smart Health Links.
@@ -100,7 +97,18 @@ export class SHLViewer {
     shlinkURI?: string
     fetch?: (url: string, options?: RequestInit) => Promise<Response>
   }) {
-    this.fetchImpl = params?.fetch ?? fetch
+    // Bind fetch to the global object to avoid "Illegal invocation" when called as a bare function
+    const chosenFetch = params?.fetch ?? (globalThis as unknown as { fetch?: typeof fetch }).fetch
+    if (typeof chosenFetch === 'function') {
+      this.fetchImpl = chosenFetch.bind(globalThis) as (
+        url: string,
+        options?: RequestInit
+      ) => Promise<Response>
+    } else {
+      throw new SHLViewerError(
+        'Fetch is not available in this environment; provide a fetch implementation'
+      )
+    }
 
     if (params?.shlinkURI) {
       this._shl = this.parseSHLinkURI(params.shlinkURI)
@@ -264,13 +272,6 @@ export class SHLViewer {
 
         // Create SmartHealthCard objects for each JWS
         for (const jws of fileContent.verifiableCredential) {
-          // Import SmartHealthCardReader dynamically to avoid circular imports
-          const { SmartHealthCardReader } = require('../shc/reader.js') as {
-            SmartHealthCardReader: new (params: {
-              verifyExpiration: boolean
-            }) => SmartHealthCardReader
-          }
-
           // Use SmartHealthCardReader to properly decode the JWS and extract the FHIR Bundle
           const reader = new SmartHealthCardReader({ verifyExpiration: false })
           try {

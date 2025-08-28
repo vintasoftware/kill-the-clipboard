@@ -151,3 +151,16 @@ export class SHLExpiredError extends SHLResolveError {
     this.name = 'SHLExpiredError'
   }
 }
+
+/**
+ * Error thrown when SHL viewer cannot be created.
+ *
+ * @public
+ * @category Errors
+ */
+export class SHLViewerError extends SHLError {
+  constructor(message: string) {
+    super(message, 'SHL_VIEWER_ERROR')
+    this.name = 'SHLViewerError'
+  }
+}
