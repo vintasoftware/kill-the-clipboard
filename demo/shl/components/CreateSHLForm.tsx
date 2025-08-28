@@ -35,8 +35,8 @@ export function CreateSHLForm({ onSHLCreated, onCancel }: CreateSHLFormProps) {
 
   const form = useForm<FormValues>({
     initialValues: {
-      passcode: '',
-      confirmPasscode: '',
+      passcode: '123456',
+      confirmPasscode: '123456',
       label: '',
       longTerm: false,
     },

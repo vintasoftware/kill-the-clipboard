@@ -173,9 +173,6 @@ export async function POST(request: NextRequest) {
     //   }
     // }
 
-    // Build the manifest
-    const manifest = await manifestBuilder.buildManifest({ embeddedLengthMax: 4096 });
-
     // Extract entropy from the manifest URL for database key
     const manifestUrl = shl.url;
     const urlParts = manifestUrl.split('/');
@@ -193,7 +190,6 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({
       shlUri,
-      manifest: manifest,
     });
 
   } catch (error) {

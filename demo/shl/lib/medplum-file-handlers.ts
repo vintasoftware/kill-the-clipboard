@@ -1,10 +1,9 @@
+import { v4 as uuidv4 } from 'uuid';
 import { MedplumClient } from '@medplum/core';
 
-/**
- * Shared Medplum file handling functions for SHL operations.
- * These functions handle file upload, URL generation, and file loading
- * using Medplum's Binary resource system.
- */
+// Shared Medplum file handling functions for SHL operations.
+// These functions handle file upload, URL generation, and file loading
+// using Medplum's Binary resource system.
 
 /**
  * Upload encrypted file content to Medplum as a Binary resource.
@@ -18,19 +17,19 @@ export async function uploadSHLFile(
   content: string,
   contentType?: string
 ): Promise<string> {
-  console.log('uploadSHLFile called with content length:', content.length, 'contentType:', contentType);
+  console.log('uploadSHLFile called with content length:', content.length);
 
   try {
     // Upload encrypted file content to Medplum as Binary resource
     // Use createBinary method which handles file data properly
     const binary = await medplum.createBinary({
       data: content, // JWE content as string
-      filename: `shl-file-${Date.now()}.jwe`,
+      filename: `shl-file-${uuidv4()}.jwe`,
       contentType: contentType || 'application/jose', // JWE content type
     });
 
-    console.log('Binary resource created:', binary.id, 'URL:', binary.url);
-    return binary.id!; // Return the Binary resource ID as storage path
+    console.log('At uploadSHLFile, Binary resource created:', binary.id);
+    return `Binary/${binary.id}`; // Return the Binary FHIR path
   } catch (error) {
     console.error('Error uploading file to Medplum:', error);
     throw error;
@@ -40,38 +39,14 @@ export async function uploadSHLFile(
 /**
  * Generate a URL for a Binary resource using Medplum's fhirUrl method.
  * @param medplum - Authenticated Medplum client instance
- * @param binaryID - The Binary resource ID
+ * @param path - The Binary path
  * @returns The FHIR URL for the Binary resource
  */
-export async function getSHLFileURL(medplum: MedplumClient, binaryID: string): Promise<string> {
-  console.log('getSHLFileURL called for binaryID:', binaryID);
-  const url = medplum.fhirUrl('Binary', binaryID).toString();
-  console.log('Generated FHIR URL:', url);
+export async function getSHLFileURL(medplum: MedplumClient, path: string): Promise<string> {
+  console.log('getSHLFileURL called for path:', path);
+  const url = medplum.fhirUrl(path).toString();
+  console.log('getSHLFileURL generated FHIR URL:', url);
   return Promise.resolve(url);
-  // const binary = await medplum.readResource('Binary', binaryID);
-  // const url = binary.url!;
-  // console.log('Generated FHIR URL:', url);
-  // return url;
-}
-
-/**
- * Load file content from a Medplum Binary resource.
- * @param medplum - Authenticated Medplum client instance
- * @param path - The Binary resource ID
- * @returns Promise resolving to the file content as a string
- */
-export async function loadSHLFile(medplum: MedplumClient, path: string): Promise<string> {
-  console.log('loadSHLFile called for path:', path);
-
-  try {
-    const blob = await medplum.download(`Binary/${path}`);
-    const content = await blob.text();
-    console.log('File content loaded (first 50 bytes):', content.slice(0, 50));
-    return content;
-  } catch (error) {
-    console.error('Error loading file from Medplum:', error);
-    throw error;
-  }
 }
 
 /**
@@ -91,9 +66,6 @@ export function createManifestFileHandlers(medplum: MedplumClient, readonly: boo
     },
     getFileURL: async (path: string) => {
       return getSHLFileURL(medplum, path);
-    },
-    loadFile: async (path: string) => {
-      return loadSHLFile(medplum, path);
     },
   };
 }

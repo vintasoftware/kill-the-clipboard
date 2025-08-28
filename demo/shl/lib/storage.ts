@@ -95,18 +95,3 @@ export async function getStoredPasscode(entropy: string): Promise<string | null>
   const passcode = passcodes.find(p => p.entropy === entropy);
   return passcode?.hashedPasscode || null;
 }
-
-// Cleanup old entries (run periodically)
-export async function cleanupExpiredEntries(maxAgeMs: number = 7 * 24 * 60 * 60 * 1000): Promise<void> {
-  const cutoffTime = new Date(Date.now() - maxAgeMs).toISOString();
-
-  // Cleanup manifests
-  const manifests = await loadJsonFile<StoredManifest>(MANIFESTS_FILE);
-  const validManifests = manifests.filter(m => m.createdAt > cutoffTime);
-  await saveJsonFile(MANIFESTS_FILE, validManifests);
-
-  // Cleanup passcodes
-  const passcodes = await loadJsonFile<StoredPasscode>(PASSCODES_FILE);
-  const validPasscodes = passcodes.filter(p => p.createdAt > cutoffTime);
-  await saveJsonFile(PASSCODES_FILE, validPasscodes);
-}

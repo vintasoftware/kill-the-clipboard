@@ -11,13 +11,13 @@ import {
   PasswordInput,
   LoadingOverlay,
   Group,
-  Accordion,
   Code,
   Badge,
 } from '@mantine/core';
 import { useForm } from '@mantine/form';
 import { notifications } from '@mantine/notifications';
 import { SHLViewer, SHLResolvedContent } from 'kill-the-clipboard';
+import { buildMedplumFetch } from '@/lib/medplum-fetch';
 import { useState, useEffect } from 'react';
 import { IconAlertCircle, IconCheck, IconX } from '@tabler/icons-react';
 import { useMedplum } from '@medplum/react';
@@ -37,8 +37,8 @@ export default function ViewerPage() {
 
   const form = useForm<ViewerFormValues>({
     initialValues: {
-      recipient: '',
-      passcode: '',
+      recipient: 'Flavio',
+      passcode: '123456',
     },
     validate: {
       recipient: (value) => (!value ? 'Recipient name is required' : null),
@@ -73,22 +73,7 @@ export default function ViewerPage() {
       const viewer = new SHLViewer({
         shlinkURI: uri,
         // Provide Medplum-authenticated fetch
-        fetch: async (url, options) => {
-          console.log('fetching', url, options);
-          if (options && options.headers) {
-            options.headers = {
-              ...options.headers,
-              Authorization: `Bearer ${accessToken}`,
-            };
-          } else {
-            options = {
-              headers: {
-                Authorization: `Bearer ${accessToken}`,
-              },
-            };
-          }
-          return await fetch(url, options);
-        },
+        fetch: buildMedplumFetch(medplum),
       });
       setShlViewer(viewer);
       setStep('credentials');

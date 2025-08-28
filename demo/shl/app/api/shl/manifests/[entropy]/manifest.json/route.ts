@@ -1,11 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { MedplumClient } from '@medplum/core';
 import { SHLManifestBuilder } from 'kill-the-clipboard';
+import { buildMedplumFetch } from '@/lib/medplum-fetch';
 import { getManifestBuilder, getStoredPasscode } from '@/lib/storage';
 import { verifyPasscode } from '@/lib/auth';
 import { createManifestFileHandlers } from '@/lib/medplum-file-handlers';
 
-// Initialize Medplum client for server-side operations
 const medplum = new MedplumClient({
   baseUrl: process.env.MEDPLUM_BASE_URL || 'https://api.medplum.com',
   clientId: process.env.MEDPLUM_CLIENT_ID!,
@@ -81,6 +81,8 @@ export async function POST(
   const manifestBuilder = SHLManifestBuilder.deserialize({
     data: builderState,
     ...createManifestFileHandlers(medplum),
+    // Provide Medplum-authenticated fetch
+    fetch: buildMedplumFetch(medplum),
   });
 
   // Build and return the manifest
