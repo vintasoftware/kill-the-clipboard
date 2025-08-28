@@ -4,6 +4,7 @@ import { SignInForm, useMedplum, useMedplumProfile } from '@medplum/react';
 import { Suspense, useState } from 'react';
 import { CreateSHLForm } from '@/components/CreateSHLForm';
 import { SHLDisplay } from '@/components/SHLDisplay';
+import { PatientDataManager } from '@/components/PatientDataManager';
 
 export default function HomePage() {
   const medplum = useMedplum();
@@ -58,11 +59,14 @@ export default function HomePage() {
             </div>
 
             {!isCreating && !createdSHL && (
-              <Group>
-                <Button size="lg" onClick={handleCreateSHL}>
-                  Create Smart Health Link
-                </Button>
-              </Group>
+              <Stack gap="lg">
+                <PatientDataManager enableSampleData={true} title="Your Health Information" />
+                <Group>
+                  <Button size="lg" onClick={handleCreateSHL}>
+                    Create Smart Health Link
+                  </Button>
+                </Group>
+              </Stack>
             )}
 
             {isCreating && <CreateSHLForm onSHLCreated={handleSHLCreated} onCancel={() => setIsCreating(false)} />}

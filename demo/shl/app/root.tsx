@@ -6,6 +6,9 @@ import '@medplum/react/styles.css';
 import { JSX, ReactNode } from 'react';
 
 const medplum = new MedplumClient({
+  baseUrl: process.env.NEXT_PUBLIC_MEDPLUM_BASE_URL!,
+  clientId: process.env.NEXT_PUBLIC_MEDPLUM_CLIENT_ID!,
+
   // Handle unauthenticated requests
   onUnauthenticated: () => (window.location.href = '/'),
 

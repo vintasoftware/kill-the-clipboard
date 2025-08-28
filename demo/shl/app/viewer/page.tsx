@@ -24,6 +24,8 @@ import { buildMedplumFetch } from '@/lib/medplum-fetch';
 import { useState, useEffect, useCallback } from 'react';
 import { IconAlertCircle, IconCheck, IconX } from '@tabler/icons-react';
 import { useMedplum } from '@medplum/react';
+import { PatientDataBundleDisplay } from '@/components/PatientDataBundleDisplay';
+import { Bundle } from '@medplum/fhirtypes';
 
 interface ViewerFormValues {
   recipient: string;
@@ -38,8 +40,6 @@ export default function ViewerPage() {
   const [isLoading, setIsLoading] = useState(false);
   const [step, setStep] = useState<'uri' | 'credentials' | 'content'>('uri');
   const [qrCodesByCard, setQrCodesByCard] = useState<string[][]>([]);
-
-  console.log('qrCodesByCard', qrCodesByCard);
 
   const form = useForm<ViewerFormValues>({
     initialValues: {
@@ -66,7 +66,6 @@ export default function ViewerPage() {
           throw new Error('No access token available. Please sign in again.');
         }
 
-        console.log('viewing', uri);
         const viewer = new SHLViewer({
           shlinkURI: uri,
           // Provide Medplum-authenticated fetch
@@ -133,7 +132,13 @@ export default function ViewerPage() {
       // Generate QR codes for any Smart Health Cards present
       if (content.smartHealthCards?.length) {
         try {
-          const allQrCodes = await Promise.all(content.smartHealthCards.map((card) => (card as any).asQR()));
+          const allQrCodes = await Promise.all(
+            content.smartHealthCards.map((card) =>
+              card.asQR({
+                enableChunking: true,
+              })
+            )
+          );
           setQrCodesByCard(allQrCodes);
         } catch (qrError) {
           console.warn('Failed to generate QR codes for SHC:', qrError);
@@ -161,167 +166,6 @@ export default function ViewerPage() {
     setStep('uri');
     form.reset();
     window.location.hash = '';
-  };
-
-  const renderFHIRResource = (resource: any, index: number) => {
-    // If a Bundle, render a friendly summary plus raw JSON
-    if (resource.resourceType === 'Bundle') {
-      const entries = Array.isArray(resource.entry) ? resource.entry : [];
-      const getResources = (type: string) =>
-        entries.map((e: any) => e.resource).filter((r: any) => r?.resourceType === type);
-      const patient = getResources('Patient')[0];
-      const allergies = getResources('AllergyIntolerance');
-      const conditions = getResources('Condition');
-      const medications = getResources('MedicationRequest');
-      const observations = getResources('Observation');
-
-      return (
-        <Card key={`bundle-${index}`} withBorder p="md">
-          <Group justify="space-between" mb="xs">
-            <Text fw={500}>Bundle</Text>
-            <Badge variant="light">{resource.id || 'No ID'}</Badge>
-          </Group>
-
-          {patient && (
-            <Stack gap="xs" mb="sm">
-              <Text fw={500}>Patient</Text>
-              <Text size="sm">
-                <strong>Name:</strong> {patient.name?.[0]?.given?.join(' ')} {patient.name?.[0]?.family}
-              </Text>
-              <Text size="sm">
-                <strong>Birth Date:</strong> {patient.birthDate || 'Not specified'}
-              </Text>
-              <Text size="sm">
-                <strong>Gender:</strong> {patient.gender || 'Not specified'}
-              </Text>
-            </Stack>
-          )}
-
-          <Divider my="sm" />
-
-          <Stack gap="sm">
-            <Text fw={500}>Summary</Text>
-            <List size="sm">
-              <List.Item>Allergies: {allergies.length}</List.Item>
-              <List.Item>Conditions: {conditions.length}</List.Item>
-              <List.Item>Medications: {medications.length}</List.Item>
-              <List.Item>Observations: {observations.length}</List.Item>
-            </List>
-          </Stack>
-
-          {allergies.length > 0 && (
-            <Stack gap="xs" mt="sm">
-              <Text fw={500}>Allergies</Text>
-              {allergies.slice(0, 5).map((a: any, i: number) => (
-                <Text key={`allergy-${i}`} size="sm">
-                  {a.code?.text || a.code?.coding?.[0]?.display || 'Unnamed allergy'}
-                  {a.clinicalStatus?.text ? ` • ${a.clinicalStatus.text}` : ''}
-                </Text>
-              ))}
-            </Stack>
-          )}
-
-          {conditions.length > 0 && (
-            <Stack gap="xs" mt="sm">
-              <Text fw={500}>Conditions</Text>
-              {conditions.slice(0, 5).map((c: any, i: number) => (
-                <Text key={`condition-${i}`} size="sm">
-                  {c.code?.text || c.code?.coding?.[0]?.display || 'Unnamed condition'}
-                </Text>
-              ))}
-            </Stack>
-          )}
-
-          {medications.length > 0 && (
-            <Stack gap="xs" mt="sm">
-              <Text fw={500}>Medications</Text>
-              {medications.slice(0, 5).map((m: any, i: number) => (
-                <Text key={`med-${i}`} size="sm">
-                  {m.medicationCodeableConcept?.text ||
-                    m.medicationCodeableConcept?.coding?.[0]?.display ||
-                    'Medication'}
-                </Text>
-              ))}
-            </Stack>
-          )}
-
-          {observations.length > 0 && (
-            <Stack gap="xs" mt="sm">
-              <Text fw={500}>Recent Observations</Text>
-              {observations.slice(0, 5).map((o: any, i: number) => (
-                <Text key={`obs-${i}`} size="sm">
-                  {(o.code?.text || o.code?.coding?.[0]?.display || 'Observation') +
-                    (o.valueQuantity ? `: ${o.valueQuantity.value} ${o.valueQuantity.unit || ''}` : '')}
-                  {o.effectiveDateTime ? ` • ${o.effectiveDateTime}` : ''}
-                </Text>
-              ))}
-            </Stack>
-          )}
-
-          <details>
-            <summary style={{ cursor: 'pointer', marginTop: '8px' }}>
-              <Text size="sm" c="dimmed">
-                View raw data
-              </Text>
-            </summary>
-            <Code block mt="xs">
-              {JSON.stringify(resource, null, 2)}
-            </Code>
-          </details>
-        </Card>
-      );
-    }
-
-    return (
-      <Card key={index} withBorder p="md">
-        <Group justify="space-between" mb="xs">
-          <Text fw={500}>{resource.resourceType}</Text>
-          <Badge variant="light">{resource.id || 'No ID'}</Badge>
-        </Group>
-
-        {resource.resourceType === 'Patient' && (
-          <Stack gap="xs">
-            <Text size="sm">
-              <strong>Name:</strong> {resource.name?.[0]?.given?.join(' ')} {resource.name?.[0]?.family}
-            </Text>
-            <Text size="sm">
-              <strong>Birth Date:</strong> {resource.birthDate || 'Not specified'}
-            </Text>
-            <Text size="sm">
-              <strong>Gender:</strong> {resource.gender || 'Not specified'}
-            </Text>
-          </Stack>
-        )}
-
-        {resource.resourceType === 'Observation' && (
-          <Stack gap="xs">
-            <Text size="sm">
-              <strong>Code:</strong> {resource.code?.text || resource.code?.coding?.[0]?.display || 'Not specified'}
-            </Text>
-            <Text size="sm">
-              <strong>Value:</strong>{' '}
-              {resource.valueQuantity
-                ? `${resource.valueQuantity.value} ${resource.valueQuantity.unit}`
-                : resource.valueString || resource.valueCodeableConcept?.text || 'Not specified'}
-            </Text>
-            <Text size="sm">
-              <strong>Date:</strong> {resource.effectiveDateTime || 'Not specified'}
-            </Text>
-          </Stack>
-        )}
-
-        <details>
-          <summary style={{ cursor: 'pointer', marginTop: '8px' }}>
-            <Text size="sm" c="dimmed">
-              View raw data
-            </Text>
-          </summary>
-          <Code block mt="xs">
-            {JSON.stringify(resource, null, 2)}
-          </Code>
-        </details>
-      </Card>
-    );
   };
 
   return (
@@ -452,7 +296,7 @@ export default function ViewerPage() {
               <Stack gap="md">
                 <Title order={2}>Health Information</Title>
                 <Text c="dimmed">
-                  Successfully retrieved {resolvedContent.fhirResources.length} FHIR resources
+                  Successfully retrieved {resolvedContent.fhirResources.length} FHIR resource(s)
                   {resolvedContent.smartHealthCards.length > 0 &&
                     ` and ${resolvedContent.smartHealthCards.length} Smart Health Card(s)`}
                 </Text>
@@ -470,7 +314,9 @@ export default function ViewerPage() {
                 <Stack gap="md">
                   <Title order={3}>FHIR Resources</Title>
                   <Stack gap="md">
-                    {resolvedContent.fhirResources.map((resource, index) => renderFHIRResource(resource, index))}
+                    {resolvedContent.fhirResources.map((resource, index) => (
+                      <PatientDataBundleDisplay key={index} bundle={resource as Bundle} />
+                    ))}
                   </Stack>
                 </Stack>
               </Card>
@@ -517,7 +363,7 @@ export default function ViewerPage() {
                             </Text>
                           </summary>
                           <Code block mt="xs">
-                            {(card as any).asJWS()}
+                            {card.asJWS()}
                           </Code>
                         </details>
                       </Card>

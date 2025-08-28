@@ -1,5 +1,6 @@
 // Types for Smart Health Links
 import type { Resource } from '@medplum/fhirtypes'
+import type { SmartHealthCard } from '../shc/card.js'
 
 /**
  * FHIR R4 Resource type re-exported from @medplum/fhirtypes for convenience.
@@ -356,9 +357,8 @@ export interface SHLResolvedContent {
   /**
    * Smart Health Cards extracted from application/smart-health-card files.
    * Each card is fully parsed and ready for verification or display.
-   * Note: Type is unknown[] to avoid circular imports, but represents SmartHealthCard[].
    */
-  smartHealthCards: unknown[] // Will be SmartHealthCard[] but avoiding circular import
+  smartHealthCards: SmartHealthCard[]
   /**
    * FHIR resources extracted from application/fhir+json files.
    * Each resource is a parsed JSON object conforming to FHIR R4 specification.

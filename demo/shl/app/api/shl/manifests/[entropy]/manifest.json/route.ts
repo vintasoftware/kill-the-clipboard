@@ -7,8 +7,8 @@ import { verifyPasscode } from '@/lib/auth';
 import { createManifestFileHandlers } from '@/lib/medplum-file-handlers';
 
 const medplum = new MedplumClient({
-  baseUrl: process.env.MEDPLUM_BASE_URL || 'https://api.medplum.com',
-  clientId: process.env.MEDPLUM_CLIENT_ID!,
+  baseUrl: process.env.NEXT_PUBLIC_MEDPLUM_BASE_URL || 'https://api.medplum.com',
+  clientId: process.env.NEXT_PUBLIC_MEDPLUM_CLIENT_ID!,
   clientSecret: process.env.MEDPLUM_CLIENT_SECRET!,
 });
 

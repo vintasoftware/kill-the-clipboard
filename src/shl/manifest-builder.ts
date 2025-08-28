@@ -1,4 +1,5 @@
 import type { Resource } from '@medplum/fhirtypes'
+import type { SmartHealthCard } from '../shc/card.js'
 import { encryptSHLFile } from './crypto.js'
 import { SHLError, SHLManifestError, SHLManifestRateLimitError, SHLNetworkError } from './errors.js'
 import { SHL } from './shl.js'
@@ -10,9 +11,6 @@ import type {
   SHLManifestFileDescriptor,
   SHLManifestV1,
 } from './types.js'
-
-// Import SmartHealthCard type - using unknown to avoid circular imports
-type SmartHealthCard = unknown & { asJWS(): string }
 
 /**
  * Class that builds the manifest and files for a Smart Health Link.

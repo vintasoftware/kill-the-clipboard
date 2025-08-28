@@ -51,8 +51,8 @@ This is a Next.js demo application that demonstrates Smart Health Links (SHL) fu
 
    Configure the following variables:
    ```env
-   MEDPLUM_BASE_URL=https://api.medplum.com
-   MEDPLUM_CLIENT_ID=your_client_id
+   NEXT_PUBLIC_MEDPLUM_BASE_URL=https://api.medplum.com
+   NEXT_PUBLIC_MEDPLUM_CLIENT_ID=your_client_id
    MEDPLUM_CLIENT_SECRET=your_client_secret
    ```
 
@@ -73,7 +73,7 @@ This is a Next.js demo application that demonstrates Smart Health Links (SHL) fu
 2. Click "Create Smart Health Link"
 3. Set a passcode (minimum 6 characters); optionally set label and `L` flag
 4. Submit the form; the server will:
-   - Build a FHIR Bundle and a Smart Health Card (if it fits a single SHC QR code) from your Medplum data
+   - Build a FHIR Bundle and a Smart Health Card from your Medplum data
    - Encrypt and upload the bundle as a JWE files using Medplum `Binary` FHIR resources
    - Persist builder state and passcode hash locally (demo only, not suited for production)
 5. You’ll get a `shlink:/...` URI and a button to open the viewer
