@@ -88,21 +88,6 @@ export async function POST(
   // Build and return the manifest
   const manifest = await manifestBuilder.buildManifest({ embeddedLengthMax });
 
-  // Set appropriate headers
   const response = NextResponse.json(manifest);
-  response.headers.set('Cache-Control', 'no-store');
-  response.headers.set('Access-Control-Allow-Origin', '*');
-  response.headers.set('Access-Control-Allow-Methods', 'POST, OPTIONS');
-  response.headers.set('Access-Control-Allow-Headers', 'Content-Type');
-
-  return response;
-}
-
-export async function OPTIONS() {
-  // Handle CORS preflight request
-  const response = new NextResponse(null, { status: 200 });
-  response.headers.set('Access-Control-Allow-Origin', '*');
-  response.headers.set('Access-Control-Allow-Methods', 'POST, OPTIONS');
-  response.headers.set('Access-Control-Allow-Headers', 'Content-Type');
   return response;
 }
