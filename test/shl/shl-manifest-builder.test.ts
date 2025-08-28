@@ -339,4 +339,89 @@ describe('SHLManifestBuilder', () => {
     expect(hasZip).toBe(true)
     expect(hasNoZip).toBe(true)
   })
+
+  it('manifestId throws on malformed manifest URL', () => {
+    // Construct SHL then force an invalid internal URL via serialize/deserialize hack
+    const good = SHL.generate({
+      baseManifestURL: 'https://shl.example.org',
+      manifestPath: '/manifest.json',
+    })
+    const uploaded = new Map<string, string>()
+    const builder = new SHLManifestBuilder({
+      shl: good,
+      uploadFile: async (c: string) => {
+        const id = `f-${uploaded.size + 1}`
+        uploaded.set(id, c)
+        return id
+      },
+      getFileURL: async (p: string) => `https://files/${p}`,
+      loadFile: async (p: string) => uploaded.get(p) as string,
+    })
+
+    const serialized = builder.serialize()
+    // Corrupt the url path: remove entropy segment
+    serialized.shl.url = 'https://shl.example.org/manifest.json'
+    const corrupted = SHLManifestBuilder.deserialize({
+      data: serialized,
+      uploadFile: async (c: string) => 'x',
+      getFileURL: async (p: string) => p,
+    })
+
+    expect(() => corrupted.manifestId).toThrow('Invalid manifest URL format')
+  })
+
+  it('default loadFile maps 429 to SHLManifestRateLimitError and 500 to SHLNetworkError', async () => {
+    const shl = SHL.generate({
+      baseManifestURL: 'https://shl.example.org',
+      manifestPath: '/manifest.json',
+    })
+    const uploaded = new Map<string, string>()
+
+    const fetch429 = vi.fn(
+      async () =>
+        ({
+          ok: false,
+          status: 429,
+          statusText: 'Too Many Requests',
+          text: async () => '',
+        }) as Response
+    )
+    const builder429 = new SHLManifestBuilder({
+      shl,
+      uploadFile: async (c: string) => {
+        const id = `f-${uploaded.size + 1}`
+        uploaded.set(id, c)
+        return id
+      },
+      getFileURL: async (p: string) => `https://files/${p}`,
+      fetch: fetch429,
+    })
+
+    await builder429.addFHIRResource({
+      content: { resourceType: 'Patient' } as any,
+      enableCompression: false,
+    })
+    await expect(builder429.buildManifest({ embeddedLengthMax: 1_000_000 })).rejects.toThrow(
+      'Too many requests to file storage'
+    )
+
+    const fetch500 = vi.fn(
+      async () =>
+        ({ ok: false, status: 500, statusText: 'Internal Error', text: async () => '' }) as Response
+    )
+    const builder500 = new SHLManifestBuilder({
+      shl,
+      uploadFile: async (c: string) => 'id',
+      getFileURL: async (p: string) => `https://files/${p}`,
+      fetch: fetch500,
+    })
+
+    await builder500.addFHIRResource({
+      content: { resourceType: 'Patient' } as any,
+      enableCompression: false,
+    })
+    await expect(builder500.buildManifest({ embeddedLengthMax: 1_000_000 })).rejects.toThrow(
+      'HTTP 500: Internal Error'
+    )
+  })
 })

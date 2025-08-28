@@ -1,6 +1,12 @@
 import { base64url } from 'jose'
 import { describe, expect, it, vi } from 'vitest'
-import { SHL, SHLFormatError, SHLManifestBuilder, SHLViewer } from '@/index'
+import {
+  SHL,
+  SHLFormatError,
+  SHLInvalidPasscodeError,
+  SHLManifestBuilder,
+  SHLViewer,
+} from '@/index'
 import { createValidFHIRBundle } from '../helpers'
 
 describe('SHLViewer', () => {
@@ -592,5 +598,51 @@ describe('SHLViewer', () => {
         'JWE decryption failed'
       )
     })
+  })
+
+  it('throws for missing payload in shlink URI', () => {
+    expect(() => new SHLViewer({ shlinkURI: 'shlink:/' })).toThrow(SHLFormatError)
+  })
+
+  it('throws for unsupported version v in payload', () => {
+    // Craft payload with v=2
+    const shl = SHL.generate({ baseManifestURL: 'https://shl.example.org' })
+    const payload = { ...shl['payload'], v: 2 as 1 }
+    const json = JSON.stringify(payload)
+    const { base64url } = require('jose') as typeof import('jose')
+    const uri = `shlink:/${base64url.encode(new TextEncoder().encode(json))}`
+    expect(() => new SHLViewer({ shlinkURI: uri })).toThrow('unsupported version')
+  })
+
+  it('enforces passcode when P flag is set', async () => {
+    const shl = SHL.generate({ baseManifestURL: 'https://shl.example.org', flag: 'P' })
+    const shlinkURI = shl.generateSHLinkURI()
+    const fetchOkEmpty = vi.fn(
+      async () =>
+        ({
+          ok: true,
+          status: 200,
+          statusText: 'OK',
+          text: async () => JSON.stringify({ files: [] }),
+        }) as Response
+    )
+    await expect(
+      new SHLViewer({ shlinkURI, fetch: fetchOkEmpty }).resolveSHLink({ recipient: 'r' })
+    ).rejects.toThrow(SHLInvalidPasscodeError)
+  })
+
+  it('propagates 401 as SHLInvalidPasscodeError', async () => {
+    const shl = SHL.generate({ baseManifestURL: 'https://shl.example.org', flag: 'P' })
+    const shlinkURI = shl.generateSHLinkURI()
+    const fetch401 = vi.fn(
+      async () =>
+        ({ ok: false, status: 401, statusText: 'Unauthorized', text: async () => '' }) as Response
+    )
+    await expect(
+      new SHLViewer({ shlinkURI, fetch: fetch401 }).resolveSHLink({
+        recipient: 'r',
+        passcode: 'x',
+      })
+    ).rejects.toThrow('Invalid or missing passcode')
   })
 })
