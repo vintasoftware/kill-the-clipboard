@@ -2,22 +2,32 @@
 
 This is a Next.js demo application that demonstrates Smart Health Links (SHL) functionality using Medplum and the `kill-the-clipboard` library.
 
-## Features
+**⚠️ Warning: This is a demo project. For production use, ensure proper security measures are implemented.**
 
-- **Create Smart Health Links**: Generate secure, encrypted links to health information
-- **Passcode Protection**: Secure access with user-defined passcodes
-- **Long-term Links**: Support for ongoing access to health data
-- **Viewer Interface**: Resolve and view Smart Health Links
-- **Medplum Integration**: Leverage Medplum's FHIR data store
+## What this demo implements
 
-## Architecture
+- **Smart Health Link Generator**: Creates Smart Health Links that point to a manifest; `U` flag unsupported
+    - **Passcode protection (`P` flag)**: Server-enforced passcode prompted on the viewer; passcodes are stored as salted SHA-256 hashes (demo only, not suited for production). For production, use Argon2 or similar and a proper database
+    - **Persistent Manifest storage**: Serialized `SHLManifestBuilder` state and passcode hashes stored on local filesystem under `.shl-storage/*.json` (demo only, not suited for production). For production, use a proper database
+    - **File storage**: Encrypted JWE files persisted to Medplum as `Binary` resources; file URLs are FHIR URLs for `Binary` resources
+- **Smart Health Link Viewer**: Resolves `shlink:/...`, prompts for passcode if needed, fetches manifest, decrypts files, and displays FHIR resources
+    - **Manifest serving**: POST manifest endpoint; embeds JWEs ≤ 4 KiB, otherwise returns JWE file URLs
+    - **Optional long-term flag (`L`)**: Flag is settable on creation; no polling implemented yet
 
-The demo consists of:
+## URL Paths
 
-1. **Patient Portal** (`/`): Create and manage Smart Health Links
-2. **SHL Creation API** (`/api/shl`): Server-side SHL generation
-3. **Manifest API** (`/api/shl/manifests/[entropy]/manifest.json`): Serve SHL manifests
-4. **Viewer** (`/viewer`): Resolve and display Smart Health Links
+- **SHL Generator** (`/`): Create SHLs
+- **SHL Generation API** (`/api/shl`): Server-side SHL generation
+- **SHL Viewer** (`/viewer`): Resolve and display SHLs
+- **Manifest API** (`/api/shl/manifests/[entropy]/manifest.json`): Serve SHL manifests
+
+## Important limitations
+
+- SHL Viewer requires a valid Medplum session to fetch files due to how Medplum's `Binary` resources are protected by its FHIR server
+- No friendly FHIR resource display
+- No QR code rendering
+- No polling for SHLs with `L` flag
+- No rate limiting for manifest requests
 
 ## Setup
 
@@ -49,12 +59,9 @@ The demo consists of:
    # SHL Configuration
    SHL_BASE_URL=https://your-domain.com/api/shl/manifests
    
-   # SHC Signing Keys (for production)
-   SHC_PRIVATE_KEY=your_es256_private_key
-   SHC_PUBLIC_KEY=your_es256_public_key
-   
-   # Passcode Security
-   SHL_PASSCODE_PEPPER=your_global_pepper
+   # SHC Signing Keys
+   SHC_PRIVATE_KEY=a_es256_private_key
+   SHC_PUBLIC_KEY=a_es256_public_key
    ```
 
 3. Run the development server:
@@ -68,19 +75,22 @@ The demo consists of:
 
 ### Creating a Smart Health Link
 
-1. Navigate to the home page
+1. Sign in with Medplum on the home page
 2. Click "Create Smart Health Link"
-3. Set a passcode (minimum 6 characters)
-4. Optionally add a label and enable long-term access
-5. Submit the form to generate the SHL
+3. Set a passcode (minimum 6 characters); optionally set label and `L` flag
+4. Submit the form; the server will:
+   - Build a FHIR Bundle and a Smart Health Card (if it fits a single SHC QR code) from your Medplum data
+   - Encrypt and upload the bundle as a JWE files using Medplum `Binary` FHIR resources
+   - Persist builder state and passcode hash locally (demo only, not suited for production)
+5. You’ll get a `shlink:/...` URI and a button to open the viewer
 
 ### Viewing a Smart Health Link
 
-1. Navigate to `/viewer`
-2. Paste the Smart Health Link URI
-3. Enter your name as the recipient
-4. If required, enter the passcode
-5. Click "View Health Information" to resolve the link
+1. Sign in with Medplum
+2. Navigate to `/viewer` (or open from the creation screen)
+3. Paste the Smart Health Link URI (or it is pre-filled when opened via button)
+4. Enter the passcode and your name as the recipient
+5. Click "View Health Information" to resolve and decrypt the link content
 
 ## Development
 
@@ -88,50 +98,35 @@ The demo consists of:
 
 ```
 demo/shl/
-├── app/                    # Next.js App Router
-│   ├── api/               # API routes
-│   │   └── shl/          # SHL-related APIs
-│   ├── components/        # React components
-│   ├── viewer/            # SHL viewer page
-│   ├── layout.tsx         # Root layout
-│   ├── page.tsx           # Home page
-│   └── root.tsx           # Medplum provider wrapper
-├── components/            # Shared components
-├── package.json           # Dependencies
-└── README.md             # This file
+├── app/
+│   ├── api/
+│   │   └── shl/
+│   │       ├── route.ts                # POST /api/shl - Create SHLs
+│   │       └── manifests/
+│   │           └── [entropy]/
+│   │               └── manifest.json/
+│   │                   └── route.ts    # POST manifest endpoint
+│   ├── viewer/
+│   │   └── page.tsx                    # SHL viewer page
+│   ├── layout.tsx
+│   ├── page.tsx                        # Home page - SHL creation
+│   └── root.tsx
+├── components/
+│   ├── CreateSHLForm.tsx               # Form for creating SHLs
+│   └── SHLDisplay.tsx                  # Component for displaying created SHLs
+├── lib/
+│   ├── auth.ts                         # Passcode hashing and verification
+│   ├── medplum-fetch.ts                # Medplum-authenticated fetch wrapper
+│   ├── medplum-file-handlers.ts        # JWE file upload/URL generation for SHL files
+│   └── storage.ts                      # Local filesystem storage functions (demo only)
+├── .shl-storage/                       # Local storage directory (created at runtime)
+│   ├── manifests.json
+│   └── passcodes.json
+├── package.json
+└── README.md
 ```
-
-### Key Components
-
-- **`CreateSHLForm`**: Form for creating new Smart Health Links
-- **`SHLDisplay`**: Display created SHLs with QR codes and sharing options
-- **`ViewerPage`**: Interface for resolving and viewing SHLs
 
 ### API Endpoints
 
-- **`POST /api/shl`**: Create a new Smart Health Link
-- **`POST /api/shl/manifests/[entropy]/manifest.json`**: Serve SHL manifests
-
-## Security Considerations
-
-- All SHL content is encrypted using AES-256-GCM
-- Passcodes are hashed and never stored in plain text
-- File URLs are short-lived and single-use
-- CORS is configured for cross-origin manifest requests
-- HTTPS is required for production deployments
-
-## Future Enhancements
-
-- [ ] QR code generation using `qrcode.react`
-- [ ] Database integration for persistent storage
-- [ ] Rate limiting on manifest requests
-- [ ] Enhanced FHIR resource display
-- [ ] Patient authentication and data fetching from Medplum
-
-## Contributing
-
-This is a demo project. For production use, ensure proper security measures are implemented.
-
-## License
-
-See the main project license.
+- **`POST /api/shl`**: Create a new Smart Health Link (requires Medplum bearer token)
+- **`POST /api/shl/manifests/[entropy]/manifest.json`**: Serve SHL manifests (requires Medplum bearer token; passcode enforced)
