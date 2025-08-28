@@ -77,7 +77,7 @@ export const PatientDataBundleDisplay: React.FC<PatientDataBundleDisplayProps> =
 
       {observations.length > 0 && (
         <Stack gap="xs" mt="sm">
-          <Text fw={500}>Recent Observations</Text>
+          <Text fw={500}>Observations</Text>
           <List size="sm">
             {observations.map((o: any, i: number) => (
               <List.Item key={`obs-${i}`}>

@@ -60,7 +60,7 @@ export default function HomePage() {
 
             {!isCreating && !createdSHL && (
               <Stack gap="lg">
-                <PatientDataManager enableSampleData={true} title="Your Health Information" />
+                <PatientDataManager title="Your Health Information" />
                 <Group>
                   <Button size="lg" onClick={handleCreateSHL}>
                     Create Smart Health Link

@@ -1,0 +1,97 @@
+[
+  {
+    "resourceType": "MedicationRequest",
+    "status": "active",
+    "intent": "order",
+    "medicationCodeableConcept": {
+      "coding": [
+        {
+          "system": "http://www.nlm.nih.gov/research/umls/rxnorm",
+          "code": "308136",
+          "display": "Lisinopril 10 MG Oral Tablet"
+        }
+      ],
+      "text": "Lisinopril 10mg"
+    },
+    "subject": {
+      "reference": "Patient/"
+    },
+    "authoredOn": "2024-01-01"
+  },
+  {
+    "resourceType": "MedicationRequest",
+    "status": "active",
+    "intent": "order",
+    "medicationCodeableConcept": {
+      "coding": [
+        {
+          "system": "http://www.nlm.nih.gov/research/umls/rxnorm",
+          "code": "860975",
+          "display": "Metformin 500 MG Oral Tablet"
+        }
+      ],
+      "text": "Metformin 500mg"
+    },
+    "subject": {
+      "reference": "Patient/"
+    },
+    "authoredOn": "2024-01-01"
+  },
+  {
+    "resourceType": "MedicationRequest",
+    "status": "active",
+    "intent": "order",
+    "medicationCodeableConcept": {
+      "coding": [
+        {
+          "system": "http://www.nlm.nih.gov/research/umls/rxnorm",
+          "code": "1998447",
+          "display": "Albuterol 0.09 MG/ACTUAT Inhalation Spray"
+        }
+      ],
+      "text": "Albuterol inhaler"
+    },
+    "subject": {
+      "reference": "Patient/"
+    },
+    "authoredOn": "2024-01-01"
+  },
+  {
+    "resourceType": "MedicationRequest",
+    "status": "completed",
+    "intent": "order",
+    "medicationCodeableConcept": {
+      "coding": [
+        {
+          "system": "http://www.nlm.nih.gov/research/umls/rxnorm",
+          "code": "197696",
+          "display": "Amoxicillin 500 MG Oral Capsule"
+        }
+      ],
+      "text": "Amoxicillin 500mg"
+    },
+    "subject": {
+      "reference": "Patient/"
+    },
+    "authoredOn": "2023-12-02"
+  },
+  {
+    "resourceType": "MedicationRequest",
+    "status": "active",
+    "intent": "order",
+    "medicationCodeableConcept": {
+      "coding": [
+        {
+          "system": "http://www.nlm.nih.gov/research/umls/rxnorm",
+          "code": "316049",
+          "display": "Prenatal Vitamins"
+        }
+      ],
+      "text": "Prenatal vitamins"
+    },
+    "subject": {
+      "reference": "Patient/"
+    },
+    "authoredOn": "2024-01-01"
+  }
+]

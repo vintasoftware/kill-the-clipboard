@@ -1,0 +1,122 @@
+[
+  {
+    "resourceType": "Observation",
+    "status": "final",
+    "code": {
+      "coding": [
+        {
+          "system": "http://loinc.org",
+          "code": "8480-6",
+          "display": "Systolic blood pressure"
+        }
+      ],
+      "text": "Blood Pressure Systolic"
+    },
+    "subject": {
+      "reference": "Patient/"
+    },
+    "effectiveDateTime": "2024-01-01",
+    "valueQuantity": {
+      "value": 145,
+      "unit": "mmHg",
+      "system": "http://unitsofmeasure.org",
+      "code": "mm[Hg]"
+    }
+  },
+  {
+    "resourceType": "Observation",
+    "status": "final",
+    "code": {
+      "coding": [
+        {
+          "system": "http://loinc.org",
+          "code": "8462-4",
+          "display": "Diastolic blood pressure"
+        }
+      ],
+      "text": "Blood Pressure Diastolic"
+    },
+    "subject": {
+      "reference": "Patient/"
+    },
+    "effectiveDateTime": "2024-01-01",
+    "valueQuantity": {
+      "value": 90,
+      "unit": "mmHg",
+      "system": "http://unitsofmeasure.org",
+      "code": "mm[Hg]"
+    }
+  },
+  {
+    "resourceType": "Observation",
+    "status": "final",
+    "code": {
+      "coding": [
+        {
+          "system": "http://loinc.org",
+          "code": "33747-0",
+          "display": "General blood glucose measurement"
+        }
+      ],
+      "text": "Blood Glucose"
+    },
+    "subject": {
+      "reference": "Patient/"
+    },
+    "effectiveDateTime": "2024-01-01",
+    "valueQuantity": {
+      "value": 120,
+      "unit": "mg/dL",
+      "system": "http://unitsofmeasure.org",
+      "code": "mg/dL"
+    }
+  },
+  {
+    "resourceType": "Observation",
+    "status": "final",
+    "code": {
+      "coding": [
+        {
+          "system": "http://loinc.org",
+          "code": "29463-7",
+          "display": "Body Weight"
+        }
+      ],
+      "text": "Weight"
+    },
+    "subject": {
+      "reference": "Patient/"
+    },
+    "effectiveDateTime": "2024-01-01",
+    "valueQuantity": {
+      "value": 70,
+      "unit": "kg",
+      "system": "http://unitsofmeasure.org",
+      "code": "kg"
+    }
+  },
+  {
+    "resourceType": "Observation",
+    "status": "final",
+    "code": {
+      "coding": [
+        {
+          "system": "http://loinc.org",
+          "code": "8302-2",
+          "display": "Body height"
+        }
+      ],
+      "text": "Height"
+    },
+    "subject": {
+      "reference": "Patient/"
+    },
+    "effectiveDateTime": "2024-01-01",
+    "valueQuantity": {
+      "value": 165,
+      "unit": "cm",
+      "system": "http://unitsofmeasure.org",
+      "code": "cm"
+    }
+  }
+]
