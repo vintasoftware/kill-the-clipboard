@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { MedplumClient } from '@medplum/core';
 import { Patient, Bundle, Resource } from '@medplum/fhirtypes';
-import { SHL, SHLManifestBuilder, SmartHealthCard } from 'kill-the-clipboard';
+import { SHL, SHLManifestBuilder, SmartHealthCard, SmartHealthCardIssuer } from 'kill-the-clipboard';
 import { storeManifestBuilder, storePasscode } from '@/lib/storage';
 import { hashPasscode } from '@/lib/auth';
 import { createManifestFileHandlers } from '@/lib/medplum-file-handlers';
@@ -161,29 +161,26 @@ export async function POST(request: NextRequest) {
       enableCompression: true
     });
 
-    // Create and add a basic Smart Health Card if we have the keys
-    // if (process.env.SHC_PRIVATE_KEY) {
-    //   try {
-    //     await manifestBuilder.addHealthCard({
-    //       shc: ...,
-    //       enableCompression: false
-    //     });
-    //   } catch (shcError) {
-    //     console.warn('Could not add Smart Health Card:', shcError);
-    //   }
-    // }
+    // Add the FHIR bundle as a Smart Health Card to the manifest
+    const shcIssuer = new SmartHealthCardIssuer({
+      issuer: process.env.SHC_ISSUER!,
+      privateKey: process.env.SHC_PRIVATE_KEY!,
+      publicKey: process.env.SHC_PUBLIC_KEY!,
+    });
+    const shc = await shcIssuer.issue(fhirBundle);
+    await manifestBuilder.addHealthCard({ shc });
 
-    // Extract entropy from the manifest URL for database key
+    // Extract manifestID from the manifest URL for database key
     const manifestUrl = shl.url;
     const urlParts = manifestUrl.split('/');
-    const entropy = urlParts[urlParts.length - 2]; // Get the entropy part before manifest.json
+    const manifestID = urlParts[urlParts.length - 2]; // Get the manifestID part before manifest.json
 
     // Store the manifest builder state in database
-    await storeManifestBuilder(entropy, manifestBuilder.serialize(), profile.id);
+    await storeManifestBuilder(manifestID, manifestBuilder.serialize(), profile.id);
 
     // Hash and store the passcode
     const { hash } = hashPasscode(passcode);
-    await storePasscode(entropy, hash);
+    await storePasscode(manifestID, hash);
 
     // Return the SHL URI
     const shlUri = shl.generateSHLinkURI();

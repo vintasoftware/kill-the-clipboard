@@ -2,6 +2,7 @@ import type { Resource } from '@medplum/fhirtypes'
 import { base64url } from 'jose'
 import type { SmartHealthCard } from '../shc/card.js'
 import { SmartHealthCardReader } from '../shc/reader.js'
+import type { SmartHealthCardReaderConfigParams } from '../shc/types.js'
 import { decryptSHLFile } from './crypto.js'
 import {
   SHLError,
@@ -203,6 +204,7 @@ export class SHLViewer {
     passcode?: string
     recipient: string
     embeddedLengthMax?: number
+    shcReaderConfig?: SmartHealthCardReaderConfigParams
   }): Promise<SHLResolvedContent> {
     const shl = this.shl
 
@@ -273,7 +275,7 @@ export class SHLViewer {
         // Create SmartHealthCard objects for each JWS
         for (const jws of fileContent.verifiableCredential) {
           // Use SmartHealthCardReader to properly decode the JWS and extract the FHIR Bundle
-          const reader = new SmartHealthCardReader({ verifyExpiration: false })
+          const reader = new SmartHealthCardReader(params.shcReaderConfig ?? {})
           try {
             const smartHealthCard = await reader.fromJWS(jws)
             smartHealthCards.push(smartHealthCard)

@@ -182,7 +182,7 @@ export class SmartHealthCardReader {
         throw error
       }
       const message = error instanceof Error ? error.message : String(error)
-      throw new VerificationError(`Unable to resolve public key via JWKS: ${message}`)
+      throw new VerificationError(`Unable to resolve public key via JWKS endpoint: ${message}`)
     }
   }
 

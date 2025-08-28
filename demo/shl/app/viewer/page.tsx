@@ -13,12 +13,15 @@ import {
   Group,
   Code,
   Badge,
+  Divider,
+  List,
+  Image,
 } from '@mantine/core';
 import { useForm } from '@mantine/form';
 import { notifications } from '@mantine/notifications';
 import { SHLViewer, SHLResolvedContent } from 'kill-the-clipboard';
 import { buildMedplumFetch } from '@/lib/medplum-fetch';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { IconAlertCircle, IconCheck, IconX } from '@tabler/icons-react';
 import { useMedplum } from '@medplum/react';
 
@@ -34,6 +37,9 @@ export default function ViewerPage() {
   const [resolvedContent, setResolvedContent] = useState<SHLResolvedContent | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [step, setStep] = useState<'uri' | 'credentials' | 'content'>('uri');
+  const [qrCodesByCard, setQrCodesByCard] = useState<string[][]>([]);
+
+  console.log('qrCodesByCard', qrCodesByCard);
 
   const form = useForm<ViewerFormValues>({
     initialValues: {
@@ -51,6 +57,34 @@ export default function ViewerPage() {
     },
   });
 
+  const handleParseUri = useCallback(
+    (uri: string) => {
+      try {
+        // Get the access token from Medplum client
+        const accessToken = medplum.getAccessToken();
+        if (!accessToken) {
+          throw new Error('No access token available. Please sign in again.');
+        }
+
+        console.log('viewing', uri);
+        const viewer = new SHLViewer({
+          shlinkURI: uri,
+          // Provide Medplum-authenticated fetch
+          fetch: buildMedplumFetch(medplum),
+        });
+        setShlViewer(viewer);
+        setStep('credentials');
+      } catch (error) {
+        notifications.show({
+          title: 'Invalid SHL URI',
+          message: error instanceof Error ? error.message : 'Failed to parse Smart Health Link',
+          color: 'red',
+        });
+      }
+    },
+    [medplum]
+  );
+
   // Parse SHL URI from URL hash on component mount
   useEffect(() => {
     const hash = window.location.hash;
@@ -59,32 +93,7 @@ export default function ViewerPage() {
       setShlUri(uri);
       handleParseUri(uri);
     }
-  }, []);
-
-  const handleParseUri = (uri: string) => {
-    try {
-      // Get the access token from Medplum client
-      const accessToken = medplum.getAccessToken();
-      if (!accessToken) {
-        throw new Error('No access token available. Please sign in again.');
-      }
-
-      console.log('viewing', uri);
-      const viewer = new SHLViewer({
-        shlinkURI: uri,
-        // Provide Medplum-authenticated fetch
-        fetch: buildMedplumFetch(medplum),
-      });
-      setShlViewer(viewer);
-      setStep('credentials');
-    } catch (error) {
-      notifications.show({
-        title: 'Invalid SHL URI',
-        message: error instanceof Error ? error.message : 'Failed to parse Smart Health Link',
-        color: 'red',
-      });
-    }
-  };
+  }, [handleParseUri]);
 
   const handleUriSubmit = (values: { shlUri: string }) => {
     if (!values.shlUri) {
@@ -108,6 +117,9 @@ export default function ViewerPage() {
         recipient: values.recipient,
         passcode: shlViewer.shl.requiresPasscode ? values.passcode : undefined,
         embeddedLengthMax: 4096,
+        shcReaderConfig: {
+          publicKey: process.env.NEXT_PUBLIC_SHC_PUBLIC_KEY!,
+        },
       });
 
       setResolvedContent(content);
@@ -117,6 +129,19 @@ export default function ViewerPage() {
         message: 'Smart Health Link resolved successfully',
         color: 'green',
       });
+
+      // Generate QR codes for any Smart Health Cards present
+      if (content.smartHealthCards?.length) {
+        try {
+          const allQrCodes = await Promise.all(content.smartHealthCards.map((card) => (card as any).asQR()));
+          setQrCodesByCard(allQrCodes);
+        } catch (qrError) {
+          console.warn('Failed to generate QR codes for SHC:', qrError);
+          setQrCodesByCard([]);
+        }
+      } else {
+        setQrCodesByCard([]);
+      }
     } catch (error) {
       console.error('Error resolving SHL:', error);
       notifications.show({
@@ -139,6 +164,114 @@ export default function ViewerPage() {
   };
 
   const renderFHIRResource = (resource: any, index: number) => {
+    // If a Bundle, render a friendly summary plus raw JSON
+    if (resource.resourceType === 'Bundle') {
+      const entries = Array.isArray(resource.entry) ? resource.entry : [];
+      const getResources = (type: string) =>
+        entries.map((e: any) => e.resource).filter((r: any) => r?.resourceType === type);
+      const patient = getResources('Patient')[0];
+      const allergies = getResources('AllergyIntolerance');
+      const conditions = getResources('Condition');
+      const medications = getResources('MedicationRequest');
+      const observations = getResources('Observation');
+
+      return (
+        <Card key={`bundle-${index}`} withBorder p="md">
+          <Group justify="space-between" mb="xs">
+            <Text fw={500}>Bundle</Text>
+            <Badge variant="light">{resource.id || 'No ID'}</Badge>
+          </Group>
+
+          {patient && (
+            <Stack gap="xs" mb="sm">
+              <Text fw={500}>Patient</Text>
+              <Text size="sm">
+                <strong>Name:</strong> {patient.name?.[0]?.given?.join(' ')} {patient.name?.[0]?.family}
+              </Text>
+              <Text size="sm">
+                <strong>Birth Date:</strong> {patient.birthDate || 'Not specified'}
+              </Text>
+              <Text size="sm">
+                <strong>Gender:</strong> {patient.gender || 'Not specified'}
+              </Text>
+            </Stack>
+          )}
+
+          <Divider my="sm" />
+
+          <Stack gap="sm">
+            <Text fw={500}>Summary</Text>
+            <List size="sm">
+              <List.Item>Allergies: {allergies.length}</List.Item>
+              <List.Item>Conditions: {conditions.length}</List.Item>
+              <List.Item>Medications: {medications.length}</List.Item>
+              <List.Item>Observations: {observations.length}</List.Item>
+            </List>
+          </Stack>
+
+          {allergies.length > 0 && (
+            <Stack gap="xs" mt="sm">
+              <Text fw={500}>Allergies</Text>
+              {allergies.slice(0, 5).map((a: any, i: number) => (
+                <Text key={`allergy-${i}`} size="sm">
+                  {a.code?.text || a.code?.coding?.[0]?.display || 'Unnamed allergy'}
+                  {a.clinicalStatus?.text ? ` • ${a.clinicalStatus.text}` : ''}
+                </Text>
+              ))}
+            </Stack>
+          )}
+
+          {conditions.length > 0 && (
+            <Stack gap="xs" mt="sm">
+              <Text fw={500}>Conditions</Text>
+              {conditions.slice(0, 5).map((c: any, i: number) => (
+                <Text key={`condition-${i}`} size="sm">
+                  {c.code?.text || c.code?.coding?.[0]?.display || 'Unnamed condition'}
+                </Text>
+              ))}
+            </Stack>
+          )}
+
+          {medications.length > 0 && (
+            <Stack gap="xs" mt="sm">
+              <Text fw={500}>Medications</Text>
+              {medications.slice(0, 5).map((m: any, i: number) => (
+                <Text key={`med-${i}`} size="sm">
+                  {m.medicationCodeableConcept?.text ||
+                    m.medicationCodeableConcept?.coding?.[0]?.display ||
+                    'Medication'}
+                </Text>
+              ))}
+            </Stack>
+          )}
+
+          {observations.length > 0 && (
+            <Stack gap="xs" mt="sm">
+              <Text fw={500}>Recent Observations</Text>
+              {observations.slice(0, 5).map((o: any, i: number) => (
+                <Text key={`obs-${i}`} size="sm">
+                  {(o.code?.text || o.code?.coding?.[0]?.display || 'Observation') +
+                    (o.valueQuantity ? `: ${o.valueQuantity.value} ${o.valueQuantity.unit || ''}` : '')}
+                  {o.effectiveDateTime ? ` • ${o.effectiveDateTime}` : ''}
+                </Text>
+              ))}
+            </Stack>
+          )}
+
+          <details>
+            <summary style={{ cursor: 'pointer', marginTop: '8px' }}>
+              <Text size="sm" c="dimmed">
+                View raw data
+              </Text>
+            </summary>
+            <Code block mt="xs">
+              {JSON.stringify(resource, null, 2)}
+            </Code>
+          </details>
+        </Card>
+      );
+    }
+
     return (
       <Card key={index} withBorder p="md">
         <Group justify="space-between" mb="xs">
@@ -353,6 +486,30 @@ export default function ViewerPage() {
                         <Text fw={500} mb="xs">
                           Smart Health Card #{index + 1}
                         </Text>
+                        {qrCodesByCard[index]?.length ? (
+                          <Stack gap="xs" mb="sm">
+                            <Text size="sm" c="dimmed">
+                              QR Code{qrCodesByCard[index].length > 1 ? 's' : ''} (scan to import)
+                            </Text>
+                            <Group>
+                              {qrCodesByCard[index].map((dataUrl, i) => (
+                                <Image
+                                  key={`qr-${index}-${i}`}
+                                  src={dataUrl}
+                                  alt={`SHC QR ${i + 1}`}
+                                  w={180}
+                                  h={180}
+                                  fit="contain"
+                                  radius="md"
+                                />
+                              ))}
+                            </Group>
+                          </Stack>
+                        ) : (
+                          <Text size="sm" c="dimmed">
+                            Generating QR code...
+                          </Text>
+                        )}
                         <details>
                           <summary style={{ cursor: 'pointer' }}>
                             <Text size="sm" c="dimmed">

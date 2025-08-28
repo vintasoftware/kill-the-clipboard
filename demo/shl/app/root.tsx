@@ -6,17 +6,11 @@ import '@medplum/react/styles.css';
 import { JSX, ReactNode } from 'react';
 
 const medplum = new MedplumClient({
-  // Uncomment this to run against the server on your localhost
-  // baseUrl: 'http://localhost:8103/',
-
   // Handle unauthenticated requests
   onUnauthenticated: () => (window.location.href = '/'),
 
   // Use Next.js fetch
   fetch: (url: string, options?: any) => fetch(url, options),
-
-  // Recommend using cache for React performance
-  cacheTime: 10000,
 });
 
 export default function Root(props: { children: ReactNode }): JSX.Element {

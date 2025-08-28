@@ -51,18 +51,12 @@ This is a Next.js demo application that demonstrates Smart Health Links (SHL) fu
 
    Configure the following variables:
    ```env
-   # Medplum Configuration
    MEDPLUM_BASE_URL=https://api.medplum.com
    MEDPLUM_CLIENT_ID=your_client_id
    MEDPLUM_CLIENT_SECRET=your_client_secret
-   
-   # SHL Configuration
-   SHL_BASE_URL=https://your-domain.com/api/shl/manifests
-   
-   # SHC Signing Keys
-   SHC_PRIVATE_KEY=a_es256_private_key
-   SHC_PUBLIC_KEY=a_es256_public_key
    ```
+
+   The other variables can be left as is.
 
 3. Run the development server:
    ```bash

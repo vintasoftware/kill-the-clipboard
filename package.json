@@ -70,7 +70,7 @@
   "devDependencies": {
     "@arethetypeswrong/cli": "^0.18.2",
     "@biomejs/biome": "2.0.4",
-    "@medplum/fhirtypes": "^3.0.0",
+    "@medplum/fhirtypes": "^4.3.10",
     "@rollup/plugin-commonjs": "^28.0.6",
     "@rollup/plugin-node-resolve": "^16.0.1",
     "@rollup/plugin-terser": "^0.4.4",
