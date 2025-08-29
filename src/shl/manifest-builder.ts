@@ -1,5 +1,5 @@
 import type { Resource } from '@medplum/fhirtypes'
-import type { SmartHealthCard } from '../shc/card.js'
+import type { SmartHealthCard } from '../shc/shc.js'
 import { encryptSHLFile } from './crypto.js'
 import { SHLError, SHLManifestError, SHLNetworkError } from './errors.js'
 import { SHL } from './shl.js'

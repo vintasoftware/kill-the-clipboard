@@ -1,15 +1,15 @@
 // SmartHealthCardReader class
 import { importJWK } from 'jose'
-import { SmartHealthCard } from './card.js'
 import { FileFormatError, QRCodeError, SmartHealthCardError, VerificationError } from './errors.js'
 import { JWSProcessor } from './jws/jws-processor.js'
 import { QRCodeGenerator } from './qr/qr-code-generator.js'
+import { SmartHealthCard } from './shc.js'
 import type {
   SmartHealthCardReaderConfig,
   SmartHealthCardReaderConfigParams,
   VerifiableCredential,
 } from './types.js'
-import { VerifiableCredentialProcessor } from './types.js'
+import { VerifiableCredentialProcessor } from './vc.js'
 
 /**
  * Reads and verifies SMART Health Cards from various sources.

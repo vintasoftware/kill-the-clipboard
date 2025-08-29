@@ -1,6 +1,6 @@
 // Types for Smart Health Links
 import type { Resource } from '@medplum/fhirtypes'
-import type { SmartHealthCard } from '../shc/card.js'
+import type { SmartHealthCard } from '../shc/shc.js'
 import type { QREncodeParams } from '../shc/types.js'
 
 /**

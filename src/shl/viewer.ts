@@ -1,6 +1,6 @@
 import type { Resource } from '@medplum/fhirtypes'
-import type { SmartHealthCard } from '../shc/card.js'
 import { SmartHealthCardReader } from '../shc/reader.js'
+import type { SmartHealthCard } from '../shc/shc.js'
 import type { SmartHealthCardReaderConfigParams } from '../shc/types.js'
 import { decryptSHLFile } from './crypto.js'
 import {

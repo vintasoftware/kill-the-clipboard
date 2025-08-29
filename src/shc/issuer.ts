@@ -1,8 +1,8 @@
 // SmartHealthCardIssuer class
 
-import { SmartHealthCard } from './card.js'
 import { FHIRBundleProcessor } from './fhir/bundle-processor.js'
 import { JWSProcessor } from './jws/jws-processor.js'
+import { SmartHealthCard } from './shc.js'
 import type {
   FHIRBundle,
   SmartHealthCardConfig,
@@ -10,7 +10,7 @@ import type {
   SmartHealthCardJWT,
   VerifiableCredentialParams,
 } from './types.js'
-import { VerifiableCredentialProcessor } from './types.js'
+import { VerifiableCredentialProcessor } from './vc.js'
 
 /**
  * Issues new SMART Health Cards from FHIR Bundles.
