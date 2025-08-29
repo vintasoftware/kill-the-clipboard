@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { SHL, SHLManifestBuilder, SmartHealthCardIssuer } from '@/index'
+import { SHL, SHLManifestBuilder, SHLNetworkError, SmartHealthCardIssuer } from '@/index'
 import { createValidFHIRBundle, testPrivateKeyPKCS8, testPublicKeySPKI } from '../helpers'
 
 describe('SHLManifestBuilder', () => {
@@ -20,7 +20,7 @@ describe('SHLManifestBuilder', () => {
         uploadedFiles.set(fileId, content)
         return fileId
       },
-      getFileURL: (path: string) => `https://files.example.org/${path}`,
+      getFileURL: async (path: string) => `https://files.example.org/${path}`,
       loadFile: async (path: string) => {
         const content = uploadedFiles.get(path)
         if (!content) throw new Error(`File not found: ${path}`)
@@ -57,7 +57,7 @@ describe('SHLManifestBuilder', () => {
     const manifest = await manifestBuilder.buildManifest({ embeddedLengthMax: 50000 })
 
     expect(manifest.files).toHaveLength(1)
-    const firstFile = manifest.files[0]
+    const firstFile = manifest.files[0]!
     expect(firstFile).toBeDefined()
     expect('embedded' in firstFile).toBe(true)
     expect('location' in firstFile).toBe(false)
@@ -68,7 +68,7 @@ describe('SHLManifestBuilder', () => {
     const manifest = await manifestBuilder.buildManifest({ embeddedLengthMax: 100 })
 
     expect(manifest.files).toHaveLength(1)
-    const firstFile = manifest.files[0]
+    const firstFile = manifest.files[0]!
     expect(firstFile).toBeDefined()
     expect('location' in firstFile).toBe(true)
     expect('embedded' in firstFile).toBe(false)
@@ -96,7 +96,7 @@ describe('SHLManifestBuilder', () => {
         uploadedFiles.set(fileId, content)
         return fileId
       },
-      getFileURL: (path: string) => `https://files.example.org/${path}`,
+      getFileURL: async (path: string) => `https://files.example.org/${path}`,
       fetch: mockFetch,
     })
 
@@ -104,7 +104,7 @@ describe('SHLManifestBuilder', () => {
     const manifest = await builderWithoutLoadFile.buildManifest({ embeddedLengthMax: 50000 })
 
     expect(manifest.files).toHaveLength(1)
-    const firstFile = manifest.files[0]
+    const firstFile = manifest.files[0]!
     expect(firstFile).toBeDefined()
     expect('embedded' in firstFile).toBe(true)
     expect(mockFetch).toHaveBeenCalled()
@@ -118,19 +118,18 @@ describe('SHLManifestBuilder', () => {
 
     const builderWithFailingLoadFile = new SHLManifestBuilder({
       shl,
-      uploadFile: async (content: string) => {
-        const fileId = `file-${uploadedFiles.size + 1}`
-        uploadedFiles.set(fileId, content)
-        return fileId
-      },
-      getFileURL: (path: string) => `https://files.example.org/${path}`,
+      uploadFile: async (_content: string) => 'id',
+      getFileURL: async (path: string) => `https://files.example.org/${path}`,
       fetch: mockFetch,
     })
 
     await builderWithFailingLoadFile.addFHIRResource({ content: createValidFHIRBundle() })
     await expect(
       builderWithFailingLoadFile.buildManifest({ embeddedLengthMax: 50000 })
-    ).rejects.toThrow('File not found at storage path')
+    ).rejects.toThrow(SHLNetworkError)
+    await expect(
+      builderWithFailingLoadFile.buildManifest({ embeddedLengthMax: 50000 })
+    ).rejects.toThrow('File not found at URL: https://files.example.org/id')
   })
 
   it('should serialize and deserialize builder state correctly', async () => {
@@ -158,7 +157,7 @@ describe('SHLManifestBuilder', () => {
         uploadedFiles.set(fileId, content)
         return fileId
       },
-      getFileURL: (path: string) => `https://files.example.org/${path}`,
+      getFileURL: async (path: string) => `https://files.example.org/${path}`,
       loadFile: async (path: string) => {
         const content = uploadedFiles.get(path)
         if (!content) throw new Error(`File not found: ${path}`)
@@ -182,7 +181,7 @@ describe('SHLManifestBuilder', () => {
         uploadedFiles.set(fileId, content)
         return fileId
       },
-      getFileURL: (path: string) => `https://files.example.org/${path}?token=${++urlCounter}`,
+      getFileURL: async (path: string) => `https://files.example.org/${path}?token=${++urlCounter}`,
       loadFile: async (path: string) => {
         const content = uploadedFiles.get(path)
         if (!content) throw new Error(`File not found: ${path}`)
@@ -209,12 +208,12 @@ describe('SHLManifestBuilder', () => {
   it('should handle different embeddedLengthMax values per request', async () => {
     await manifestBuilder.addFHIRResource({ content: createValidFHIRBundle() })
     const manifestEmbedded = await manifestBuilder.buildManifest({ embeddedLengthMax: 50000 })
-    const embeddedFile = manifestEmbedded.files[0]
+    const embeddedFile = manifestEmbedded.files[0]!
     expect(embeddedFile).toBeDefined()
     expect('embedded' in embeddedFile).toBe(true)
 
     const manifestLocation = await manifestBuilder.buildManifest({ embeddedLengthMax: 100 })
-    const locationFile = manifestLocation.files[0]
+    const locationFile = manifestLocation.files[0]!
     expect(locationFile).toBeDefined()
     expect('location' in locationFile).toBe(true)
   })
@@ -304,7 +303,7 @@ describe('SHLManifestBuilder', () => {
     const deserializedBuilder = SHLManifestBuilder.deserialize({
       data: serialized,
       uploadFile: async () => 'new-file',
-      getFileURL: (path: string) => `https://example.org/${path}`,
+      getFileURL: async (path: string) => `https://example.org/${path}`,
       fetch: mockFetch,
     })
 
@@ -327,7 +326,7 @@ describe('SHLManifestBuilder', () => {
 
     const headers = [] as Array<Record<string, unknown>>
     for (const jwe of jwes) {
-      const [protectedHeaderB64u] = jwe.split('.')
+      const [protectedHeaderB64u] = jwe.split('.') as [string, ...string[]]
       const { base64url } = await import('jose')
       const bytes = base64url.decode(protectedHeaderB64u)
       const json = new TextDecoder().decode(bytes)
@@ -363,19 +362,18 @@ describe('SHLManifestBuilder', () => {
     serialized.shl.url = 'https://shl.example.org/manifest.json'
     const corrupted = SHLManifestBuilder.deserialize({
       data: serialized,
-      uploadFile: async (c: string) => 'x',
+      uploadFile: async (_c: string) => 'x',
       getFileURL: async (p: string) => p,
     })
 
     expect(() => corrupted.manifestId).toThrow('Invalid manifest URL format')
   })
 
-  it('default loadFile maps 429 to SHLManifestRateLimitError and 500 to SHLNetworkError', async () => {
+  it('default loadFile maps 429 and 500 to SHLNetworkError', async () => {
     const shl = SHL.generate({
       baseManifestURL: 'https://shl.example.org',
       manifestPath: '/manifest.json',
     })
-    const uploaded = new Map<string, string>()
 
     const fetch429 = vi.fn(
       async () =>
@@ -388,11 +386,7 @@ describe('SHLManifestBuilder', () => {
     )
     const builder429 = new SHLManifestBuilder({
       shl,
-      uploadFile: async (c: string) => {
-        const id = `f-${uploaded.size + 1}`
-        uploaded.set(id, c)
-        return id
-      },
+      uploadFile: async (_c: string) => 'id',
       getFileURL: async (p: string) => `https://files/${p}`,
       fetch: fetch429,
     })
@@ -402,7 +396,10 @@ describe('SHLManifestBuilder', () => {
       enableCompression: false,
     })
     await expect(builder429.buildManifest({ embeddedLengthMax: 1_000_000 })).rejects.toThrow(
-      'Too many requests to file storage'
+      SHLNetworkError
+    )
+    await expect(builder429.buildManifest({ embeddedLengthMax: 1_000_000 })).rejects.toThrow(
+      'Failed to fetch file from storage at https://files/id, got HTTP 429: Too Many Requests'
     )
 
     const fetch500 = vi.fn(
@@ -411,7 +408,7 @@ describe('SHLManifestBuilder', () => {
     )
     const builder500 = new SHLManifestBuilder({
       shl,
-      uploadFile: async (c: string) => 'id',
+      uploadFile: async (_c: string) => 'id',
       getFileURL: async (p: string) => `https://files/${p}`,
       fetch: fetch500,
     })
@@ -421,7 +418,10 @@ describe('SHLManifestBuilder', () => {
       enableCompression: false,
     })
     await expect(builder500.buildManifest({ embeddedLengthMax: 1_000_000 })).rejects.toThrow(
-      'HTTP 500: Internal Error'
+      SHLNetworkError
+    )
+    await expect(builder500.buildManifest({ embeddedLengthMax: 1_000_000 })).rejects.toThrow(
+      'Failed to fetch file from storage at https://files/id, got HTTP 500: Internal Error'
     )
   })
 })

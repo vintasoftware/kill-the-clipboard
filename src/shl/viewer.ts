@@ -426,7 +426,9 @@ export class SHLViewer {
         } else if (response.status === 429) {
           throw new SHLManifestRateLimitError('Too many requests to SHL manifest')
         } else {
-          throw new SHLNetworkError(`HTTP ${response.status}: ${response.statusText}`)
+          throw new SHLNetworkError(
+            `Failed to fetch SHL manifest, got HTTP ${response.status}: ${response.statusText}`
+          )
         }
       }
 
@@ -534,9 +536,7 @@ export class SHLViewer {
    * @param params.url - HTTPS URL to the encrypted JWE file
    * @param params.key - Base64url-encoded encryption key from SHL
    * @returns Promise resolving to decrypted file content and content type
-   * @throws {@link SHLManifestNotFoundError} When file URL returns 404
-   * @throws {@link SHLManifestRateLimitError} When file requests are rate limited (429)
-   * @throws {@link SHLNetworkError} When other HTTP errors occur or network fails
+   * @throws {@link SHLNetworkError} When file cannot be loaded
    * @throws {@link SHLDecryptionError} When JWE decryption fails
    *
    * @private
@@ -553,11 +553,11 @@ export class SHLViewer {
 
       if (!response.ok) {
         if (response.status === 404) {
-          throw new SHLManifestNotFoundError('SHL file not found')
-        } else if (response.status === 429) {
-          throw new SHLManifestRateLimitError('Too many requests to SHL file')
+          throw new SHLNetworkError(`File not found at URL: ${params.url}`)
         } else {
-          throw new SHLNetworkError(`HTTP ${response.status}: ${response.statusText}`)
+          throw new SHLNetworkError(
+            `Failed to fetch file from storage at ${params.url}, got HTTP ${response.status}: ${response.statusText}`
+          )
         }
       }
 

@@ -1,10 +1,17 @@
 import { base64url } from 'jose'
 import { describe, expect, it, vi } from 'vitest'
 import {
+  encryptSHLFile,
   SHL,
+  SHLDecryptionError,
+  SHLExpiredError,
   SHLFormatError,
   SHLInvalidPasscodeError,
   SHLManifestBuilder,
+  SHLManifestError,
+  SHLManifestNotFoundError,
+  SHLManifestRateLimitError,
+  SHLNetworkError,
   SHLViewer,
 } from '@/index'
 import { createValidFHIRBundle } from '../helpers'
@@ -50,6 +57,43 @@ describe('SHLViewer', () => {
 
     it('should throw error for malformed payload', () => {
       expect(() => new SHLViewer({ shlinkURI: 'shlink:/invalid-base64' })).toThrow(SHLFormatError)
+    })
+
+    it('validates payload fields: key length, url, exp, flag', () => {
+      const good = SHL.generate({ baseManifestURL: 'https://shl.example.org' })
+      const payload = { ...good.payload }
+
+      // key length
+      const p1 = { ...payload, key: payload.key.slice(0, 42) }
+      const uri1 = `shlink:/${base64url.encode(new TextEncoder().encode(JSON.stringify(p1)))}`
+      expect(() => new SHLViewer({ shlinkURI: uri1 })).toThrow(SHLFormatError)
+      expect(() => new SHLViewer({ shlinkURI: uri1 })).toThrow(
+        'Invalid SHLink payload: "key" field must be 43 characters'
+      )
+
+      // bad url
+      const p2 = { ...payload, url: 'not-a-url' }
+      const uri2 = `shlink:/${base64url.encode(new TextEncoder().encode(JSON.stringify(p2)))}`
+      expect(() => new SHLViewer({ shlinkURI: uri2 })).toThrow(SHLFormatError)
+      expect(() => new SHLViewer({ shlinkURI: uri2 })).toThrow(
+        'Invalid SHLink payload: "url" field is not a valid URL'
+      )
+
+      // bad exp
+      const p3 = { ...payload, exp: 0 }
+      const uri3 = `shlink:/${base64url.encode(new TextEncoder().encode(JSON.stringify(p3)))}`
+      expect(() => new SHLViewer({ shlinkURI: uri3 })).toThrow(SHLFormatError)
+      expect(() => new SHLViewer({ shlinkURI: uri3 })).toThrow(
+        'Invalid SHLink payload: "exp" field must be a positive number'
+      )
+
+      // bad flag
+      const p4 = { ...payload, flag: 'Z' as unknown as 'L' }
+      const uri4 = `shlink:/${base64url.encode(new TextEncoder().encode(JSON.stringify(p4)))}`
+      expect(() => new SHLViewer({ shlinkURI: uri4 })).toThrow(SHLFormatError)
+      expect(() => new SHLViewer({ shlinkURI: uri4 })).toThrow(
+        'Invalid SHLink payload: "flag" field contains invalid characters'
+      )
     })
   })
 
@@ -155,12 +199,21 @@ describe('SHLViewer', () => {
           recipient: 'r',
           passcode: 'p',
         })
+      ).rejects.toThrow(SHLInvalidPasscodeError)
+      await expect(
+        new SHLViewer({ shlinkURI, fetch: fetch401 }).resolveSHLink({
+          recipient: 'r',
+          passcode: 'p',
+        })
       ).rejects.toThrow('Invalid or missing passcode')
 
       const fetch404 = vi.fn(
         async () =>
           ({ ok: false, status: 404, statusText: 'Not Found', text: async () => '' }) as Response
       )
+      await expect(
+        new SHLViewer({ shlinkURI, fetch: fetch404 }).resolveSHLink({ recipient: 'r' })
+      ).rejects.toThrow(SHLManifestNotFoundError)
       await expect(
         new SHLViewer({ shlinkURI, fetch: fetch404 }).resolveSHLink({ recipient: 'r' })
       ).rejects.toThrow('SHL manifest not found')
@@ -176,12 +229,18 @@ describe('SHLViewer', () => {
       )
       await expect(
         new SHLViewer({ shlinkURI, fetch: fetch429 }).resolveSHLink({ recipient: 'r' })
+      ).rejects.toThrow(SHLManifestRateLimitError)
+      await expect(
+        new SHLViewer({ shlinkURI, fetch: fetch429 }).resolveSHLink({ recipient: 'r' })
       ).rejects.toThrow('Too many requests to SHL manifest')
 
       const fetchInvalidJson = vi.fn(
         async () =>
           ({ ok: true, status: 200, statusText: 'OK', text: async () => 'not-json' }) as Response
       )
+      await expect(
+        new SHLViewer({ shlinkURI, fetch: fetchInvalidJson }).resolveSHLink({ recipient: 'r' })
+      ).rejects.toThrow(SHLManifestError)
       await expect(
         new SHLViewer({ shlinkURI, fetch: fetchInvalidJson }).resolveSHLink({ recipient: 'r' })
       ).rejects.toThrow('Invalid manifest response: not valid JSON')
@@ -196,6 +255,9 @@ describe('SHLViewer', () => {
             text: async () => JSON.stringify(invalidManifest),
           }) as Response
       )
+      await expect(
+        new SHLViewer({ shlinkURI, fetch: fetchInvalidManifest }).resolveSHLink({ recipient: 'r' })
+      ).rejects.toThrow(SHLManifestError)
       await expect(
         new SHLViewer({ shlinkURI, fetch: fetchInvalidManifest }).resolveSHLink({ recipient: 'r' })
       ).rejects.toThrow('unsupported content type')
@@ -245,7 +307,10 @@ describe('SHLViewer', () => {
 
       await expect(
         new SHLViewer({ shlinkURI, fetch: fetchFile404 }).resolveSHLink({ recipient: 'r' })
-      ).rejects.toThrow('SHL file not found')
+      ).rejects.toThrow(SHLNetworkError)
+      await expect(
+        new SHLViewer({ shlinkURI, fetch: fetchFile404 }).resolveSHLink({ recipient: 'r' })
+      ).rejects.toThrow('File not found at URL: https://files.example.org/file-1')
     })
 
     it('throws SHLDecryptionError for invalid JWE ciphertext', async () => {
@@ -275,7 +340,299 @@ describe('SHLViewer', () => {
       })
 
       const v2 = new SHLViewer({ shlinkURI: shl.generateSHLinkURI(), fetch: fetchMock })
+      await expect(v2.resolveSHLink({ recipient: 'r' })).rejects.toThrow(SHLDecryptionError)
       await expect(v2.resolveSHLink({ recipient: 'r' })).rejects.toThrow('JWE decryption failed')
+    })
+
+    it('throws SHLExpiredError when SHL is expired', async () => {
+      const shl = SHL.generate({
+        baseManifestURL: 'https://shl.example.org',
+        expirationDate: new Date(Date.now() - 60_000),
+      })
+      const shlinkURI = shl.generateSHLinkURI()
+      const fetchMock = vi.fn(
+        async () =>
+          ({
+            ok: true,
+            status: 200,
+            statusText: 'OK',
+            text: async () => JSON.stringify({ files: [] }),
+          }) as Response
+      )
+      await expect(
+        new SHLViewer({ shlinkURI, fetch: fetchMock }).resolveSHLink({ recipient: 'r' })
+      ).rejects.toThrow(SHLExpiredError)
+      expect(fetchMock).not.toHaveBeenCalled()
+    })
+
+    it('throws for content type mismatch between descriptor and decrypted file', async () => {
+      const shl = SHL.generate({ baseManifestURL: 'https://shl.example.org' })
+      const jweMismatch = await encryptSHLFile({
+        content: JSON.stringify({ resourceType: 'Patient' }),
+        key: shl.key,
+        contentType: 'application/fhir+json',
+        enableCompression: false,
+      })
+      const manifest = {
+        files: [{ contentType: 'application/smart-health-card', embedded: jweMismatch }],
+      }
+      const shlinkURI = shl.generateSHLinkURI()
+      const fetchMock = vi.fn(
+        async () =>
+          ({
+            ok: true,
+            status: 200,
+            statusText: 'OK',
+            text: async () => JSON.stringify(manifest),
+          }) as Response
+      )
+      await expect(
+        new SHLViewer({ shlinkURI, fetch: fetchMock }).resolveSHLink({ recipient: 'r' })
+      ).rejects.toThrow(SHLManifestError)
+      await expect(
+        new SHLViewer({ shlinkURI, fetch: fetchMock }).resolveSHLink({ recipient: 'r' })
+      ).rejects.toThrow(/Content type mismatch/)
+    })
+
+    it('invalid SMART Health Card file: missing verifiableCredential array', async () => {
+      const shl = SHL.generate({ baseManifestURL: 'https://shl.example.org' })
+      const jwe = await encryptSHLFile({
+        content: JSON.stringify({}),
+        key: shl.key,
+        contentType: 'application/smart-health-card',
+        enableCompression: false,
+      })
+      const manifest = { files: [{ contentType: 'application/smart-health-card', embedded: jwe }] }
+      const shlinkURI = shl.generateSHLinkURI()
+      const fetchMock = vi.fn(
+        async () =>
+          ({
+            ok: true,
+            status: 200,
+            statusText: 'OK',
+            text: async () => JSON.stringify(manifest),
+          }) as Response
+      )
+      await expect(
+        new SHLViewer({ shlinkURI, fetch: fetchMock }).resolveSHLink({ recipient: 'r' })
+      ).rejects.toThrow(SHLManifestError)
+      await expect(
+        new SHLViewer({ shlinkURI, fetch: fetchMock }).resolveSHLink({ recipient: 'r' })
+      ).rejects.toThrow('missing verifiableCredential array')
+    })
+
+    it('invalid FHIR JSON file: not valid JSON and missing resourceType', async () => {
+      const shl = SHL.generate({ baseManifestURL: 'https://shl.example.org' })
+      // Not JSON case
+      const jweNotJson = await encryptSHLFile({
+        content: 'not-json',
+        key: shl.key,
+        contentType: 'application/fhir+json',
+      })
+      // Missing resourceType case
+      const jweMissingType = await encryptSHLFile({
+        content: JSON.stringify({ foo: 'bar' }),
+        key: shl.key,
+        contentType: 'application/fhir+json',
+      })
+      const manifest1 = { files: [{ contentType: 'application/fhir+json', embedded: jweNotJson }] }
+      const manifest2 = {
+        files: [{ contentType: 'application/fhir+json', embedded: jweMissingType }],
+      }
+      const shlinkURI = shl.generateSHLinkURI()
+
+      const fetchNotJson = vi.fn(
+        async () =>
+          ({
+            ok: true,
+            status: 200,
+            statusText: 'OK',
+            text: async () => JSON.stringify(manifest1),
+          }) as Response
+      )
+      await expect(
+        new SHLViewer({ shlinkURI, fetch: fetchNotJson }).resolveSHLink({ recipient: 'r' })
+      ).rejects.toThrow(SHLManifestError)
+      await expect(
+        new SHLViewer({ shlinkURI, fetch: fetchNotJson }).resolveSHLink({ recipient: 'r' })
+      ).rejects.toThrow('Invalid FHIR JSON file: not valid JSON')
+
+      const fetchMissingType = vi.fn(
+        async () =>
+          ({
+            ok: true,
+            status: 200,
+            statusText: 'OK',
+            text: async () => JSON.stringify(manifest2),
+          }) as Response
+      )
+      await expect(
+        new SHLViewer({ shlinkURI, fetch: fetchMissingType }).resolveSHLink({ recipient: 'r' })
+      ).rejects.toThrow(SHLManifestError)
+      await expect(
+        new SHLViewer({ shlinkURI, fetch: fetchMissingType }).resolveSHLink({ recipient: 'r' })
+      ).rejects.toThrow('Invalid FHIR JSON file: missing resourceType')
+    })
+
+    it('validateManifest errors for both/none of embedded/location and invalid URL', async () => {
+      const shl = SHL.generate({ baseManifestURL: 'https://shl.example.org' })
+      const shlinkURI = shl.generateSHLinkURI()
+
+      const both = {
+        files: [{ contentType: 'application/fhir+json', embedded: 'x', location: 'https://x' }],
+      }
+      const neither = { files: [{ contentType: 'application/fhir+json' }] } as any
+      const badUrl = { files: [{ contentType: 'application/fhir+json', location: 'not-a-url' }] }
+
+      const f1 = vi.fn(
+        async () =>
+          ({
+            ok: true,
+            status: 200,
+            statusText: 'OK',
+            text: async () => JSON.stringify(both),
+          }) as Response
+      )
+      await expect(
+        new SHLViewer({ shlinkURI, fetch: f1 }).resolveSHLink({ recipient: 'r' })
+      ).rejects.toThrow(SHLManifestError)
+      await expect(
+        new SHLViewer({ shlinkURI, fetch: f1 }).resolveSHLink({ recipient: 'r' })
+      ).rejects.toThrow('cannot have both "embedded" and "location"')
+
+      const f2 = vi.fn(
+        async () =>
+          ({
+            ok: true,
+            status: 200,
+            statusText: 'OK',
+            text: async () => JSON.stringify(neither),
+          }) as Response
+      )
+      await expect(
+        new SHLViewer({ shlinkURI, fetch: f2 }).resolveSHLink({ recipient: 'r' })
+      ).rejects.toThrow(SHLManifestError)
+      await expect(
+        new SHLViewer({ shlinkURI, fetch: f2 }).resolveSHLink({ recipient: 'r' })
+      ).rejects.toThrow('must have either "embedded" or "location"')
+
+      const f3 = vi.fn(
+        async () =>
+          ({
+            ok: true,
+            status: 200,
+            statusText: 'OK',
+            text: async () => JSON.stringify(badUrl),
+          }) as Response
+      )
+      await expect(
+        new SHLViewer({ shlinkURI, fetch: f3 }).resolveSHLink({ recipient: 'r' })
+      ).rejects.toThrow(SHLManifestError)
+      await expect(
+        new SHLViewer({ shlinkURI, fetch: f3 }).resolveSHLink({ recipient: 'r' })
+      ).rejects.toThrow('"location" is not a valid URL')
+    })
+
+    it('manifest HTTP 500 maps to SHLNetworkError', async () => {
+      const shl = SHL.generate({ baseManifestURL: 'https://shl.example.org' })
+      const shlinkURI = shl.generateSHLinkURI()
+      const fetch500 = vi.fn(
+        async () =>
+          ({ ok: false, status: 500, statusText: 'Internal Err', text: async () => '' }) as Response
+      )
+      await expect(
+        new SHLViewer({ shlinkURI, fetch: fetch500 }).resolveSHLink({ recipient: 'r' })
+      ).rejects.toThrow(SHLNetworkError)
+      await expect(
+        new SHLViewer({ shlinkURI, fetch: fetch500 }).resolveSHLink({ recipient: 'r' })
+      ).rejects.toThrow('Failed to fetch SHL manifest, got HTTP 500: Internal Err')
+    })
+
+    it('file fetch maps 429 and 500 to SHLNetworkError', async () => {
+      const shl = SHL.generate({ baseManifestURL: 'https://shl.example.org' })
+      const _jwe = await encryptSHLFile({
+        content: JSON.stringify({ resourceType: 'Patient' }),
+        key: shl.key,
+        contentType: 'application/fhir+json',
+      })
+      const manifest = {
+        files: [{ contentType: 'application/fhir+json', location: 'https://files.example.org/f' }],
+      }
+      const shlinkURI = shl.generateSHLinkURI()
+
+      const fetch429 = vi.fn(async (_url: string, init?: RequestInit) => {
+        if (init?.method === 'POST')
+          return {
+            ok: true,
+            status: 200,
+            statusText: 'OK',
+            text: async () => JSON.stringify(manifest),
+          } as Response
+        return {
+          ok: false,
+          status: 429,
+          statusText: 'Too Many Requests',
+          text: async () => '',
+        } as Response
+      })
+      await expect(
+        new SHLViewer({ shlinkURI, fetch: fetch429 }).resolveSHLink({ recipient: 'r' })
+      ).rejects.toThrow(SHLNetworkError)
+      await expect(
+        new SHLViewer({ shlinkURI, fetch: fetch429 }).resolveSHLink({ recipient: 'r' })
+      ).rejects.toThrow(
+        'Failed to fetch file from storage at https://files.example.org/f, got HTTP 429: Too Many Requests'
+      )
+
+      const fetch500 = vi.fn(async (_url: string, init?: RequestInit) => {
+        if (init?.method === 'POST')
+          return {
+            ok: true,
+            status: 200,
+            statusText: 'OK',
+            text: async () => JSON.stringify(manifest),
+          } as Response
+        return {
+          ok: false,
+          status: 500,
+          statusText: 'Internal Error',
+          text: async () => '',
+        } as Response
+      })
+      await expect(
+        new SHLViewer({ shlinkURI, fetch: fetch500 }).resolveSHLink({ recipient: 'r' })
+      ).rejects.toThrow(SHLNetworkError)
+      await expect(
+        new SHLViewer({ shlinkURI, fetch: fetch500 }).resolveSHLink({ recipient: 'r' })
+      ).rejects.toThrow(
+        'Failed to fetch file from storage at https://files.example.org/f, got HTTP 500: Internal Error'
+      )
+    })
+
+    it('sends recipient, passcode, and embeddedLengthMax in manifest request body', async () => {
+      const shl = SHL.generate({ baseManifestURL: 'https://shl.example.org', flag: 'P' })
+      const shlinkURI = shl.generateSHLinkURI()
+      const calls: Array<RequestInit | undefined> = []
+      const fetchMock = vi.fn(async (_url: string, init?: RequestInit) => {
+        calls.push(init)
+        return {
+          ok: true,
+          status: 200,
+          statusText: 'OK',
+          text: async () => JSON.stringify({ files: [] }),
+        } as Response
+      })
+      const viewer = new SHLViewer({ shlinkURI, fetch: fetchMock })
+      await viewer.resolveSHLink({
+        recipient: 'Dr. Who',
+        passcode: 'secret',
+        embeddedLengthMax: 4096,
+      })
+      expect(calls[0]?.method).toBe('POST')
+      const body = JSON.parse((calls[0]?.body as string) ?? '{}') as Record<string, unknown>
+      expect(body.recipient).toBe('Dr. Who')
+      expect(body.passcode).toBe('secret')
+      expect(body.embeddedLengthMax).toBe(4096)
     })
   })
 
@@ -607,10 +964,11 @@ describe('SHLViewer', () => {
   it('throws for unsupported version v in payload', () => {
     // Craft payload with v=2
     const shl = SHL.generate({ baseManifestURL: 'https://shl.example.org' })
-    const payload = { ...shl['payload'], v: 2 as 1 }
+    const payload = { ...shl.payload, v: 2 as 1 }
     const json = JSON.stringify(payload)
     const { base64url } = require('jose') as typeof import('jose')
     const uri = `shlink:/${base64url.encode(new TextEncoder().encode(json))}`
+    expect(() => new SHLViewer({ shlinkURI: uri })).toThrow(SHLFormatError)
     expect(() => new SHLViewer({ shlinkURI: uri })).toThrow('unsupported version')
   })
 
@@ -629,6 +987,9 @@ describe('SHLViewer', () => {
     await expect(
       new SHLViewer({ shlinkURI, fetch: fetchOkEmpty }).resolveSHLink({ recipient: 'r' })
     ).rejects.toThrow(SHLInvalidPasscodeError)
+    await expect(
+      new SHLViewer({ shlinkURI, fetch: fetchOkEmpty }).resolveSHLink({ recipient: 'r' })
+    ).rejects.toThrow('SHL requires a passcode')
   })
 
   it('propagates 401 as SHLInvalidPasscodeError', async () => {
@@ -638,6 +999,12 @@ describe('SHLViewer', () => {
       async () =>
         ({ ok: false, status: 401, statusText: 'Unauthorized', text: async () => '' }) as Response
     )
+    await expect(
+      new SHLViewer({ shlinkURI, fetch: fetch401 }).resolveSHLink({
+        recipient: 'r',
+        passcode: 'x',
+      })
+    ).rejects.toThrow(SHLInvalidPasscodeError)
     await expect(
       new SHLViewer({ shlinkURI, fetch: fetch401 }).resolveSHLink({
         recipient: 'r',

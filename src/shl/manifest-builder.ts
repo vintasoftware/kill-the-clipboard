@@ -1,7 +1,7 @@
 import type { Resource } from '@medplum/fhirtypes'
 import type { SmartHealthCard } from '../shc/card.js'
 import { encryptSHLFile } from './crypto.js'
-import { SHLError, SHLManifestError, SHLManifestRateLimitError, SHLNetworkError } from './errors.js'
+import { SHLError, SHLManifestError, SHLNetworkError } from './errors.js'
 import { SHL } from './shl.js'
 import type {
   SerializedSHLManifestBuilder,
@@ -140,6 +140,7 @@ export class SHLManifestBuilder {
    *
    * @param fetchImpl - Fetch implementation to use for HTTP requests
    * @returns Function that loads file content from storage paths
+   * @throws {@link SHLNetworkError} When file cannot be loaded
    *
    * @private
    */
@@ -158,11 +159,11 @@ export class SHLManifestBuilder {
 
         if (!response.ok) {
           if (response.status === 404) {
-            throw new SHLManifestError(`File not found at storage path: ${storagePath}`)
-          } else if (response.status === 429) {
-            throw new SHLManifestRateLimitError('Too many requests to file storage')
+            throw new SHLNetworkError(`File not found at URL: ${fileURL}`)
           } else {
-            throw new SHLNetworkError(`HTTP ${response.status}: ${response.statusText}`)
+            throw new SHLNetworkError(
+              `Failed to fetch file from storage at ${fileURL}, got HTTP ${response.status}: ${response.statusText}`
+            )
           }
         }
 
@@ -391,7 +392,6 @@ export class SHLManifestBuilder {
    *   Defaults to 16384 (16 KiB). Typical range: 4096-32768.
    * @returns Promise resolving to SHL manifest object conforming to v1 specification
    * @throws {@link SHLManifestError} When a stored file cannot be loaded or content is missing
-   * @throws {@link SHLManifestRateLimitError} When storage requests are rate limited
    * @throws {@link SHLNetworkError} When storage network requests fail
    *
    * @example
@@ -411,23 +411,32 @@ export class SHLManifestBuilder {
 
     const manifestFiles: SHLManifestFileDescriptor[] = []
 
-    for (const file of this._files) {
-      if (file.ciphertextLength <= embeddedLengthMax) {
-        // Embed the file directly - load the ciphertext from storage
-        const ciphertext = await this.loadFile(file.storagePath)
-        manifestFiles.push({
-          contentType: file.type,
-          embedded: ciphertext,
-        })
-      } else {
-        // Reference file by location with fresh short-lived URL
-        const fileURL = await this.getFileURL(file.storagePath)
+    try {
+      for (const file of this._files) {
+        if (file.ciphertextLength <= embeddedLengthMax) {
+          // Embed the file directly - load the ciphertext from storage
+          const ciphertext = await this.loadFile(file.storagePath)
+          manifestFiles.push({
+            contentType: file.type,
+            embedded: ciphertext,
+          })
+        } else {
+          // Reference file by location with fresh short-lived URL
+          const fileURL = await this.getFileURL(file.storagePath)
 
-        manifestFiles.push({
-          contentType: file.type,
-          location: fileURL,
-        })
+          manifestFiles.push({
+            contentType: file.type,
+            location: fileURL,
+          })
+        }
       }
+    } catch (error) {
+      if (error instanceof SHLError) {
+        throw error
+      }
+      throw new SHLManifestError(
+        `Failed to build manifest: ${error instanceof Error ? error.message : String(error)}`
+      )
     }
 
     return { files: manifestFiles }

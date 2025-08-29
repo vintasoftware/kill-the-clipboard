@@ -19,7 +19,7 @@ describe('End-to-End SHL Workflow', () => {
         uploadedFiles.set(fileId, content)
         return fileId
       },
-      getFileURL: (path: string) => `https://files.example.org/${path}`,
+      getFileURL: async (path: string) => `https://files.example.org/${path}`,
       loadFile: async (path: string) => {
         const content = uploadedFiles.get(path)
         if (!content) throw new Error(`File not found: ${path}`)

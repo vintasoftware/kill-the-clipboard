@@ -169,7 +169,7 @@ export async function decryptSHLFile(params: {
           if (header.zip === 'DEF') {
             hasZipHeader = true
             // Remove the zip header before passing to jose
-            const { zip, ...headerWithoutZip } = header
+            const { zip: _zip, ...headerWithoutZip } = header
             const newHeaderB64u = base64url.encode(
               new TextEncoder().encode(JSON.stringify(headerWithoutZip))
             )
@@ -177,7 +177,7 @@ export async function decryptSHLFile(params: {
           }
         }
       }
-    } catch (headerError) {
+    } catch (_headerError) {
       // If we can't parse the header, continue with original JWE
       // jose will handle the error appropriately
     }
