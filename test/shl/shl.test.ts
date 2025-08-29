@@ -1,3 +1,4 @@
+import { base64url } from 'jose'
 import { describe, expect, it } from 'vitest'
 import { SHL, SHLFormatError } from '@/index'
 
@@ -36,6 +37,14 @@ describe('SHL Class', () => {
     const shl = SHL.generate({ baseManifestURL: 'https://shl.example.org', label: 'Test Card' })
     const uri = shl.generateSHLinkURI()
     expect(uri).toMatch(/^shlink:\/[A-Za-z0-9_-]+$/)
+  })
+
+  it('should generate a SHLink with valid payload', () => {
+    const shl = SHL.generate({ baseManifestURL: 'https://shl.example.org', label: 'Test Card' })
+    const uri = shl.generateSHLinkURI()
+    // biome-ignore lint/style/noNonNullAssertion: uri split is ensured
+    const payload = JSON.parse(new TextDecoder().decode(base64url.decode(uri.split('/')[1]!)))
+    expect(payload).toEqual(shl.payload)
   })
 
   it('should throw error for invalid label length', () => {

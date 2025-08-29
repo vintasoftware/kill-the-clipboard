@@ -284,7 +284,30 @@ describe('SHLManifestBuilder', () => {
 
     // The manifest ID should be the entropy segment in the URL path
     const url = new URL(shl.url)
-    const pathSegments = url.pathname.split('/').filter(segment => segment.length > 0)
+    const pathSegments = url.pathname.split('/')
+    const expectedEntropySegment = pathSegments[pathSegments.length - 2]
+    expect(manifestId).toBe(expectedEntropySegment)
+  })
+
+  it('should handle manifest URL without manifestPath', () => {
+    const shl = SHL.generate({
+      baseManifestURL: 'https://shl.example.org',
+    })
+    const builder = new SHLManifestBuilder({
+      shl,
+      uploadFile: async (c: string) => 'id',
+      getFileURL: async (p: string) => `https://files/${p}`,
+      loadFile: async (p: string) => 'x',
+    })
+
+    const manifestId = builder.manifestId
+
+    // The manifest ID should be part of the SHL's manifest URL
+    expect(shl.url).toContain(manifestId)
+
+    // The manifest ID should be the entropy segment in the URL path
+    const url = new URL(shl.url)
+    const pathSegments = url.pathname.split('/')
     const expectedEntropySegment = pathSegments[pathSegments.length - 2]
     expect(manifestId).toBe(expectedEntropySegment)
   })
@@ -375,7 +398,9 @@ describe('SHLManifestBuilder', () => {
       getFileURL: async (p: string) => p,
     })
 
-    expect(() => corrupted.manifestId).toThrow('Invalid manifest URL format')
+    expect(() => corrupted.manifestId).toThrow(
+      'Could not find entropy segment in path: /manifest.json'
+    )
   })
 
   it('default loadFile maps 429 and 500 to SHLNetworkError', async () => {
@@ -431,6 +456,68 @@ describe('SHLManifestBuilder', () => {
     )
     await expect(builder500.buildManifest({ embeddedLengthMax: 1_000_000 })).rejects.toThrow(
       'Failed to fetch file from storage at https://files/id, got HTTP 500: Internal Error'
+    )
+  })
+
+  it('manifestId throws when entropy segment is empty between slashes', () => {
+    const serialized = manifestBuilder.serialize()
+    // Create a URL with an empty segment between slashes
+    serialized.shl.url = 'https://shl.example.org/abc//manifest.json'
+    const corrupted = SHLManifestBuilder.deserialize({
+      data: serialized,
+      uploadFile: async (_c: string) => 'id',
+      getFileURL: async (p: string) => p,
+    })
+
+    expect(() => corrupted.manifestId).toThrow(
+      'Could not find entropy segment in path: /abc//manifest.json'
+    )
+  })
+
+  it('manifestId throws on invalid entropy length', () => {
+    // Build a valid builder, then corrupt URL to have a short entropy segment
+    const serialized = manifestBuilder.serialize()
+    serialized.shl.url = 'https://shl.example.org/short/manifest.json'
+    const corrupted = SHLManifestBuilder.deserialize({
+      data: serialized,
+      uploadFile: async (_c: string) => 'id',
+      getFileURL: async (p: string) => p,
+    })
+
+    expect(() => corrupted.manifestId).toThrow('Invalid entropy segment length: expected 43, got 5')
+  })
+
+  it('manifestId throws on invalid entropy format characters', () => {
+    const invalid = '!'.repeat(43)
+    const serialized = manifestBuilder.serialize()
+    serialized.shl.url = `https://shl.example.org/${invalid}/manifest.json`
+    const corrupted = SHLManifestBuilder.deserialize({
+      data: serialized,
+      uploadFile: async (_c: string) => 'id',
+      getFileURL: async (p: string) => p,
+    })
+
+    expect(() => corrupted.manifestId).toThrow(`Invalid entropy segment format: ${invalid}`)
+  })
+
+  it('buildManifest wraps non-SHL errors into SHLManifestError', async () => {
+    const uploaded = new Map<string, string>()
+    const builder = new SHLManifestBuilder({
+      shl,
+      uploadFile: async (content: string) => {
+        const id = `file-${uploaded.size + 1}`
+        uploaded.set(id, content)
+        return id
+      },
+      getFileURL: async (p: string) => `https://files.example.org/${p}`,
+      loadFile: async () => {
+        throw new Error('boom')
+      },
+    })
+
+    await builder.addFHIRResource({ content: createValidFHIRBundle() })
+    await expect(builder.buildManifest({ embeddedLengthMax: 1_000_000 })).rejects.toThrow(
+      'Failed to build manifest: boom'
     )
   })
 })

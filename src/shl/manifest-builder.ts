@@ -332,10 +332,12 @@ export class SHLManifestBuilder {
     const manifestURL = this._shl.url
 
     // Extract the entropy segment from the manifest URL
-    // Expected format: https://domain/path/to/entropy/manifest.json
+    // Expected formats:
+    //   - https://domain/path/to/entropy/manifest.json
+    //   - https://domain/path/to/entropy/
     // We need to find the second-to-last path segment (the entropy)
     const url = new URL(manifestURL)
-    const pathSegments = url.pathname.split('/').filter(segment => segment.length > 0)
+    const pathSegments = url.pathname.split('/')
 
     if (pathSegments.length < 2) {
       throw new SHLManifestError(`Invalid manifest URL format: ${manifestURL}`)
