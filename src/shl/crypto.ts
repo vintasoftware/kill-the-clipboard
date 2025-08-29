@@ -86,9 +86,6 @@ export async function encryptSHLFile(params: {
     if (params.enableCompression) {
       // Parse the JWE to add the zip header
       const parts = jwe.split('.')
-      if (parts.length !== 5) {
-        throw new SHLError('Invalid JWE format from jose library', 'SHL_ENCRYPTION_ERROR')
-      }
       const partsTuple = parts as [string, string, string, string, string]
 
       // Decode, modify, and re-encode the protected header
