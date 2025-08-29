@@ -57,6 +57,7 @@ describe('SHLManifestBuilder', () => {
     const manifest = await manifestBuilder.buildManifest({ embeddedLengthMax: 50000 })
 
     expect(manifest.files).toHaveLength(1)
+    // biome-ignore lint/style/noNonNullAssertion: files length   already asserted to == 1
     const firstFile = manifest.files[0]!
     expect(firstFile).toBeDefined()
     expect('embedded' in firstFile).toBe(true)
@@ -68,6 +69,7 @@ describe('SHLManifestBuilder', () => {
     const manifest = await manifestBuilder.buildManifest({ embeddedLengthMax: 100 })
 
     expect(manifest.files).toHaveLength(1)
+    // biome-ignore lint/style/noNonNullAssertion: files length already asserted to == 1
     const firstFile = manifest.files[0]!
     expect(firstFile).toBeDefined()
     expect('location' in firstFile).toBe(true)
@@ -104,6 +106,7 @@ describe('SHLManifestBuilder', () => {
     const manifest = await builderWithoutLoadFile.buildManifest({ embeddedLengthMax: 50000 })
 
     expect(manifest.files).toHaveLength(1)
+    // biome-ignore lint/style/noNonNullAssertion: files length already asserted to == 1
     const firstFile = manifest.files[0]!
     expect(firstFile).toBeDefined()
     expect('embedded' in firstFile).toBe(true)
@@ -208,11 +211,17 @@ describe('SHLManifestBuilder', () => {
   it('should handle different embeddedLengthMax values per request', async () => {
     await manifestBuilder.addFHIRResource({ content: createValidFHIRBundle() })
     const manifestEmbedded = await manifestBuilder.buildManifest({ embeddedLengthMax: 50000 })
+
+    expect(manifestEmbedded.files).toHaveLength(1)
+    // biome-ignore lint/style/noNonNullAssertion: files length already asserted to == 1
     const embeddedFile = manifestEmbedded.files[0]!
     expect(embeddedFile).toBeDefined()
     expect('embedded' in embeddedFile).toBe(true)
 
     const manifestLocation = await manifestBuilder.buildManifest({ embeddedLengthMax: 100 })
+
+    expect(manifestLocation.files).toHaveLength(1)
+    // biome-ignore lint/style/noNonNullAssertion: files length already asserted to == 1
     const locationFile = manifestLocation.files[0]!
     expect(locationFile).toBeDefined()
     expect('location' in locationFile).toBe(true)
@@ -392,7 +401,7 @@ describe('SHLManifestBuilder', () => {
     })
 
     await builder429.addFHIRResource({
-      content: { resourceType: 'Patient' } as any,
+      content: { resourceType: 'Patient' },
       enableCompression: false,
     })
     await expect(builder429.buildManifest({ embeddedLengthMax: 1_000_000 })).rejects.toThrow(
@@ -414,7 +423,7 @@ describe('SHLManifestBuilder', () => {
     })
 
     await builder500.addFHIRResource({
-      content: { resourceType: 'Patient' } as any,
+      content: { resourceType: 'Patient' },
       enableCompression: false,
     })
     await expect(builder500.buildManifest({ embeddedLengthMax: 1_000_000 })).rejects.toThrow(

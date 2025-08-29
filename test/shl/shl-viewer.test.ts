@@ -481,7 +481,7 @@ describe('SHLViewer', () => {
       const both = {
         files: [{ contentType: 'application/fhir+json', embedded: 'x', location: 'https://x' }],
       }
-      const neither = { files: [{ contentType: 'application/fhir+json' }] } as any
+      const neither = { files: [{ contentType: 'application/fhir+json' }] }
       const badUrl = { files: [{ contentType: 'application/fhir+json', location: 'not-a-url' }] }
 
       const f1 = vi.fn(
