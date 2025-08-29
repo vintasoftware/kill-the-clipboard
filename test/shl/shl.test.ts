@@ -40,11 +40,24 @@ describe('SHL Class', () => {
   })
 
   it('should generate a SHLink with valid payload', () => {
-    const shl = SHL.generate({ baseManifestURL: 'https://shl.example.org', label: 'Test Card' })
+    const expirationDate = new Date('2025-12-31T23:59:59Z')
+    const shl = SHL.generate({
+      baseManifestURL: 'https://shl.example.org',
+      manifestPath: 'manifest.json',
+      flag: 'LP',
+      expirationDate,
+      label: 'Test Card',
+    })
     const uri = shl.generateSHLinkURI()
     // biome-ignore lint/style/noNonNullAssertion: uri split is ensured
     const payload = JSON.parse(new TextDecoder().decode(base64url.decode(uri.split('/')[1]!)))
+
     expect(payload).toEqual(shl.payload)
+    expect(payload.v).toBe(1)
+    expect(payload.url).toMatch(/^https:\/\/shl\.example\.org\/[A-Za-z0-9_-]{43}\/manifest\.json$/)
+    expect(payload.flag).toBe('LP')
+    expect(payload.exp).toBe(Math.floor(expirationDate.getTime() / 1000))
+    expect(payload.label).toBe('Test Card')
   })
 
   it('should throw error for invalid label length', () => {
