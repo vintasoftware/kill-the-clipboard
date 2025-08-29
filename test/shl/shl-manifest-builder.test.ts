@@ -113,6 +113,11 @@ describe('SHLManifestBuilder', () => {
     }
   })
 
+  it('should build an empty manifest if no files are added', async () => {
+    const manifest = await manifestBuilder.buildManifest()
+    expect(manifest.files).toHaveLength(0)
+  })
+
   it('should use default loadFile implementation when not provided', async () => {
     const mockFetch = vi.fn(async (url: string) => {
       const fileId = url.split('/').pop()
@@ -149,7 +154,12 @@ describe('SHLManifestBuilder', () => {
   it('should handle loadFile errors gracefully in default implementation', async () => {
     const mockFetch = vi.fn(
       async () =>
-        ({ ok: false, status: 404, statusText: 'Not Found', text: async () => '' }) as Response
+        ({
+          ok: false,
+          status: 404,
+          statusText: 'Not Found',
+          text: async () => '',
+        }) as Response
     )
 
     const builderWithFailingLoadFile = new SHLManifestBuilder({

@@ -196,7 +196,12 @@ describe('SHLViewer', () => {
 
       const fetch401 = vi.fn(
         async () =>
-          ({ ok: false, status: 401, statusText: 'Unauthorized', text: async () => '' }) as Response
+          ({
+            ok: false,
+            status: 401,
+            statusText: 'Unauthorized',
+            text: async () => '',
+          }) as Response
       )
       await expect(
         new SHLViewer({ shlinkURI, fetch: fetch401 }).resolveSHLink({
@@ -346,6 +351,35 @@ describe('SHLViewer', () => {
       const v2 = new SHLViewer({ shlinkURI: shl.generateSHLinkURI(), fetch: fetchMock })
       await expect(v2.resolveSHLink({ recipient: 'r' })).rejects.toThrow(SHLDecryptionError)
       await expect(v2.resolveSHLink({ recipient: 'r' })).rejects.toThrow('JWE decryption failed')
+    })
+
+    it('throws SHLDecryptionError for key mismatch', async () => {
+      const shl1 = SHL.generate({ baseManifestURL: 'https://shl.example.org' })
+      const shl2WithWrongKey = SHL.generate({ baseManifestURL: 'https://shl.example.org' })
+
+      const jwe = await encryptSHLFile({
+        content: JSON.stringify(createValidFHIRBundle()),
+        key: shl1.key,
+        contentType: 'application/fhir+json',
+      })
+      const manifest = { files: [{ contentType: 'application/fhir+json', embedded: jwe }] }
+      const shlinkURIWithWrongKey = shl2WithWrongKey.generateSHLinkURI()
+
+      const fetchMock = vi.fn(
+        async () =>
+          ({
+            ok: true,
+            status: 200,
+            statusText: 'OK',
+            text: async () => JSON.stringify(manifest),
+          }) as Response
+      )
+
+      const viewer = new SHLViewer({ shlinkURI: shlinkURIWithWrongKey, fetch: fetchMock })
+      await expect(viewer.resolveSHLink({ recipient: 'r' })).rejects.toThrow(SHLDecryptionError)
+      await expect(viewer.resolveSHLink({ recipient: 'r' })).rejects.toThrow(
+        'JWE decryption failed'
+      )
     })
 
     it('throws SHLExpiredError when SHL is expired', async () => {

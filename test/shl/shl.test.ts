@@ -65,4 +65,22 @@ describe('SHL Class', () => {
       SHL.generate({ baseManifestURL: 'https://shl.example.org', label: 'x'.repeat(81) })
     ).toThrow(SHLFormatError)
   })
+
+  it('should reconstruct from payload correctly', () => {
+    const original = SHL.generate({
+      baseManifestURL: 'https://shl.example.org',
+      manifestPath: 'manifest.json',
+      flag: 'P',
+      label: 'Reconstructed',
+      expirationDate: new Date('2030-01-01T00:00:00Z'),
+    })
+
+    const reconstructed = SHL.fromPayload(original.payload)
+    expect(reconstructed.url).toBe(original.url)
+    expect(reconstructed.key).toBe(original.key)
+    expect(reconstructed.flag).toBe(original.flag)
+    expect(reconstructed.label).toBe(original.label)
+    expect(reconstructed.exp).toBe(original.exp)
+    expect(reconstructed.payload).toEqual(original.payload)
+  })
 })
