@@ -1,6 +1,7 @@
 // Types for Smart Health Links
 import type { Resource } from '@medplum/fhirtypes'
 import type { SmartHealthCard } from '../shc/card.js'
+import type { QREncodeParams } from '../shc/types.js'
 
 /**
  * FHIR R4 Resource type re-exported from @medplum/fhirtypes for convenience.
@@ -99,6 +100,21 @@ export interface SHLinkPayloadV1 {
    */
   v?: 1
 }
+
+/**
+ * Configuration parameters for SHL QR code generation.
+ *
+ * @public
+ * @category Configuration
+ */
+export type SHLQREncodeParams = {
+  /**
+   * URL of the SHL viewer to include in the QR code as a prefix.
+   * When provided, the QR code will contain: `${viewerURL}#${shlinkURI}`
+   * instead of just the bare SHLink URI.
+   */
+  viewerURL?: string
+} & QREncodeParams
 
 /**
  * Manifest request structure (v1).

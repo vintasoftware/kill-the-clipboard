@@ -530,7 +530,7 @@ Flow to resolve and display an SHLink:
 - Env vars (Vercel):
   - `SHC_PRIVATE_KEY`
   - `SHC_PUBLIC_KEY`
-  - `SHL_BASE_URL` (e.g., `https://example.org/shl/manifests/`) to use as `baseManifestURL` parameter
+  - `SHL_MANIFEST_BASE_URL` (e.g., `https://example.org/shl/manifests/`) to use as `baseManifestURL` parameter
   - Medplum credentials as required by the SDK
 
 

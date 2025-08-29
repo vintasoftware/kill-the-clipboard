@@ -2,7 +2,9 @@
 import { Card, Title, Text, Stack, Button, Group, CopyButton, Tooltip, Alert, Code, Box } from '@mantine/core';
 import { notifications } from '@mantine/notifications';
 import { IconCheck, IconCopy, IconQrcode, IconAlertCircle } from '@tabler/icons-react';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { SHL } from 'kill-the-clipboard';
+import { base64url } from 'jose';
 
 interface SHLDisplayProps {
   shlUri: string;
@@ -11,6 +13,8 @@ interface SHLDisplayProps {
 
 export function SHLDisplay({ shlUri, onReset }: SHLDisplayProps) {
   const [showQR, setShowQR] = useState(false);
+  const [qrCodeDataUrl, setQrCodeDataUrl] = useState<string | null>(null);
+  const [qrError, setQrError] = useState<string | null>(null);
 
   const handleCopy = () => {
     navigator.clipboard.writeText(shlUri);
@@ -26,6 +30,29 @@ export function SHLDisplay({ shlUri, onReset }: SHLDisplayProps) {
     const viewerUrl = `${window.location.origin}/viewer#${shlUri}`;
     window.open(viewerUrl, '_blank');
   };
+
+  // Generate QR code when showQR becomes true
+  useEffect(() => {
+    if (showQR && !qrCodeDataUrl && !qrError) {
+      const generateQR = async () => {
+        try {
+          setQrError(null);
+          const shl = SHL.parseSHLinkURI(shlUri);
+          const dataUrl = await shl.asQR({
+            viewerURL: process.env.NEXT_PUBLIC_SHL_VIEWER_URL!,
+            width: 350,
+            margin: 2,
+            errorCorrectionLevel: 'M',
+          });
+          setQrCodeDataUrl(dataUrl);
+        } catch (error) {
+          setQrError(error instanceof Error ? error.message : 'Failed to generate QR code');
+        }
+      };
+
+      generateQR();
+    }
+  }, [showQR, qrCodeDataUrl, qrError, shlUri]);
 
   return (
     <Card withBorder p="xl">
@@ -66,7 +93,18 @@ export function SHLDisplay({ shlUri, onReset }: SHLDisplayProps) {
             )}
           </CopyButton>
 
-          <Button variant="outline" leftSection={<IconQrcode size="1rem" />} onClick={() => setShowQR(!showQR)}>
+          <Button
+            variant="outline"
+            leftSection={<IconQrcode size="1rem" />}
+            onClick={() => {
+              if (showQR) {
+                // Reset QR code state when hiding
+                setQrCodeDataUrl(null);
+                setQrError(null);
+              }
+              setShowQR(!showQR);
+            }}
+          >
             {showQR ? 'Hide QR Code' : 'Show QR Code'}
           </Button>
 
@@ -78,23 +116,49 @@ export function SHLDisplay({ shlUri, onReset }: SHLDisplayProps) {
             <Text size="sm" c="dimmed" mb="md">
               Scan this QR code to access your health information
             </Text>
-            {/* TODO: Add QR code generation using a library like qrcode.react */}
-            <Box
-              style={{
-                width: 200,
-                height: 200,
-                border: '1px solid #ddd',
-                borderRadius: 8,
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                backgroundColor: '#f8f9fa',
-              }}
-            >
-              <Text size="sm" c="dimmed">
-                QR Code Placeholder
-              </Text>
-            </Box>
+            {qrError ? (
+              <Alert color="red" mb="md">
+                {qrError}
+              </Alert>
+            ) : qrCodeDataUrl ? (
+              <Box
+                style={{
+                  display: 'flex',
+                  justifyContent: 'center',
+                  padding: '16px',
+                  backgroundColor: '#f8f9fa',
+                  borderRadius: 8,
+                  border: '1px solid #ddd',
+                }}
+              >
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  src={qrCodeDataUrl}
+                  alt="Smart Health Link QR Code"
+                  style={{
+                    display: 'block',
+                  }}
+                />
+              </Box>
+            ) : (
+              <Box
+                style={{
+                  width: 200,
+                  height: 200,
+                  border: '1px solid #ddd',
+                  borderRadius: 8,
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  backgroundColor: '#f8f9fa',
+                  margin: '0 auto',
+                }}
+              >
+                <Text size="sm" c="dimmed">
+                  Generating QR Code...
+                </Text>
+              </Box>
+            )}
           </Box>
         )}
 

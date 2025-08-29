@@ -14,6 +14,7 @@ import {
 import {
   createInvalidBundle,
   createValidFHIRBundle,
+  decodeQRFromDataURL,
   testPrivateKeyPKCS8,
   testPublicKeySPKI,
 } from '../helpers'
@@ -296,12 +297,20 @@ describe('SmartHealthCard', () => {
     it('should generate QR codes', async () => {
       const healthCard = await issuer.issue(validBundle)
       const qrCodes = await healthCard.asQR()
+      const qrNumericStrings = healthCard.asQRNumeric()
 
       expect(Array.isArray(qrCodes)).toBe(true)
       expect(qrCodes.length).toBeGreaterThan(0)
-      qrCodes.forEach(qr => {
+      expect(qrCodes.length).toBe(qrNumericStrings.length)
+
+      qrCodes.forEach((qr, index) => {
         expect(typeof qr).toBe('string')
         expect(qr).toMatch(/^data:image\/png;base64,/)
+
+        // Validate QR code content by reading it back
+        const decodedContent = decodeQRFromDataURL(qr)
+        const expectedContent = qrNumericStrings[index]
+        expect(decodedContent, `QR decode failed for index ${index}`).toBe(expectedContent)
       })
     })
 

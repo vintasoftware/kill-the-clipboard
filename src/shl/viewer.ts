@@ -1,5 +1,4 @@
 import type { Resource } from '@medplum/fhirtypes'
-import { base64url } from 'jose'
 import type { SmartHealthCard } from '../shc/card.js'
 import { SmartHealthCardReader } from '../shc/reader.js'
 import type { SmartHealthCardReaderConfigParams } from '../shc/types.js'
@@ -7,7 +6,6 @@ import { decryptSHLFile } from './crypto.js'
 import {
   SHLError,
   SHLExpiredError,
-  SHLFormatError,
   SHLInvalidPasscodeError,
   SHLManifestError,
   SHLManifestNotFoundError,
@@ -18,7 +16,6 @@ import {
 import { SHL } from './shl.js'
 import type {
   SHLFileContentType,
-  SHLinkPayloadV1,
   SHLManifestRequestV1,
   SHLManifestV1,
   SHLResolvedContent,
@@ -108,7 +105,7 @@ export class SHLViewer {
       )
     }
 
-    this._shl = this.parseSHLinkURI(params.shlinkURI)
+    this._shl = SHL.parseSHLinkURI(params.shlinkURI)
   }
 
   /**
@@ -298,73 +295,6 @@ export class SHLViewer {
       manifest,
       smartHealthCards,
       fhirResources,
-    }
-  }
-
-  /**
-   * Parse a SHLink URI into an SHL object.
-   *
-   * Handles both bare SHLink URIs and viewer-prefixed URIs:
-   * - `shlink:/eyJ1cmwiOi4uLn0` (bare)
-   * - `https://viewer.example/#shlink:/eyJ1cmwiOi4uLn0` (viewer-prefixed)
-   *
-   * Validates URI format, decodes base64url payload, parses JSON,
-   * and validates payload structure according to SHL specification.
-   *
-   * @param shlinkURI - SHLink URI to parse
-   * @returns SHL instance with parsed payload data
-   * @throws {@link SHLFormatError} When URI format is invalid, payload cannot be decoded, or payload structure is invalid
-   *
-   * @private
-   */
-  private parseSHLinkURI(shlinkURI: string): SHL {
-    try {
-      // Remove viewer prefix if present (ends with #)
-      let uriToParse = shlinkURI
-      const hashIndex = shlinkURI.indexOf('#shlink:/')
-      if (hashIndex !== -1) {
-        uriToParse = shlinkURI.substring(hashIndex + 1)
-      }
-
-      // Validate shlink:/ prefix
-      if (!uriToParse.startsWith('shlink:/')) {
-        throw new SHLFormatError('Invalid SHLink URI: must start with "shlink:/"')
-      }
-
-      // Extract and decode the payload
-      const payloadB64u = uriToParse.substring('shlink:/'.length)
-      if (!payloadB64u) {
-        throw new SHLFormatError('Invalid SHLink URI: missing payload')
-      }
-
-      // Decode base64url payload
-      let payloadBytes: Uint8Array
-      try {
-        payloadBytes = base64url.decode(payloadB64u)
-      } catch {
-        throw new SHLFormatError('Invalid SHLink URI: payload is not valid base64url')
-      }
-
-      // Parse JSON payload
-      const payloadJson = new TextDecoder().decode(payloadBytes)
-      let payload: SHLinkPayloadV1
-      try {
-        payload = JSON.parse(payloadJson) as SHLinkPayloadV1
-      } catch {
-        throw new SHLFormatError('Invalid SHLink URI: payload is not valid JSON')
-      }
-
-      // Validate payload structure
-      SHL.validatePayload(payload)
-
-      // Create a reconstructed SHL object using the static factory method
-      return SHL.fromPayload(payload)
-    } catch (error) {
-      if (error instanceof SHLError) {
-        throw error
-      }
-      const errorMessage = error instanceof Error ? error.message : String(error)
-      throw new SHLFormatError(`Failed to parse SHLink URI: ${errorMessage}`)
     }
   }
 

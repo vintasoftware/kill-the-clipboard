@@ -1,6 +1,7 @@
 import { base64url } from 'jose'
 import { describe, expect, it } from 'vitest'
 import { SHL, SHLFormatError } from '@/index'
+import { decodeQRFromDataURL } from '../helpers'
 
 describe('SHL Class', () => {
   it('should create a valid SHL with basic properties', () => {
@@ -122,5 +123,110 @@ describe('SHL Class', () => {
       expect(entropySegment).toHaveLength(43)
       expect(entropySegment).toMatch(/^[A-Za-z0-9_-]{43}$/)
     }
+  })
+
+  describe('QR Code Generation', () => {
+    const baseSHL = SHL.generate({ baseManifestURL: 'https://shl.example.org', label: 'Test QR' })
+
+    it('should generate valid QR codes with various options', async () => {
+      const expectedURI = baseSHL.generateSHLinkURI()
+
+      const testCases = [
+        {
+          options: undefined,
+          description: 'default options',
+          expectedContent: expectedURI,
+        },
+        {
+          options: { width: 512, errorCorrectionLevel: 'H' as const },
+          description: 'custom options',
+          expectedContent: expectedURI,
+        },
+        {
+          options: { viewerURL: 'https://viewer.example.org/shl' },
+          description: 'viewer URL',
+          expectedContent: `https://viewer.example.org/shl#${expectedURI}`,
+        },
+      ]
+
+      for (const { options, description, expectedContent } of testCases) {
+        const qrDataURL = await baseSHL.asQR(options)
+
+        // Validate data URL format
+        expect(qrDataURL, `Failed for ${description}`).toMatch(/^data:image\/png;base64,/)
+        expect(qrDataURL.length, `Invalid length for ${description}`).toBeGreaterThan(100)
+
+        // Validate QR code content by reading it back
+        const decodedContent = decodeQRFromDataURL(qrDataURL)
+        expect(decodedContent, `QR decode failed for ${description}`).toBe(expectedContent)
+      }
+    })
+  })
+
+  describe('SHLink URI Parsing', () => {
+    it('should parse valid SHLink URIs correctly', () => {
+      const testCases = [
+        {
+          name: 'bare URI',
+          shl: SHL.generate({
+            baseManifestURL: 'https://shl.example.org',
+            flag: 'P',
+            label: 'Parse Test',
+            expirationDate: new Date('2030-01-01T00:00:00Z'),
+          }),
+          uriTransform: (uri: string) => uri,
+        },
+        {
+          name: 'viewer-prefixed URI',
+          shl: SHL.generate({ baseManifestURL: 'https://shl.example.org', flag: 'LP' }),
+          uriTransform: (uri: string) => `https://viewer.example.org/shl#${uri}`,
+        },
+      ]
+
+      for (const { name, shl, uriTransform } of testCases) {
+        const uri = uriTransform(shl.generateSHLinkURI())
+        const parsed = SHL.parseSHLinkURI(uri)
+
+        expect(parsed.payload, `Failed for ${name}`).toEqual(shl.payload)
+        expect(parsed.generateSHLinkURI()).toBe(shl.generateSHLinkURI())
+      }
+    })
+
+    it('should throw SHLFormatError for invalid URIs', () => {
+      const invalidCases = [
+        'invalid-uri',
+        'http://example.org',
+        'shlink:/',
+        'shlink:/invalid-base64',
+        `shlink:/${base64url.encode(new TextEncoder().encode('invalid json'))}`,
+        `shlink:/${base64url.encode(new TextEncoder().encode(JSON.stringify({ key: 'test-key-that-is-43-characters-long-base64url' })))}`,
+      ]
+
+      for (const invalidURI of invalidCases) {
+        expect(() => SHL.parseSHLinkURI(invalidURI)).toThrow(SHLFormatError)
+      }
+    })
+
+    it('should handle round-trip parsing with all field types', () => {
+      const comprehensive = SHL.generate({
+        baseManifestURL: 'https://comprehensive.example.org',
+        manifestPath: '/v2/manifest.json',
+        flag: 'LP',
+        label: 'Comprehensive Test',
+        expirationDate: new Date('2024-12-31T23:59:59.999Z'),
+      })
+
+      const uri = comprehensive.generateSHLinkURI()
+      const parsed = SHL.parseSHLinkURI(uri)
+
+      // Verify all properties preserved
+      expect(parsed.url).toBe(comprehensive.url)
+      expect(parsed.key).toBe(comprehensive.key)
+      expect(parsed.flag).toBe(comprehensive.flag)
+      expect(parsed.label).toBe(comprehensive.label)
+      expect(parsed.requiresPasscode).toBe(comprehensive.requiresPasscode)
+      expect(parsed.isLongTerm).toBe(comprehensive.isLongTerm)
+      expect(parsed.exp).toBe(comprehensive.exp)
+    })
   })
 })

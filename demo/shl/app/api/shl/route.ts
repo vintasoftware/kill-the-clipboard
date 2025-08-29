@@ -45,7 +45,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Get the base URL for manifest construction
-    const baseUrl = process.env.SHL_BASE_URL || `${request.nextUrl.origin}/api/shl/manifests`;
+    const baseUrl = process.env.SHL_MANIFEST_BASE_URL!
 
     // Create SHL instance
     const shl = SHL.generate({

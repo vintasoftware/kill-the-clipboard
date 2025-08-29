@@ -1,6 +1,7 @@
 import { base64url } from 'jose'
-import { SHLFormatError } from './errors.js'
-import type { SHLFlag, SHLinkPayloadV1 } from './types.js'
+import QRCode from 'qrcode'
+import { SHLError, SHLFormatError } from './errors.js'
+import type { SHLFlag, SHLinkPayloadV1, SHLQREncodeParams } from './types.js'
 
 /**
  * Immutable SHL class representing a Smart Health Link payload and URI.
@@ -300,6 +301,57 @@ export class SHL {
   }
 
   /**
+   * Generate a QR code as a Data URL for the SHLink URI.
+   *
+   * Creates a QR code image encoded as a base64 Data URL that can be used
+   * directly in HTML img tags or displayed in applications.
+   *
+   * @param options - Optional QR code generation options
+   * @param options.viewerURL - URL of the SHL viewer
+   *   to include in the QR code as a prefix like https://example.org/viewer#shlink:/...
+   *   (default: no URL)
+   * @param options.width - Width of the QR code image in pixels (default: 256)
+   * @param options.margin - Margin around the QR code in modules (default: 1)
+   * @param options.errorCorrectionLevel - Error correction level: 'L', 'M', 'Q', or 'H' (default: 'M', per spec)
+   * @param options.color - Color options for dark and light modules
+   * @returns Promise that resolves to a Data URL string
+   *
+   * @example
+   * ```typescript
+   * const shl = SHL.generate({
+   *   baseManifestURL: 'https://shl.example.org',
+   *   manifestPath: '/manifest.json'
+   * });
+   *
+   * const qrCodeDataURL = await shl.asQR();
+   * // Use in HTML: <img src={qrCodeDataURL} alt="SHL QR Code" />
+   *
+   * // With custom options
+   * const customQR = await shl.asQR({
+   *   width: 512,
+   *   errorCorrectionLevel: 'H',
+   *   color: { dark: '#000000', light: '#FFFFFF' }
+   * });
+   * ```
+   */
+  async asQR(options?: SHLQREncodeParams): Promise<string> {
+    let shlinkURI = this.generateSHLinkURI()
+    if (options?.viewerURL) {
+      shlinkURI = `${options.viewerURL}#${shlinkURI}`
+    }
+
+    const qrOptions: QRCode.QRCodeToDataURLOptions = {
+      width: options?.width ?? 256,
+      margin: options?.margin ?? 1,
+      errorCorrectionLevel: options?.errorCorrectionLevel ?? 'M',
+      color: options?.color ?? { dark: '#000000', light: '#FFFFFF' },
+      type: 'image/png',
+    }
+
+    return QRCode.toDataURL(shlinkURI, qrOptions)
+  }
+
+  /**
    * Static factory method to create an SHL from a parsed payload.
    *
    * This method is used internally by {@link SHLViewer} to reconstruct SHL objects
@@ -390,6 +442,71 @@ export class SHL {
     // Validate flag format if present
     if (p.flag && !/^[LP]+$/.test(p.flag)) {
       throw new SHLFormatError('Invalid SHLink payload: "flag" field contains invalid characters')
+    }
+  }
+
+  /**
+   * Static method to parse a SHLink URI into an SHL object.
+   *
+   * Handles both bare SHLink URIs and viewer-prefixed URIs:
+   * - `shlink:/eyJ1cmwiOi4uLn0` (bare)
+   * - `https://viewer.example/#shlink:/eyJ1cmwiOi4uLn0` (viewer-prefixed)
+   *
+   * Validates URI format, decodes base64url payload, parses JSON,
+   * and validates payload structure according to SHL specification.
+   *
+   * @param shlinkURI - SHLink URI to parse
+   * @returns SHL instance with parsed payload data
+   * @throws {@link SHLFormatError} When URI format is invalid, payload cannot be decoded, or payload structure is invalid
+   */
+  static parseSHLinkURI(shlinkURI: string): SHL {
+    try {
+      // Remove viewer prefix if present (ends with #)
+      let uriToParse = shlinkURI
+      const hashIndex = shlinkURI.indexOf('#shlink:/')
+      if (hashIndex !== -1) {
+        uriToParse = shlinkURI.substring(hashIndex + 1)
+      }
+
+      // Validate shlink:/ prefix
+      if (!uriToParse.startsWith('shlink:/')) {
+        throw new SHLFormatError('Invalid SHLink URI: must start with "shlink:/"')
+      }
+
+      // Extract and decode the payload
+      const payloadB64u = uriToParse.substring('shlink:/'.length)
+      if (!payloadB64u) {
+        throw new SHLFormatError('Invalid SHLink URI: missing payload')
+      }
+
+      // Decode base64url payload
+      let payloadBytes: Uint8Array
+      try {
+        payloadBytes = base64url.decode(payloadB64u)
+      } catch {
+        throw new SHLFormatError('Invalid SHLink URI: payload is not valid base64url')
+      }
+
+      // Parse JSON payload
+      const payloadJson = new TextDecoder().decode(payloadBytes)
+      let payload: SHLinkPayloadV1
+      try {
+        payload = JSON.parse(payloadJson) as SHLinkPayloadV1
+      } catch {
+        throw new SHLFormatError('Invalid SHLink URI: payload is not valid JSON')
+      }
+
+      // Validate payload structure
+      SHL.validatePayload(payload)
+
+      // Create a reconstructed SHL object using the static factory method
+      return SHL.fromPayload(payload)
+    } catch (error) {
+      if (error instanceof SHLError) {
+        throw error
+      }
+      const errorMessage = error instanceof Error ? error.message : String(error)
+      throw new SHLFormatError(`Failed to parse SHLink URI: ${errorMessage}`)
     }
   }
 }

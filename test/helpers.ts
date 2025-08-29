@@ -1,5 +1,7 @@
 // biome-ignore-all lint/suspicious/noExplicitAny: Tests use `any` for validation scenarios
 import type { Bundle } from '@medplum/fhirtypes'
+import { PNG } from 'pngjs'
+import decodeQR from 'qr/decode.js'
 import type { FHIRBundle } from '@/index'
 
 export const testPrivateKeyPKCS8 = `-----BEGIN PRIVATE KEY-----
@@ -53,3 +55,32 @@ export const createInvalidBundle = (): Bundle => ({
   id: '123',
   type: 'collection' as any,
 })
+
+/**
+ * Helper function to decode QR code from data URL for testing purposes.
+ * Uses the 'qr' package to validate generated QR codes by reading them back.
+ */
+export function decodeQRFromDataURL(dataURL: string): string | null {
+  try {
+    // Extract base64 data from data URL
+    const base64Data = dataURL.replace(/^data:image\/png;base64,/, '')
+    const imageBuffer = Buffer.from(base64Data, 'base64')
+
+    // Parse PNG to get RGBA data
+    const png = PNG.sync.read(imageBuffer)
+
+    // The qr package expects { width, height, data } where data is RGBA bytes
+    const image = {
+      width: png.width,
+      height: png.height,
+      data: png.data, // Already RGBA format from pngjs
+    }
+
+    // Decode the QR code
+    const result = decodeQR(image)
+    return result || null
+  } catch (error) {
+    console.warn('QR decode error:', error)
+    return null
+  }
+}
