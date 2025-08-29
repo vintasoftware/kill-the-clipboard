@@ -83,4 +83,44 @@ describe('SHL Class', () => {
     expect(reconstructed.exp).toBe(original.exp)
     expect(reconstructed.payload).toEqual(original.payload)
   })
+
+  it('should handle different baseManifestURL formats correctly', () => {
+    const testCases = [
+      {
+        baseManifestURL: 'https://shl.example.org/manifests/',
+        manifestPath: '/manifest.json',
+        expectedPattern:
+          /^https:\/\/shl\.example\.org\/manifests\/[A-Za-z0-9_-]{43}\/manifest\.json$/,
+      },
+      {
+        baseManifestURL: 'https://api.example.com/v1/shl',
+        expectedPattern: /^https:\/\/api\.example\.com\/v1\/shl\/[A-Za-z0-9_-]{43}\/$/,
+      },
+      {
+        baseManifestURL: 'https://health.gov/links',
+        manifestPath: '/data.json',
+        expectedPattern: /^https:\/\/health\.gov\/links\/[A-Za-z0-9_-]{43}\/data\.json$/,
+      },
+    ]
+
+    for (const testCase of testCases) {
+      const shl = SHL.generate(
+        testCase.manifestPath
+          ? {
+              baseManifestURL: testCase.baseManifestURL,
+              manifestPath: testCase.manifestPath,
+            }
+          : {
+              baseManifestURL: testCase.baseManifestURL,
+            }
+      )
+
+      expect(shl.url).toMatch(testCase.expectedPattern)
+      const url = new URL(shl.url)
+      const pathSegments = url.pathname.split('/')
+      const entropySegment = pathSegments[pathSegments.length - 2]
+      expect(entropySegment).toHaveLength(43)
+      expect(entropySegment).toMatch(/^[A-Za-z0-9_-]{43}$/)
+    }
+  })
 })
