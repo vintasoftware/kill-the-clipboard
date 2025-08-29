@@ -113,8 +113,9 @@ describe('SHLViewer', () => {
         loadFile: async (path: string) => uploaded.get(path) as string,
       })
 
-      await builder.addFHIRResource({ content: createValidFHIRBundle(), enableCompression: false })
-      const manifest = await builder.buildManifest({ embeddedLengthMax: 1000000 })
+      const fhirBundle = createValidFHIRBundle()
+      await builder.addFHIRResource({ content: fhirBundle, enableCompression: false })
+      const manifest = await builder.buildManifest({ embeddedLengthMax: 1_000_000 })
       const shlinkURI = shl.generateSHLinkURI()
 
       const fetchMock = vi.fn(async (url: string, init?: RequestInit) => {
@@ -132,7 +133,8 @@ describe('SHLViewer', () => {
       const result = await new SHLViewer({ shlinkURI, fetch: fetchMock }).resolveSHLink({
         recipient: 'did:example:alice',
       })
-      expect(result.smartHealthCards.length + result.fhirResources.length).toBe(1)
+      expect(result.fhirResources).toHaveLength(1)
+      expect(result.fhirResources[0]).toEqual(fhirBundle)
       expect(fetchMock).toHaveBeenCalled()
     })
 
@@ -151,7 +153,8 @@ describe('SHLViewer', () => {
         loadFile: async (path: string) => uploaded.get(path) as string,
       })
 
-      await builder.addFHIRResource({ content: createValidFHIRBundle(), enableCompression: false })
+      const fhirBundle = createValidFHIRBundle()
+      await builder.addFHIRResource({ content: fhirBundle, enableCompression: false })
       const manifest = await builder.buildManifest({ embeddedLengthMax: 1 })
       const fileLocation =
         // biome-ignore lint/style/noNonNullAssertion: files available
@@ -182,7 +185,8 @@ describe('SHLViewer', () => {
       const result = await new SHLViewer({ shlinkURI, fetch: fetchMock }).resolveSHLink({
         recipient: 'did:example:alice',
       })
-      expect(result.smartHealthCards.length + result.fhirResources.length).toBe(1)
+      expect(result.fhirResources).toHaveLength(1)
+      expect(result.fhirResources[0]).toEqual(fhirBundle)
       expect(fetchMock).toHaveBeenCalled()
     })
 
@@ -550,11 +554,6 @@ describe('SHLViewer', () => {
 
     it('file fetch maps 429 and 500 to SHLNetworkError', async () => {
       const shl = SHL.generate({ baseManifestURL: 'https://shl.example.org' })
-      const _jwe = await encryptSHLFile({
-        content: JSON.stringify({ resourceType: 'Patient' }),
-        key: shl.key,
-        contentType: 'application/fhir+json',
-      })
       const manifest = {
         files: [{ contentType: 'application/fhir+json', location: 'https://files.example.org/f' }],
       }

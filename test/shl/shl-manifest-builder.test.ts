@@ -1,5 +1,11 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { SHL, SHLManifestBuilder, SHLNetworkError, SmartHealthCardIssuer } from '@/index'
+import {
+  decryptSHLFile,
+  SHL,
+  SHLManifestBuilder,
+  SHLNetworkError,
+  SmartHealthCardIssuer,
+} from '@/index'
 import { createValidFHIRBundle, testPrivateKeyPKCS8, testPublicKeySPKI } from '../helpers'
 
 describe('SHLManifestBuilder', () => {
@@ -39,17 +45,44 @@ describe('SHLManifestBuilder', () => {
     await manifestBuilder.addHealthCard({ shc: healthCard })
 
     expect(manifestBuilder.files).toHaveLength(1)
-    expect(manifestBuilder.files[0]?.type).toBe('application/smart-health-card')
-    expect(manifestBuilder.files[0]?.storagePath).toMatch(/^file-\d+$/)
-    expect(manifestBuilder.files[0]?.ciphertextLength).toBeGreaterThan(0)
+    // biome-ignore lint/style/noNonNullAssertion: files length already asserted to == 1
+    const fileMetadata = manifestBuilder.files[0]!
+    expect(fileMetadata.type).toBe('application/smart-health-card')
+    expect(fileMetadata.storagePath).toMatch(/^file-\d+$/)
+    expect(fileMetadata.ciphertextLength).toBeGreaterThan(0)
+
+    // Decrypt and verify content
+    const jwe = uploadedFiles.get(fileMetadata.storagePath)
+    expect(jwe).toBeDefined()
+    const { content: decryptedJson } = await decryptSHLFile({
+      // biome-ignore lint/style/noNonNullAssertion: jwe is checked for definedness above
+      jwe: jwe!,
+      key: shl.key,
+    })
+    const decryptedFile = JSON.parse(decryptedJson)
+    expect(decryptedFile.verifiableCredential).toEqual([healthCard.asJWS()])
   })
 
   it('should add FHIR resources to manifest', async () => {
-    await manifestBuilder.addFHIRResource({ content: createValidFHIRBundle() })
+    const fhirBundle = createValidFHIRBundle()
+    await manifestBuilder.addFHIRResource({ content: fhirBundle })
     expect(manifestBuilder.files).toHaveLength(1)
-    expect(manifestBuilder.files[0]?.type).toBe('application/fhir+json')
-    expect(manifestBuilder.files[0]?.storagePath).toMatch(/^file-\d+$/)
-    expect(manifestBuilder.files[0]?.ciphertextLength).toBeGreaterThan(0)
+    // biome-ignore lint/style/noNonNullAssertion: files length already asserted to == 1
+    const fileMetadata = manifestBuilder.files[0]!
+    expect(fileMetadata.type).toBe('application/fhir+json')
+    expect(fileMetadata.storagePath).toMatch(/^file-\d+$/)
+    expect(fileMetadata.ciphertextLength).toBeGreaterThan(0)
+
+    // Decrypt and verify content
+    const jwe = uploadedFiles.get(fileMetadata.storagePath)
+    expect(jwe).toBeDefined()
+    const { content: decryptedJson } = await decryptSHLFile({
+      // biome-ignore lint/style/noNonNullAssertion: jwe is checked for definedness above
+      jwe: jwe!,
+      key: shl.key,
+    })
+    const decryptedResource = JSON.parse(decryptedJson)
+    expect(decryptedResource).toEqual(fhirBundle)
   })
 
   it('should build manifest with embedded files for small content', async () => {
@@ -295,9 +328,9 @@ describe('SHLManifestBuilder', () => {
     })
     const builder = new SHLManifestBuilder({
       shl,
-      uploadFile: async (c: string) => 'id',
+      uploadFile: async (_c: string) => 'id',
       getFileURL: async (p: string) => `https://files/${p}`,
-      loadFile: async (p: string) => 'x',
+      loadFile: async (_p: string) => 'x',
     })
 
     const manifestId = builder.manifestId
