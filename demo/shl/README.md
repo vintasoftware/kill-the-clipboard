@@ -10,6 +10,7 @@ This is a Next.js demo application that demonstrates Smart Health Links (SHL) fu
     - **Passcode protection (`P` flag)**: Server-enforced passcode prompted on the viewer; passcodes are stored as salted SHA-256 hashes (demo only, not suited for production). For production, use Argon2 or similar and a proper database
     - **Persistent Manifest storage**: Serialized `SHLManifestBuilder` state and passcode hashes stored on local filesystem under `.shl-storage/*.json` (demo only, not suited for production). For production, use a proper database
     - **File storage**: Encrypted JWE files persisted to Medplum as `Binary` resources; file URLs are FHIR URLs for `Binary` resources
+    - **QR code rendering**: Rendering of SHL QR codes using `qr` library
 - **Smart Health Link Viewer**: Resolves `shlink:/...`, prompts for passcode if needed, fetches manifest, decrypts files, and displays FHIR resources
     - **Manifest serving**: POST manifest endpoint; embeds JWEs ≤ 4 KiB, otherwise returns JWE file URLs
     - **Optional long-term flag (`L`)**: Flag is settable on creation; no polling implemented yet
@@ -24,8 +25,6 @@ This is a Next.js demo application that demonstrates Smart Health Links (SHL) fu
 ## Important limitations
 
 - SHL Viewer requires a valid Medplum session to fetch files due to how Medplum's `Binary` resources are protected by its FHIR server
-- No friendly FHIR resource display
-- No QR code rendering
 - No polling for SHLs with `L` flag
 - No rate limiting for manifest requests
 
@@ -74,7 +73,7 @@ This is a Next.js demo application that demonstrates Smart Health Links (SHL) fu
 3. Set a passcode (minimum 6 characters); optionally set label and `L` flag
 4. Submit the form; the server will:
    - Build a FHIR Bundle and a Smart Health Card from your Medplum data
-   - Encrypt and upload the bundle as a JWE files using Medplum `Binary` FHIR resources
+   - Encrypt and upload the bundle as JWE files using Medplum `Binary` FHIR resources
    - Persist builder state and passcode hash locally (demo only, not suited for production)
 5. You’ll get a `shlink:/...` URI and a button to open the viewer
 
