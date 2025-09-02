@@ -151,6 +151,7 @@ export class SHLViewer {
    * @param params.shcReaderConfig - Optional configuration for Smart Health Card verification (e.g. public key)
    *
    * @returns Promise resolving to structured content with manifest and decrypted files
+   * @throws {@link SHLViewerError} When recipient is not a non-empty string
    * @throws {@link SHLExpiredError} When SHL has expired (exp field < current time)
    * @throws {@link SHLInvalidPasscodeError} When P-flagged SHL requires passcode but none provided, or passcode is incorrect
    * @throws {@link SHLManifestNotFoundError} When manifest URL returns 404
@@ -197,6 +198,11 @@ export class SHLViewer {
     shcReaderConfig?: SmartHealthCardReaderConfigParams
   }): Promise<SHLResolvedContent> {
     const shl = this.shl
+
+    // Validate recipient (required non-empty display string)
+    if (typeof params.recipient !== 'string' || params.recipient.trim().length === 0) {
+      throw new SHLViewerError('Recipient must be a non-empty string')
+    }
 
     // Check expiration
     if (shl.exp && shl.exp < Math.floor(Date.now() / 1000)) {

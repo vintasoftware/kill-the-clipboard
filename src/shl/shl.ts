@@ -440,8 +440,8 @@ export class SHL {
     }
 
     // Validate flag format if present
-    if (p.flag && !/^[LP]+$/.test(p.flag)) {
-      throw new SHLFormatError('Invalid SHLink payload: "flag" field contains invalid characters')
+    if (p.flag && !['L', 'P', 'LP'].includes(p.flag)) {
+      throw new SHLFormatError('Invalid SHLink payload: "flag" not one of "L", "P", "LP"')
     }
   }
 

@@ -13,6 +13,7 @@ import {
   SHLManifestRateLimitError,
   SHLNetworkError,
   SHLViewer,
+  SHLViewerError,
 } from '@/index'
 import { createValidFHIRBundle } from '../helpers'
 
@@ -92,7 +93,7 @@ describe('SHLViewer', () => {
       const uri4 = `shlink:/${base64url.encode(new TextEncoder().encode(JSON.stringify(p4)))}`
       expect(() => new SHLViewer({ shlinkURI: uri4 })).toThrow(SHLFormatError)
       expect(() => new SHLViewer({ shlinkURI: uri4 })).toThrow(
-        'Invalid SHLink payload: "flag" field contains invalid characters'
+        'Invalid SHLink payload: "flag" not one of "L", "P", "LP"'
       )
     })
   })
@@ -320,6 +321,34 @@ describe('SHLViewer', () => {
       await expect(
         new SHLViewer({ shlinkURI, fetch: fetchFile404 }).resolveSHLink({ recipient: 'r' })
       ).rejects.toThrow('File not found at URL: https://files.example.org/file-1')
+    })
+
+    it('throws SHLViewerError for recipient empty string', async () => {
+      const shl = SHL.generate({ baseManifestURL: 'https://shl.example.org' })
+      const shlinkURI = shl.generateSHLinkURI()
+
+      const fetchMock = vi.fn(
+        async () =>
+          ({
+            ok: true,
+            status: 200,
+            statusText: 'OK',
+            text: async () => JSON.stringify({ files: [] }),
+          }) as Response
+      )
+
+      const viewer = new SHLViewer({ shlinkURI, fetch: fetchMock })
+
+      await expect(viewer.resolveSHLink({ recipient: '' })).rejects.toThrow(SHLViewerError)
+      await expect(viewer.resolveSHLink({ recipient: '' })).rejects.toThrow(
+        'Recipient must be a non-empty string'
+      )
+      await expect(viewer.resolveSHLink({ recipient: '   ' })).rejects.toThrow(SHLViewerError)
+      await expect(viewer.resolveSHLink({ recipient: '   ' })).rejects.toThrow(
+        'Recipient must be a non-empty string'
+      )
+
+      expect(fetchMock).not.toHaveBeenCalled()
     })
 
     it('throws SHLDecryptionError for invalid JWE ciphertext', async () => {

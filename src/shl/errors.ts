@@ -153,7 +153,8 @@ export class SHLExpiredError extends SHLResolveError {
 }
 
 /**
- * Error thrown when SHL viewer cannot be created.
+ * Error thrown when SHL viewer cannot be created or
+ * invalid parameters are provided during resolution.
  *
  * @public
  * @category Errors
