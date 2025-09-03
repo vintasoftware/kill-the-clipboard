@@ -9,6 +9,7 @@ import type { FHIRBundle, QRCodeConfigParams } from './types.js'
  * This is the main user-facing object that provides different ways to export the health card.
  *
  * @public
+ * @group SHC
  * @category High-Level API
  */
 export class SmartHealthCard {

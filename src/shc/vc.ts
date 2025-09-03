@@ -5,6 +5,7 @@ import type { FHIRBundle, VerifiableCredential, VerifiableCredentialParams } fro
  * Creates and validates Verifiable Credentials for SMART Health Cards.
  *
  * @public
+ * @group SHC
  * @category Lower-Level API
  */
 export class VerifiableCredentialProcessor {

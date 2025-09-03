@@ -18,6 +18,7 @@ import { VerifiableCredentialProcessor } from './vc.js'
  * **Security Warning**: Issue/sign on a secure backend only; never expose the private key in browsers.
  *
  * @public
+ * @group SHC
  * @category High-Level API
  */
 export class SmartHealthCardIssuer {

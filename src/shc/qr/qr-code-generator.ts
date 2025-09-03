@@ -17,6 +17,7 @@ const V22_MAX_JWS_BY_EC_LEVEL = {
  * Generates and scans QR codes for SMART Health Cards with proper numeric encoding.
  *
  * @public
+ * @group SHC
  * @category Lower-Level API
  */
 export class QRCodeGenerator {

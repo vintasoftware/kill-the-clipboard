@@ -17,6 +17,7 @@ import type { SmartHealthCardJWT } from '../types.js'
  * Handles JWT/JWS signing and verification with ES256 algorithm.
  *
  * @public
+ * @group SHC
  * @category Lower-Level API
  */
 export class JWSProcessor {

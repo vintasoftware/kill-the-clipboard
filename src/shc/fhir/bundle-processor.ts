@@ -7,6 +7,7 @@ import type { FHIRBundle } from '../types.js'
  * Processes and validates FHIR R4 Bundles according to SMART Health Cards specification.
  *
  * @public
+ * @group SHC
  * @category Lower-Level API
  */
 export class FHIRBundleProcessor {

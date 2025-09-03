@@ -4,6 +4,7 @@
  * Base error class for Smart Health Links operations.
  *
  * @public
+ * @group SHL
  * @category Errors
  */
 export class SHLError extends Error {
@@ -21,6 +22,7 @@ export class SHLError extends Error {
  * Error thrown when SHL manifest operations fail.
  *
  * @public
+ * @group SHL
  * @category Errors
  */
 export class SHLManifestError extends SHLError {
@@ -34,6 +36,7 @@ export class SHLManifestError extends SHLError {
  * Error thrown when SHL network operations fail.
  *
  * @public
+ * @group SHL
  * @category Errors
  */
 export class SHLNetworkError extends SHLError {
@@ -47,6 +50,7 @@ export class SHLNetworkError extends SHLError {
  * Error thrown when SHL format parsing fails.
  *
  * @public
+ * @group SHL
  * @category Errors
  */
 export class SHLFormatError extends SHLError {
@@ -60,6 +64,7 @@ export class SHLFormatError extends SHLError {
  * Error thrown when SHL authentication fails.
  *
  * @public
+ * @group SHL
  * @category Errors
  */
 export class SHLAuthError extends SHLError {
@@ -73,6 +78,7 @@ export class SHLAuthError extends SHLError {
  * Error thrown when SHL passcode is invalid.
  *
  * @public
+ * @group SHL
  * @category Errors
  */
 export class SHLInvalidPasscodeError extends SHLAuthError {
@@ -87,6 +93,7 @@ export class SHLInvalidPasscodeError extends SHLAuthError {
  * Error thrown when SHL resolution fails.
  *
  * @public
+ * @group SHL
  * @category Errors
  */
 export class SHLResolveError extends SHLError {
@@ -100,7 +107,8 @@ export class SHLResolveError extends SHLError {
  * Error thrown when SHL decryption fails.
  *
  * @public
- * @category SHL Errors
+ * @group SHL
+ * @category Errors
  */
 export class SHLDecryptionError extends SHLResolveError {
   constructor(message: string) {
@@ -114,7 +122,8 @@ export class SHLDecryptionError extends SHLResolveError {
  * Error thrown when SHL manifest is not found.
  *
  * @public
- * @category SHL Errors
+ * @group SHL
+ * @category Errors
  */
 export class SHLManifestNotFoundError extends SHLResolveError {
   constructor(message: string) {
@@ -128,7 +137,8 @@ export class SHLManifestNotFoundError extends SHLResolveError {
  * Error thrown when SHL manifest requests are rate limited.
  *
  * @public
- * @category SHL Errors
+ * @group SHL
+ * @category Errors
  */
 export class SHLManifestRateLimitError extends SHLResolveError {
   constructor(message: string) {
@@ -142,7 +152,8 @@ export class SHLManifestRateLimitError extends SHLResolveError {
  * Error thrown when SHL has expired.
  *
  * @public
- * @category SHL Errors
+ * @group SHL
+ * @category Errors
  */
 export class SHLExpiredError extends SHLResolveError {
   constructor(message: string) {
@@ -157,6 +168,7 @@ export class SHLExpiredError extends SHLResolveError {
  * invalid parameters are provided during resolution.
  *
  * @public
+ * @group SHL
  * @category Errors
  */
 export class SHLViewerError extends SHLError {

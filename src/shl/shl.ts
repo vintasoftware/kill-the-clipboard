@@ -31,6 +31,7 @@ import type { SHLFlag, SHLinkPayloadV1, SHLQREncodeParams } from './types.js'
  * ```
  *
  * @public
+ * @group SHL
  * @category High-Level API
  */
 export class SHL {

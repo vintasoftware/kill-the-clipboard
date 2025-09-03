@@ -28,17 +28,10 @@
     "Method",
     "Reference"
   ],
+  "groupOrder": ["SHC", "SHL"],
   "categorizeByGroup": true,
   "defaultCategory": "Other",
-  "categoryOrder": [
-    "High-Level API",
-    "Lower-Level API",
-    "Configuration",
-    "Types",
-    "Errors",
-    "Other",
-    "*"
-  ],
+  "categoryOrder": ["High-Level API", "Lower-Level API", "Configuration", "Types", "Errors", "*"],
   "gitRevision": "main",
   "gitRemote": "origin",
   "visibilityFilters": {

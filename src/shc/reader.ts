@@ -15,6 +15,7 @@ import { VerifiableCredentialProcessor } from './vc.js'
  * Reads and verifies SMART Health Cards from various sources.
  *
  * @public
+ * @group SHC
  * @category High-Level API
  */
 export class SmartHealthCardReader {

@@ -5,6 +5,7 @@ import type { Bundle } from '@medplum/fhirtypes'
  * FHIR R4 Bundle type re-exported from @medplum/fhirtypes for convenience.
  *
  * @public
+ * @group SHC
  * @category Types
  */
 export type FHIRBundle = Bundle
@@ -13,6 +14,7 @@ export type FHIRBundle = Bundle
  * Verifiable Credential structure for SMART Health Cards.
  *
  * @public
+ * @group SHC
  * @category Types
  */
 export interface VerifiableCredential {
@@ -34,6 +36,7 @@ export interface VerifiableCredential {
  * JWT payload structure for SMART Health Cards.
  *
  * @public
+ * @group SHC
  * @category Types
  */
 export interface SmartHealthCardJWT {
@@ -51,6 +54,7 @@ export interface SmartHealthCardJWT {
  * Configuration parameters for SmartHealthCardIssuer.
  *
  * @public
+ * @group SHC
  * @category Configuration
  */
 export interface SmartHealthCardConfigParams {
@@ -96,6 +100,7 @@ export interface SmartHealthCardConfigParams {
 }
 
 /**
+ * @group SHC
  * @category Configuration
  */
 export type SmartHealthCardConfig = Required<SmartHealthCardConfigParams>
@@ -105,6 +110,7 @@ export type SmartHealthCardConfig = Required<SmartHealthCardConfigParams>
  * Reader configuration only needs public key for verification.
  *
  * @public
+ * @group SHC
  * @category Configuration
  */
 export interface SmartHealthCardReaderConfigParams {
@@ -138,19 +144,23 @@ export interface SmartHealthCardReaderConfigParams {
 }
 
 /**
+ * @group SHC
  * @category Configuration
  */
 export type SmartHealthCardReaderConfig = {
+  /**
+   * ES256 public key for verifying health card signatures.
+   * Can be a WebCrypto CryptoKey, raw bytes as Uint8Array, or PEM-formatted string.
+   * If `null`, the reader will attempt to resolve the public key from the issuer's JWKS endpoint.
+   */
   publicKey?: CryptoKey | Uint8Array | string | null
-  enableQROptimization: boolean
-  strictReferences: boolean
-  verifyExpiration: boolean
-}
+} & Required<Omit<SmartHealthCardReaderConfigParams, 'publicKey'>>
 
 /**
  * Parameters for creating Verifiable Credentials.
  *
  * @public
+ * @group SHC
  * @category Configuration
  */
 export interface VerifiableCredentialParams {
@@ -177,6 +187,7 @@ export interface VerifiableCredentialParams {
  * This interface matches the expected qrcode library params.
  *
  * @public
+ * @group SHC
  * @category Configuration
  */
 export interface QREncodeParams {
@@ -243,6 +254,7 @@ export interface QREncodeParams {
  * Configuration parameters for QR code generation.
  *
  * @public
+ * @group SHC
  * @category Configuration
  */
 export interface QRCodeConfigParams {
@@ -272,6 +284,7 @@ export interface QRCodeConfigParams {
 }
 
 /**
+ * @group SHC
  * @category Configuration
  */
 export type QRCodeConfig = Required<QRCodeConfigParams>

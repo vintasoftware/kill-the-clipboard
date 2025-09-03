@@ -4,6 +4,7 @@
  * Base error class for SMART Health Card operations.
  *
  * @public
+ * @group SHC
  * @category Errors
  */
 export class SmartHealthCardError extends Error {
@@ -21,6 +22,7 @@ export class SmartHealthCardError extends Error {
  * Error thrown when FHIR Bundle validation fails.
  *
  * @public
+ * @group SHC
  * @category Errors
  */
 export class FhirValidationError extends SmartHealthCardError {
@@ -34,6 +36,7 @@ export class FhirValidationError extends SmartHealthCardError {
  * Error thrown when JWT/JWS processing fails.
  *
  * @public
+ * @group SHC
  * @category Errors
  */
 export class JWSError extends SmartHealthCardError {
@@ -47,6 +50,7 @@ export class JWSError extends SmartHealthCardError {
  * Error thrown when QR code processing fails.
  *
  * @public
+ * @group SHC
  * @category Errors
  */
 export class QRCodeError extends SmartHealthCardError {
@@ -60,6 +64,7 @@ export class QRCodeError extends SmartHealthCardError {
  * Error thrown when a bundle reference cannot be resolved.
  *
  * @public
+ * @group SHC
  * @category Errors
  */
 export class InvalidBundleReferenceError extends SmartHealthCardError {
@@ -73,6 +78,7 @@ export class InvalidBundleReferenceError extends SmartHealthCardError {
  * Error thrown when file format is invalid or cannot be parsed.
  *
  * @public
+ * @group SHC
  * @category Errors
  */
 export class FileFormatError extends SmartHealthCardError {
@@ -86,6 +92,7 @@ export class FileFormatError extends SmartHealthCardError {
  * Error thrown when SMART Health Card verification fails unexpectedly.
  *
  * @public
+ * @group SHC
  * @category Errors
  */
 export class VerificationError extends SmartHealthCardError {

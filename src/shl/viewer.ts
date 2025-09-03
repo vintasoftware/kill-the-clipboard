@@ -57,6 +57,7 @@ import type {
  * ```
  *
  * @public
+ * @group SHL
  * @category High-Level API
  */
 export class SHLViewer {

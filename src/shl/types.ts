@@ -10,6 +10,7 @@ import type { QREncodeParams } from '../shc/types.js'
  * This includes Patient, Bundle, Observation, Condition, and all other FHIR resource types.
  *
  * @public
+ * @group SHL
  * @category Types
  */
 export type FHIRResource = Resource
@@ -25,6 +26,7 @@ export type FHIRResource = Resource
  * Flags are concatenated in the SHL payload (e.g., 'LP' means both L and P flags are set).
  *
  * @public
+ * @group SHL
  * @category Types
  */
 export type SHLFlag = 'L' | 'P' | 'LP'
@@ -40,6 +42,7 @@ export type SHLFlag = 'L' | 'P' | 'LP'
  * used by viewers to properly parse decrypted content.
  *
  * @public
+ * @group SHL
  * @category Types
  */
 export type SHLFileContentType = 'application/smart-health-card' | 'application/fhir+json'
@@ -66,6 +69,7 @@ export type SHLFileContentType = 'application/smart-health-card' | 'application/
  * ```
  *
  * @public
+ * @group SHL
  * @category Types
  */
 export interface SHLinkPayloadV1 {
@@ -105,6 +109,7 @@ export interface SHLinkPayloadV1 {
  * Configuration parameters for SHL QR code generation.
  *
  * @public
+ * @group SHL
  * @category Configuration
  */
 export type SHLQREncodeParams = {
@@ -139,6 +144,7 @@ export type SHLQREncodeParams = {
  * ```
  *
  * @public
+ * @group SHL
  * @category Types
  */
 export interface SHLManifestRequestV1 {
@@ -169,6 +175,7 @@ export interface SHLManifestRequestV1 {
  * that can be decrypted immediately without additional network requests.
  *
  * @public
+ * @group SHL
  * @category Types
  */
 export interface SHLManifestV1EmbeddedDescriptor {
@@ -192,6 +199,7 @@ export interface SHLManifestV1EmbeddedDescriptor {
  * and intended for single use to maintain security.
  *
  * @public
+ * @group SHL
  * @category Types
  */
 export interface SHLManifestV1LocationDescriptor {
@@ -215,6 +223,7 @@ export interface SHLManifestV1LocationDescriptor {
  * of 'embedded' vs 'location' fields.
  *
  * @public
+ * @group SHL
  * @category Types
  */
 export type SHLManifestFileDescriptor =
@@ -246,7 +255,8 @@ export type SHLManifestFileDescriptor =
  * ```
  *
  * @public
- * @category SHL Types
+ * @group SHL
+ * @category Types
  */
 export interface SHLManifestV1 {
   files: SHLManifestFileDescriptor[]
@@ -260,7 +270,8 @@ export interface SHLManifestV1 {
  * information needed for manifest building.
  *
  * @public
- * @category SHL Types
+ * @group SHL
+ * @category Types
  */
 export interface SHLFileJWE {
   type: SHLFileContentType
@@ -279,7 +290,8 @@ export interface SHLFileJWE {
  * all file content, and enables URL rotation for security.
  *
  * @public
- * @category SHL Types
+ * @group SHL
+ * @category Types
  */
 export interface SerializedSHLManifestBuilderFile {
   /**
@@ -325,7 +337,8 @@ export interface SerializedSHLManifestBuilderFile {
  * ```
  *
  * @public
- * @category SHL Types
+ * @group SHL
+ * @category Types
  */
 export interface SerializedSHLManifestBuilder {
   shl: SHLinkPayloadV1
@@ -362,7 +375,8 @@ export interface SerializedSHLManifestBuilder {
  * ```
  *
  * @public
- * @category SHL Types
+ * @group SHL
+ * @category Types
  */
 export interface SHLResolvedContent {
   /**

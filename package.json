@@ -35,6 +35,7 @@
     "docs:generate": "typedoc",
     "docs:clean": "rm -rf docs",
     "docs:build": "pnpm run docs:clean && pnpm run docs:generate",
+    "docs:watch": "typedoc --watch",
     "prepare": "husky",
     "postinstall": "husky",
     "prepublishOnly": "pnpm build",

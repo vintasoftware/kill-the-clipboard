@@ -50,6 +50,7 @@ import type { SHLFileContentType } from './types.js'
  * ```
  *
  * @public
+ * @group SHL
  * @category Lower-Level API
  */
 export async function encryptSHLFile(params: {
@@ -145,6 +146,7 @@ export async function encryptSHLFile(params: {
  * ```
  *
  * @public
+ * @group SHL
  * @category Lower-Level API
  */
 export async function decryptSHLFile(params: {

@@ -4,6 +4,8 @@
 /**
  * Raw DEFLATE compression helper for both SHC and SHL implementations.
  * Uses browser/Node.js native CompressionStream.
+ *
+ * @group Utils
  */
 export async function compressDeflateRaw(data: Uint8Array): Promise<Uint8Array> {
   const readable = new ReadableStream<Uint8Array>({
@@ -20,6 +22,8 @@ export async function compressDeflateRaw(data: Uint8Array): Promise<Uint8Array> 
 /**
  * Raw DEFLATE decompression helper for both SHC and SHL implementations.
  * Uses browser/Node.js native DecompressionStream.
+ *
+ * @group Utils
  */
 export async function decompressDeflateRaw(data: Uint8Array): Promise<Uint8Array> {
   const readable = new ReadableStream<Uint8Array>({
