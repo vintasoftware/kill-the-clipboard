@@ -1,14 +1,21 @@
 'use client';
-import { Container, Title, Text, Stack, Button, Group } from '@mantine/core';
-import { SignInForm, useMedplum, useMedplumProfile } from '@medplum/react';
-import { Suspense, useState } from 'react';
+import { Container, Title, Text, Stack, Button, Group, Loader } from '@mantine/core';
+import { SignInForm, useMedplum, useMedplumContext, useMedplumProfile } from '@medplum/react';
+import { Suspense, useEffect, useState } from 'react';
 import { CreateSHLForm } from '@/components/CreateSHLForm';
 import { SHLDisplay } from '@/components/SHLDisplay';
 import { PatientDataManager } from '@/components/PatientDataManager';
 
 export default function HomePage() {
-  const medplum = useMedplum();
-  const profile = useMedplumProfile();
+  const { medplum, loading: medplumLoading, profile } = useMedplumContext();
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    if (medplum && !medplumLoading) {
+      setIsLoading(false);
+    }
+  }, [medplum, medplumLoading]);
+
   const [isCreating, setIsCreating] = useState(false);
   const [createdSHL, setCreatedSHL] = useState<string | null>(null);
 
@@ -38,7 +45,13 @@ export default function HomePage() {
           </Text>
         </div>
 
-        {!profile && (
+        {isLoading && (
+          <div>
+            <Loader size="lg" />
+          </div>
+        )}
+
+        {!profile && !isLoading && (
           <div>
             <Text mb="md">Please sign in to create Smart Health Links with your health data.</Text>
             <SignInForm>Sign in</SignInForm>

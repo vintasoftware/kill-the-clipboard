@@ -1,7 +1,7 @@
 import { createHash, timingSafeEqual, randomBytes } from 'crypto';
 
 // Simple password hashing using SHA-256 with salt
-// In production, consider using bcrypt or Argon2 for better security
+// In production, consider use Argon2 for better security
 
 const SALT_LENGTH = 32;
 
@@ -9,7 +9,7 @@ export function hashPasscode(passcode: string, salt?: Buffer): { hash: string; s
   const saltBuffer = salt || randomBytes(SALT_LENGTH);
 
   // Simple hash implementation for demo
-  // In production, use proper PBKDF2 or Argon2
+  // In production, use Argon2
   const combined = Buffer.concat([Buffer.from(passcode, 'utf8'), saltBuffer]);
   const hash = createHash('sha256').update(combined).digest('hex');
   const saltHex = saltBuffer.toString('hex');
