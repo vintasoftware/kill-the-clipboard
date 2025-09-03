@@ -155,7 +155,7 @@ Server responsibilities are required for a functional SHL implementation. Refer 
     2. Use `SHLManifestBuilder` with implementations for `uploadFile`, `getFileURL`, and `loadFile` that persist encrypted files and return retrievable URLs
     3. Add content: `addFHIRResource({ content })`, `addHealthCard({ shc, enableCompression? })`
     4. Persist the builder state via `serialize()`
-    5. Return the SHLink URI to clients via `shl.generateSHLinkURI()`
+    5. Return the SHLink URI to clients via `shl.toURI()`
 - On the client side, during SHLink resolution:
     1. Create a `SHLViewer` instance with the SHLink URI
     2. Resolve the SHLink using `resolveSHLink({ recipient, embeddedLengthMax, shcReaderConfig? })`
@@ -220,7 +220,7 @@ await builder.addFHIRResource({ content: fhirBundle });
 const serializedBuilder = builder.serialize();
 
 // 5. [Server side] Generate the SHLink URI for sharing
-const shlinkURI = shl.generateSHLinkURI();
+const shlinkURI = shl.toURI();
 console.log('Share this SHLink:', `https://viewer.example/#${shlinkURI}`);
 
 // 6. [Server side] Implement manifest and file serving

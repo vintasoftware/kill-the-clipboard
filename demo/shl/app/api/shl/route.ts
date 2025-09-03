@@ -139,7 +139,7 @@ export async function POST(request: NextRequest) {
     await storePasscode(manifestID, hash);
 
     // Return the SHL URI
-    const shlUri = shl.generateSHLinkURI();
+    const shlUri = shl.toURI();
 
     return NextResponse.json({
       shlUri,

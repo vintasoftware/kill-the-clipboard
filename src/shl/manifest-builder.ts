@@ -191,13 +191,18 @@ export class SHLManifestBuilder {
    * @param params.enableCompression - Whether to compress the file content before encryption.
    *   Defaults to false since Smart Health Cards are already optimally compressed.
    *   Enable only if you need additional space savings and can accept the processing overhead.
+   * @returns Promise resolving to object with encrypted file metadata and storage path
+   * @returns returns.encryptedFile - Encrypted file object with type and JWE string
+   * @returns returns.storagePath - Storage key/path returned by the upload function
+   * @returns returns.ciphertextLength - Length of the JWE ciphertext string
    *
    * @throws {@link SHLError} When encryption fails
    *
    * @example
    * ```typescript
    * // Add from SmartHealthCard object
-   * await builder.addHealthCard({ shc: mySmartHealthCard });
+   * const result = await builder.addHealthCard({ shc: mySmartHealthCard });
+   * console.log('Added file:', result.storagePath, 'Size:', result.ciphertextLength);
    *
    * // Add from JWS string
    * await builder.addHealthCard({ shc: 'eyJhbGciOiJFUzI1NiIsImtpZCI6IjNLZmRnLVh3UC03Z...' });
@@ -214,7 +219,7 @@ export class SHLManifestBuilder {
     shc: SmartHealthCard | string
     /** Optional: Enable compression (default: false, as SHC is already compressed by default) */
     enableCompression?: boolean
-  }): Promise<void> {
+  }): Promise<{ encryptedFile: SHLFileJWE; storagePath: string; ciphertextLength: number }> {
     const jwsString = typeof params.shc === 'string' ? params.shc : params.shc.asJWS()
     const fileContent = JSON.stringify({ verifiableCredential: [jwsString] })
 
@@ -232,6 +237,7 @@ export class SHLManifestBuilder {
       storagePath,
       ciphertextLength: encryptedFile.jwe.length,
     })
+    return { encryptedFile, storagePath, ciphertextLength: encryptedFile.jwe.length }
   }
 
   /**
@@ -246,13 +252,17 @@ export class SHLManifestBuilder {
    * @param params.enableCompression - Whether to compress the file content before encryption.
    *   Defaults to true since FHIR JSON can be verbose and benefits from compression.
    *   Compression uses raw DEFLATE (zip=DEF in JWE header).
+   * @returns Promise resolving to object with encrypted file metadata and storage path
+   * @returns returns.encryptedFile - Encrypted file object with type and JWE string
+   * @returns returns.storagePath - Storage key/path returned by the upload function
+   * @returns returns.ciphertextLength - Length of the JWE ciphertext string
    *
    * @throws {@link SHLError} When encryption fails
    *
    * @example
    * ```typescript
    * // Add a FHIR Bundle
-   * await builder.addFHIRResource({
+   * const result = await builder.addFHIRResource({
    *   content: {
    *     resourceType: 'Bundle',
    *     type: 'collection',
@@ -262,6 +272,7 @@ export class SHLManifestBuilder {
    *     ]
    *   }
    * });
+   * console.log('Added FHIR resource:', result.storagePath, 'Size:', result.ciphertextLength);
    *
    * // Add without compression
    * await builder.addFHIRResource({
@@ -275,7 +286,7 @@ export class SHLManifestBuilder {
     content: Resource
     /** Optional: Enable compression (default: true) */
     enableCompression?: boolean
-  }): Promise<void> {
+  }): Promise<{ encryptedFile: SHLFileJWE; storagePath: string; ciphertextLength: number }> {
     const fileContent = JSON.stringify(params.content)
 
     const encryptedFile = await this.encryptFile({
@@ -292,6 +303,7 @@ export class SHLManifestBuilder {
       storagePath,
       ciphertextLength: encryptedFile.jwe.length,
     })
+    return { encryptedFile, storagePath, ciphertextLength: encryptedFile.jwe.length }
   }
 
   /**
@@ -392,7 +404,7 @@ export class SHLManifestBuilder {
    *   Files with ciphertext length ≤ this value will be embedded directly in the manifest.
    *   Files larger than this will be referenced by location URLs.
    *   Defaults to 16384 (16 KiB). Typical range: 4096-32768.
-   * @returns Promise resolving to SHL manifest object conforming to v1 specification
+   * @returns Promise resolving to SHL manifest object conforming to v1 specification ({@link SHLManifestV1})
    * @throws {@link SHLManifestError} When a stored file cannot be loaded or content is missing
    * @throws {@link SHLNetworkError} When storage network requests fail
    *
@@ -446,6 +458,7 @@ export class SHLManifestBuilder {
 
   /**
    * Return serialized builder state for persistence.
+   * Use the {@link deserialize} method to reconstruct the builder later.
    *
    * Returns a JSON-serializable object containing the SHL payload and file metadata.
    * This is NOT the same as an SHLManifestV1 - it's the builder's internal state
@@ -459,7 +472,7 @@ export class SHLManifestBuilder {
    * - Actual file content (stored separately via uploadFile)
    * - Short-lived URLs (generated fresh via getFileURL)
    *
-   * @returns Serialized builder state suitable for database storage
+   * @returns Serialized builder state suitable for database storage ({@link SerializedSHLManifestBuilder})
    *
    * @example
    * ```typescript
@@ -484,7 +497,7 @@ export class SHLManifestBuilder {
   }
 
   /**
-   * Reconstruct a builder from serialized state.
+   * Reconstruct a builder from serialized state returned by {@link serialize} method.
    *
    * Creates a new SHLManifestBuilder instance from previously serialized state.
    * The SHL instance is reconstructed from the saved payload, and the file
@@ -495,7 +508,7 @@ export class SHLManifestBuilder {
    * @param params.getFileURL - Function to generate file URLs (same signature as constructor)
    * @param params.loadFile - Optional function to load file content (same signature as constructor)
    * @param params.fetch - Optional fetch implementation for default loadFile (same signature as constructor)
-   * @returns New SHLManifestBuilder instance with restored state
+   * @returns New `SHLManifestBuilder` instance with restored state
    *
    * @example
    * ```typescript
@@ -551,7 +564,7 @@ export class SHLManifestBuilder {
    * @param params.content - Content to encrypt (JSON string)
    * @param params.type - Content type for the cty header
    * @param params.enableCompression - Whether to compress before encryption
-   * @returns Promise resolving to encrypted file object with JWE and metadata
+   * @returns Promise resolving to encrypted file object with JWE and metadata ({@link SHLFileJWE})
    *
    * @private
    */

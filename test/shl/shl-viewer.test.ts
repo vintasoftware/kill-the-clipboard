@@ -25,7 +25,7 @@ describe('SHLViewer', () => {
         manifestPath: '/manifest.json',
         label: 'Original',
       })
-      const uri = originalSHL.generateSHLinkURI()
+      const uri = originalSHL.toURI()
       const viewer = new SHLViewer({ shlinkURI: uri })
       const parsedSHL = viewer.shl
 
@@ -40,7 +40,7 @@ describe('SHLViewer', () => {
         manifestPath: '/manifest.json',
         label: 'Test Card',
       })
-      const uri = originalSHL.generateSHLinkURI()
+      const uri = originalSHL.toURI()
       const viewerPrefixedURI = `https://viewer.example.com/#${uri}`
 
       const viewer = new SHLViewer({ shlinkURI: viewerPrefixedURI })
@@ -117,7 +117,7 @@ describe('SHLViewer', () => {
       const fhirBundle = createValidFHIRBundle()
       await builder.addFHIRResource({ content: fhirBundle, enableCompression: false })
       const manifest = await builder.buildManifest({ embeddedLengthMax: 1_000_000 })
-      const shlinkURI = shl.generateSHLinkURI()
+      const shlinkURI = shl.toURI()
 
       const fetchMock = vi.fn(async (url: string, init?: RequestInit) => {
         if (init?.method === 'POST' && url === shl.url) {
@@ -162,7 +162,7 @@ describe('SHLViewer', () => {
         ('location' in manifest.files[0]! ? manifest.files[0]!.location : '') as string
       const ciphertext = uploaded.values().next().value as string
 
-      const shlinkURI = shl.generateSHLinkURI()
+      const shlinkURI = shl.toURI()
       const fetchMock = vi.fn(async (url: string, init?: RequestInit) => {
         if (init?.method === 'POST' && url === shl.url) {
           return {
@@ -193,7 +193,7 @@ describe('SHLViewer', () => {
 
     it('handles manifest HTTP errors and invalid JSON/validation', async () => {
       const shl = SHL.generate({ baseManifestURL: 'https://shl.example.org' })
-      const shlinkURI = shl.generateSHLinkURI()
+      const shlinkURI = shl.toURI()
 
       const fetch401 = vi.fn(
         async () =>
@@ -294,7 +294,7 @@ describe('SHLViewer', () => {
         // biome-ignore lint/style/noNonNullAssertion: files available
         ('location' in manifest.files[0]! ? manifest.files[0]!.location : '') as string
 
-      const shlinkURI = shl.generateSHLinkURI()
+      const shlinkURI = shl.toURI()
       const fetchFile404 = vi.fn(async (url: string, init?: RequestInit) => {
         if (init?.method === 'POST') {
           return {
@@ -325,7 +325,7 @@ describe('SHLViewer', () => {
 
     it('throws SHLViewerError for recipient empty string', async () => {
       const shl = SHL.generate({ baseManifestURL: 'https://shl.example.org' })
-      const shlinkURI = shl.generateSHLinkURI()
+      const shlinkURI = shl.toURI()
 
       const fetchMock = vi.fn(
         async () =>
@@ -377,7 +377,7 @@ describe('SHLViewer', () => {
         return { ok: false, status: 500, statusText: 'Err', text: async () => '' } as Response
       })
 
-      const v2 = new SHLViewer({ shlinkURI: shl.generateSHLinkURI(), fetch: fetchMock })
+      const v2 = new SHLViewer({ shlinkURI: shl.toURI(), fetch: fetchMock })
       await expect(v2.resolveSHLink({ recipient: 'r' })).rejects.toThrow(SHLDecryptionError)
       await expect(v2.resolveSHLink({ recipient: 'r' })).rejects.toThrow('JWE decryption failed')
     })
@@ -392,7 +392,7 @@ describe('SHLViewer', () => {
         contentType: 'application/fhir+json',
       })
       const manifest = { files: [{ contentType: 'application/fhir+json', embedded: jwe }] }
-      const shlinkURIWithWrongKey = shl2WithWrongKey.generateSHLinkURI()
+      const shlinkURIWithWrongKey = shl2WithWrongKey.toURI()
 
       const fetchMock = vi.fn(
         async () =>
@@ -416,7 +416,7 @@ describe('SHLViewer', () => {
         baseManifestURL: 'https://shl.example.org',
         expirationDate: new Date(Date.now() - 60_000),
       })
-      const shlinkURI = shl.generateSHLinkURI()
+      const shlinkURI = shl.toURI()
       const fetchMock = vi.fn(
         async () =>
           ({
@@ -443,7 +443,7 @@ describe('SHLViewer', () => {
       const manifest = {
         files: [{ contentType: 'application/smart-health-card', embedded: jweMismatch }],
       }
-      const shlinkURI = shl.generateSHLinkURI()
+      const shlinkURI = shl.toURI()
       const fetchMock = vi.fn(
         async () =>
           ({
@@ -470,7 +470,7 @@ describe('SHLViewer', () => {
         enableCompression: false,
       })
       const manifest = { files: [{ contentType: 'application/smart-health-card', embedded: jwe }] }
-      const shlinkURI = shl.generateSHLinkURI()
+      const shlinkURI = shl.toURI()
       const fetchMock = vi.fn(
         async () =>
           ({
@@ -506,7 +506,7 @@ describe('SHLViewer', () => {
       const manifest2 = {
         files: [{ contentType: 'application/fhir+json', embedded: jweMissingType }],
       }
-      const shlinkURI = shl.generateSHLinkURI()
+      const shlinkURI = shl.toURI()
 
       const fetchNotJson = vi.fn(
         async () =>
@@ -543,7 +543,7 @@ describe('SHLViewer', () => {
 
     it('validateManifest errors for both/none of embedded/location and invalid URL', async () => {
       const shl = SHL.generate({ baseManifestURL: 'https://shl.example.org' })
-      const shlinkURI = shl.generateSHLinkURI()
+      const shlinkURI = shl.toURI()
 
       const both = {
         files: [{ contentType: 'application/fhir+json', embedded: 'x', location: 'https://x' }],
@@ -602,7 +602,7 @@ describe('SHLViewer', () => {
 
     it('manifest HTTP 500 maps to SHLNetworkError', async () => {
       const shl = SHL.generate({ baseManifestURL: 'https://shl.example.org' })
-      const shlinkURI = shl.generateSHLinkURI()
+      const shlinkURI = shl.toURI()
       const fetch500 = vi.fn(
         async () =>
           ({ ok: false, status: 500, statusText: 'Internal Err', text: async () => '' }) as Response
@@ -620,7 +620,7 @@ describe('SHLViewer', () => {
       const manifest = {
         files: [{ contentType: 'application/fhir+json', location: 'https://files.example.org/f' }],
       }
-      const shlinkURI = shl.generateSHLinkURI()
+      const shlinkURI = shl.toURI()
 
       const fetch429 = vi.fn(async (_url: string, init?: RequestInit) => {
         if (init?.method === 'POST')
@@ -673,7 +673,7 @@ describe('SHLViewer', () => {
 
     it('sends recipient, passcode, and embeddedLengthMax in manifest request body', async () => {
       const shl = SHL.generate({ baseManifestURL: 'https://shl.example.org', flag: 'P' })
-      const shlinkURI = shl.generateSHLinkURI()
+      const shlinkURI = shl.toURI()
       const calls: Array<RequestInit | undefined> = []
       const fetchMock = vi.fn(async (_url: string, init?: RequestInit) => {
         calls.push(init)
@@ -717,7 +717,7 @@ describe('SHLViewer', () => {
       // Add FHIR resource with compression enabled
       await builder.addFHIRResource({ content: createValidFHIRBundle(), enableCompression: true })
       const manifest = await builder.buildManifest({ embeddedLengthMax: 1000000 })
-      const shlinkURI = shl.generateSHLinkURI()
+      const shlinkURI = shl.toURI()
 
       const fetchMock = vi.fn(async (url: string, init?: RequestInit) => {
         if (init?.method === 'POST' && url === shl.url) {
@@ -765,7 +765,7 @@ describe('SHLViewer', () => {
         ('location' in manifest.files[0]! ? manifest.files[0]!.location : '') as string
       const ciphertext = uploaded.values().next().value as string
 
-      const shlinkURI = shl.generateSHLinkURI()
+      const shlinkURI = shl.toURI()
       const fetchMock = vi.fn(async (url: string, init?: RequestInit) => {
         if (init?.method === 'POST' && url === shl.url) {
           return {
@@ -816,7 +816,7 @@ describe('SHLViewer', () => {
       await builder.addFHIRResource({ content: createValidFHIRBundle(), enableCompression: true })
       await builder.addFHIRResource({ content: createValidFHIRBundle(), enableCompression: false })
       const manifest = await builder.buildManifest({ embeddedLengthMax: 1000000 })
-      const shlinkURI = shl.generateSHLinkURI()
+      const shlinkURI = shl.toURI()
 
       const fetchMock = vi.fn(async (url: string, init?: RequestInit) => {
         if (init?.method === 'POST' && url === shl.url) {
@@ -871,7 +871,7 @@ describe('SHLViewer', () => {
       const header = JSON.parse(new TextDecoder().decode(base64url.decode(parts[0] as string)))
       expect(header.zip).toBe('DEF')
 
-      const shlinkURI = shl.generateSHLinkURI()
+      const shlinkURI = shl.toURI()
       const fetchMock = vi.fn(async (url: string, init?: RequestInit) => {
         if (init?.method === 'POST' && url === shl.url) {
           return {
@@ -931,7 +931,7 @@ describe('SHLViewer', () => {
         return { ok: false, status: 500, statusText: 'Err', text: async () => '' } as Response
       })
 
-      const viewer = new SHLViewer({ shlinkURI: shl.generateSHLinkURI(), fetch: fetchMock })
+      const viewer = new SHLViewer({ shlinkURI: shl.toURI(), fetch: fetchMock })
       // Should fail at JWE decryption, not at header parsing
       await expect(viewer.resolveSHLink({ recipient: 'r' })).rejects.toThrow(
         'JWE decryption failed'
@@ -972,7 +972,7 @@ describe('SHLViewer', () => {
         return { ok: false, status: 500, statusText: 'Err', text: async () => '' } as Response
       })
 
-      const viewer = new SHLViewer({ shlinkURI: shl.generateSHLinkURI(), fetch: fetchMock })
+      const viewer = new SHLViewer({ shlinkURI: shl.toURI(), fetch: fetchMock })
       // Should fail at JWE decryption, not at header parsing
       await expect(viewer.resolveSHLink({ recipient: 'r' })).rejects.toThrow(
         'JWE decryption failed'
@@ -1011,7 +1011,7 @@ describe('SHLViewer', () => {
         return { ok: false, status: 500, statusText: 'Err', text: async () => '' } as Response
       })
 
-      const viewer = new SHLViewer({ shlinkURI: shl.generateSHLinkURI(), fetch: fetchMock })
+      const viewer = new SHLViewer({ shlinkURI: shl.toURI(), fetch: fetchMock })
       // Should fail at JWE decryption, not at header parsing
       await expect(viewer.resolveSHLink({ recipient: 'r' })).rejects.toThrow(
         'JWE decryption failed'
@@ -1036,7 +1036,7 @@ describe('SHLViewer', () => {
 
   it('enforces passcode when P flag is set', async () => {
     const shl = SHL.generate({ baseManifestURL: 'https://shl.example.org', flag: 'P' })
-    const shlinkURI = shl.generateSHLinkURI()
+    const shlinkURI = shl.toURI()
     const fetchOkEmpty = vi.fn(
       async () =>
         ({
@@ -1056,7 +1056,7 @@ describe('SHLViewer', () => {
 
   it('propagates 401 as SHLInvalidPasscodeError', async () => {
     const shl = SHL.generate({ baseManifestURL: 'https://shl.example.org', flag: 'P' })
-    const shlinkURI = shl.generateSHLinkURI()
+    const shlinkURI = shl.toURI()
     const fetch401 = vi.fn(
       async () =>
         ({ ok: false, status: 401, statusText: 'Unauthorized', text: async () => '' }) as Response

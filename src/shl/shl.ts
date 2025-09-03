@@ -26,7 +26,7 @@ import type { SHLFlag, SHLinkPayloadV1, SHLQREncodeParams } from './types.js'
  * });
  *
  * // Generate the SHLink URI
- * const uri = shl.generateSHLinkURI();
+ * const uri = shl.toURI();
  * console.log(uri); // shlink:/eyJ1cmwiOi...
  * ```
  *
@@ -157,11 +157,11 @@ export class SHL {
    *   label: 'Lab Results - Valid for 30 days'
    * });
    * // Generate the SHLink URI
-   * const uri = shl.generateSHLinkURI();
+   * const uri = shl.toURI();
    * // Returns: shlink:/eyJ1cmwiOiJodHRwczovL3NobC5leGFtcGxlLm9yZy9tYW5pZmVzdHMvLi4uXCIsXCJrZXlcIjpcIi4uLlwiLFwidlwiOjF9
    * ```
    */
-  generateSHLinkURI(): string {
+  toURI(): string {
     const payload = this.payload
     const payloadJson = JSON.stringify(payload)
     const payloadB64u = base64url.encode(new TextEncoder().encode(payloadJson))
@@ -335,7 +335,7 @@ export class SHL {
    * ```
    */
   async asQR(options?: SHLQREncodeParams): Promise<string> {
-    let shlinkURI = this.generateSHLinkURI()
+    let shlinkURI = this.toURI()
     if (options?.viewerURL) {
       shlinkURI = `${options.viewerURL}#${shlinkURI}`
     }
@@ -459,7 +459,7 @@ export class SHL {
    * @returns SHL instance with parsed payload data
    * @throws {@link SHLFormatError} When URI format is invalid, payload cannot be decoded, or payload structure is invalid
    */
-  static parseSHLinkURI(shlinkURI: string): SHL {
+  static parse(shlinkURI: string): SHL {
     try {
       // Remove viewer prefix if present (ends with #)
       let uriToParse = shlinkURI

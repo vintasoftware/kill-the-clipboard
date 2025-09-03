@@ -51,7 +51,7 @@ describe('End-to-End SHL Workflow', () => {
     expect(serialized.files).toHaveLength(2)
 
     // Generate the SHLink URI
-    const shlinkURI = shl.generateSHLinkURI()
+    const shlinkURI = shl.toURI()
     expect(shlinkURI).toMatch(/^shlink:\/[A-Za-z0-9_-]+$/)
     const viewerPrefixedURI = `https://viewer.example/#${shlinkURI}`
 

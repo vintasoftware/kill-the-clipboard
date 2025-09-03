@@ -36,7 +36,7 @@ describe('SHL Class', () => {
 
   it('should generate valid SHLink URIs', () => {
     const shl = SHL.generate({ baseManifestURL: 'https://shl.example.org', label: 'Test Card' })
-    const uri = shl.generateSHLinkURI()
+    const uri = shl.toURI()
     expect(uri).toMatch(/^shlink:\/[A-Za-z0-9_-]+$/)
   })
 
@@ -49,7 +49,7 @@ describe('SHL Class', () => {
       expirationDate,
       label: 'Test Card',
     })
-    const uri = shl.generateSHLinkURI()
+    const uri = shl.toURI()
     // biome-ignore lint/style/noNonNullAssertion: uri split is ensured
     const payload = JSON.parse(new TextDecoder().decode(base64url.decode(uri.split('/')[1]!)))
 
@@ -129,7 +129,7 @@ describe('SHL Class', () => {
     const baseSHL = SHL.generate({ baseManifestURL: 'https://shl.example.org', label: 'Test QR' })
 
     it('should generate valid QR codes with various options', async () => {
-      const expectedURI = baseSHL.generateSHLinkURI()
+      const expectedURI = baseSHL.toURI()
 
       const testCases = [
         {
@@ -184,11 +184,11 @@ describe('SHL Class', () => {
       ]
 
       for (const { name, shl, uriTransform } of testCases) {
-        const uri = uriTransform(shl.generateSHLinkURI())
-        const parsed = SHL.parseSHLinkURI(uri)
+        const uri = uriTransform(shl.toURI())
+        const parsed = SHL.parse(uri)
 
         expect(parsed.payload, `Failed for ${name}`).toEqual(shl.payload)
-        expect(parsed.generateSHLinkURI()).toBe(shl.generateSHLinkURI())
+        expect(parsed.toURI()).toBe(shl.toURI())
       }
     })
 
@@ -203,7 +203,7 @@ describe('SHL Class', () => {
       ]
 
       for (const invalidURI of invalidCases) {
-        expect(() => SHL.parseSHLinkURI(invalidURI)).toThrow(SHLFormatError)
+        expect(() => SHL.parse(invalidURI)).toThrow(SHLFormatError)
       }
     })
 
@@ -216,8 +216,8 @@ describe('SHL Class', () => {
         expirationDate: new Date('2024-12-31T23:59:59.999Z'),
       })
 
-      const uri = comprehensive.generateSHLinkURI()
-      const parsed = SHL.parseSHLinkURI(uri)
+      const uri = comprehensive.toURI()
+      const parsed = SHL.parse(uri)
 
       // Verify all properties preserved
       expect(parsed.url).toBe(comprehensive.url)

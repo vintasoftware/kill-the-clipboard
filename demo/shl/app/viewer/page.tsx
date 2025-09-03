@@ -359,7 +359,7 @@ export default function ViewerPage() {
                         <details>
                           <summary style={{ cursor: 'pointer' }}>
                             <Text size="sm" c="dimmed">
-                              View JWS token
+                              View card as JWS
                             </Text>
                           </summary>
                           <Code block mt="xs">

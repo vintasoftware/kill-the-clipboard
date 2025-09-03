@@ -37,7 +37,7 @@ export function SHLDisplay({ shlUri, onReset }: SHLDisplayProps) {
       const generateQR = async () => {
         try {
           setQrError(null);
-          const shl = SHL.parseSHLinkURI(shlUri);
+          const shl = SHL.parse(shlUri);
           const dataUrl = await shl.asQR({
             viewerURL: process.env.NEXT_PUBLIC_SHL_VIEWER_URL!,
             width: 350,
