@@ -6,7 +6,6 @@ node_modules/
 # Build outputs
 dist/
 build/
-lib/
 out/
 /docs/
 
@@ -145,3 +144,5 @@ test-output/
 scripts/generated-examples/
 _personal/
 .cursor/
+demo/shl/.shl-storage/
+medplum-nextjs-demo/

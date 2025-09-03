@@ -9,7 +9,7 @@ This demo application demonstrates how to use the `kill-the-clipboard` library t
 ```bash
 # From project root
 pnpm install
-pnpm run demo:dev
+pnpm run shc:demo:dev
 ```
 
 The demo will open in your browser at `http://localhost:3000`.

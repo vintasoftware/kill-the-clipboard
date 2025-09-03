@@ -40,8 +40,8 @@
     "prepublishOnly": "pnpm build",
     "release": "semantic-release",
     "validate:examples": "node ./scripts/validate-health-cards-examples.ts",
-    "demo:dev": "pnpm run build && cd demo && pnpm dev",
-    "demo:build": "pnpm run build && cd demo && pnpm build"
+    "shc:demo:dev": "pnpm run build && cd demo/shc && pnpm dev",
+    "shc:demo:build": "pnpm run build && cd demo/shc && pnpm build"
   },
   "lint-staged": {
     "*.{js,ts,json}": "biome check --write --no-errors-on-unmatched"
@@ -70,7 +70,7 @@
   "devDependencies": {
     "@arethetypeswrong/cli": "^0.18.2",
     "@biomejs/biome": "2.0.4",
-    "@medplum/fhirtypes": "^3.0.0",
+    "@medplum/fhirtypes": "^4.3.10",
     "@rollup/plugin-commonjs": "^28.0.6",
     "@rollup/plugin-node-resolve": "^16.0.1",
     "@rollup/plugin-terser": "^0.4.4",
@@ -81,11 +81,14 @@
     "@semantic-release/github": "11.0.3",
     "@semantic-release/npm": "12.0.1",
     "@semantic-release/release-notes-generator": "14.0.3",
-    "@types/node": "^22.0.0",
+    "@types/node": "^22.17.0",
+    "@types/pngjs": "^6.0.5",
     "@types/qrcode": "^1.5.5",
     "@vitest/coverage-v8": "3.2.4",
     "husky": "9.1.7",
     "lint-staged": "16.1.2",
+    "pngjs": "^7.0.0",
+    "qr": "^0.5.1",
     "rollup": "^4.44.0",
     "rollup-plugin-dts": "^6.2.1",
     "semantic-release": "24.2.5",
@@ -93,8 +96,8 @@
     "tslib": "^2.8.1",
     "type-fest": "^4.41.0",
     "typedoc": "^0.28.10",
-    "typedoc-plugin-version-select": "^2.0.0",
     "typedoc-material-theme": "^1.4.0",
+    "typedoc-plugin-version-select": "^2.0.0",
     "typescript": "^5.8.3",
     "undici-types": "^6.0.0",
     "vitest": "3.2.4"

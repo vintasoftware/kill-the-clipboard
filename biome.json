@@ -39,6 +39,7 @@
         "noUndeclaredVariables": "error",
         "noUnreachable": "error",
         "noUnreachableSuper": "error",
+        "noUnusedImports": "error",
         "useIsNan": "error",
         "useValidForDirection": "error",
         "useYield": "error"
