@@ -70,13 +70,27 @@ export default defineConfig([
       }),
     ],
   },
-  // Type definitions
+  // Type definitions - ESM
   {
     input: 'src/index.ts',
     external,
     output: {
       file: 'dist/index.d.ts',
       format: 'esm',
+    },
+    plugins: [
+      dts({
+        tsconfig: './tsconfig.build.json',
+      }),
+    ],
+  },
+  // Type definitions - CJS
+  {
+    input: 'src/index.ts',
+    external,
+    output: {
+      file: 'dist/index.d.cts',
+      format: 'cjs',
     },
     plugins: [
       dts({

@@ -1,16 +1,21 @@
 {
   "name": "kill-the-clipboard",
   "version": "0.0.1",
-  "description": "JavaScript/TypeScript library to generate QR codes containing medical records for patients to share with providers. Implements the SMART Health Cards Framework for FHIR-based medical records.",
+  "description": "JavaScript/TypeScript universal (browser and node) library to generate QR codes containing medical records for patients to share with providers. Implements both the SMART Health Cards Framework and Smart Health Links Protocol for handling FHIR-based medical records.",
   "type": "module",
   "main": "./dist/index.cjs",
   "module": "./dist/index.esm.js",
-  "types": "./dist/index.d.ts",
+  "types": "./dist/index.d.cts",
   "exports": {
     ".": {
-      "types": "./dist/index.d.ts",
-      "import": "./dist/index.esm.js",
-      "require": "./dist/index.cjs",
+      "import": {
+        "types": "./dist/index.d.ts",
+        "default": "./dist/index.esm.js"
+      },
+      "require": {
+        "types": "./dist/index.d.cts",
+        "default": "./dist/index.cjs"
+      },
       "default": "./dist/index.esm.js"
     }
   },
@@ -38,7 +43,7 @@
     "docs:watch": "typedoc --watch",
     "prepare": "husky",
     "postinstall": "husky",
-    "prepublishOnly": "pnpm build",
+    "prepublishOnly": "pnpm run test && pnpm run build && pnpm run attw",
     "release": "semantic-release",
     "validate:examples": "node ./scripts/validate-health-cards-examples.ts",
     "shc:demo:dev": "pnpm run build && cd demo/shc && pnpm dev",
@@ -49,13 +54,23 @@
   },
   "keywords": [
     "smart-health-cards",
+    "smart-health-links",
     "fhir",
     "qr-code",
     "medical-records",
     "healthtech",
     "healthcare",
+    "interoperability",
+    "patient-data",
+    "vaccination-cards",
+    "health-passport",
+    "verifiable-credentials",
+    "jwt",
+    "jws",
     "typescript",
-    "javascript"
+    "javascript",
+    "browser",
+    "node"
   ],
   "author": {
     "email": "neg4n@icloud.com",
@@ -63,6 +78,17 @@
     "url": "https://github.com/neg4n"
   },
   "license": "MIT",
+  "homepage": "https://github.com/vintasoftware/kill-the-clipboard",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/vintasoftware/kill-the-clipboard.git"
+  },
+  "bugs": {
+    "url": "https://github.com/vintasoftware/kill-the-clipboard/issues"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  },
   "packageManager": "pnpm@10.8.0",
   "dependencies": {
     "jose": "^6.0.12",
