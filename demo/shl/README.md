@@ -68,7 +68,7 @@ This is a Next.js demo application that demonstrates Smart Health Links (SHL) fu
 
 ### Creating a Smart Health Link
 
-1. Sign in with Medplum on the home page
+1. Sign in with Medplum on the home page using a `Patient` account ([invite yourself if needed](https://www.medplum.com/docs/app/invite))
 2. Click "Create Smart Health Link"
 3. Set a passcode (minimum 6 characters); optionally set label and `L` flag
 4. Submit the form; the server will:
