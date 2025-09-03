@@ -307,14 +307,12 @@ export class SHL {
    * Creates a QR code image encoded as a base64 Data URL that can be used
    * directly in HTML img tags or displayed in applications.
    *
-   * @param options - Optional QR code generation options
-   * @param options.viewerURL - URL of the SHL viewer
-   *   to include in the QR code as a prefix like https://example.org/viewer#shlink:/...
-   *   (default: no URL)
-   * @param options.width - Width of the QR code image in pixels (default: 256)
-   * @param options.margin - Margin around the QR code in modules (default: 1)
-   * @param options.errorCorrectionLevel - Error correction level: 'L', 'M', 'Q', or 'H' (default: 'M', per spec)
-   * @param options.color - Color options for dark and light modules
+   * @param params - Optional QR code generation options. The object can contain:
+   *   - `viewerURL`: URL of the SHL viewer to prefix the QR code like https://example.org/viewer#shlink:/... (default: no URL)
+   *   - `width`: Width of the QR code image in pixels (default: 256)
+   *   - `margin`: Margin around the QR code in modules (default: 1)
+   *   - `errorCorrectionLevel`: Error correction level 'L', 'M', 'Q', or 'H' (default: 'M', per spec)
+   *   - `color`: Color options for dark and light modules
    * @returns Promise that resolves to a Data URL string
    *
    * @example
@@ -335,17 +333,17 @@ export class SHL {
    * });
    * ```
    */
-  async asQR(options?: SHLQREncodeParams): Promise<string> {
+  async asQR(params?: SHLQREncodeParams): Promise<string> {
     let shlinkURI = this.toURI()
-    if (options?.viewerURL) {
-      shlinkURI = `${options.viewerURL}#${shlinkURI}`
+    if (params?.viewerURL) {
+      shlinkURI = `${params.viewerURL}#${shlinkURI}`
     }
 
     const qrOptions: QRCode.QRCodeToDataURLOptions = {
-      width: options?.width ?? 256,
-      margin: options?.margin ?? 1,
-      errorCorrectionLevel: options?.errorCorrectionLevel ?? 'M',
-      color: options?.color ?? { dark: '#000000', light: '#FFFFFF' },
+      width: params?.width ?? 256,
+      margin: params?.margin ?? 1,
+      errorCorrectionLevel: params?.errorCorrectionLevel ?? 'M',
+      color: params?.color ?? { dark: '#000000', light: '#FFFFFF' },
       type: 'image/png',
     }
 

@@ -186,12 +186,9 @@ export class SHLManifestBuilder {
    * Encrypts the Smart Health Card as a JWE file and uploads it to storage.
    * The SHC is wrapped in a `verifiableCredential` array as per SMART Health Cards specification.
    *
-   * @param params - Configuration for adding the health card
-   * @param params.shc - Smart Health Card to add. Can be a JWS string or SmartHealthCard object.
-   *   If SmartHealthCard object, will call `asJWS()` to get the JWS representation.
-   * @param params.enableCompression - Whether to compress the file content before encryption.
-   *   Defaults to false since Smart Health Cards are already optimally compressed.
-   *   Enable only if you need additional space savings and can accept the processing overhead.
+   * @param params - Configuration for adding the health card. The object should contain:
+   *   - `shc`: Smart Health Card to add (JWS string or SmartHealthCard object)
+   *   - `enableCompression`: Optional. Whether to compress the file content before encryption (defaults to false, as SHCs are typically already compressed)
    * @returns Promise resolving to object with encrypted file metadata and storage path
    * @returns returns.encryptedFile - Encrypted file object with type and JWE string
    * @returns returns.storagePath - Storage key/path returned by the upload function
@@ -216,9 +213,7 @@ export class SHLManifestBuilder {
    * ```
    */
   async addHealthCard(params: {
-    /** SMART Health Card JWS string or SmartHealthCard object */
     shc: SmartHealthCard | string
-    /** Optional: Enable compression (default: false, as SHC is already compressed by default) */
     enableCompression?: boolean
   }): Promise<{ encryptedFile: SHLFileJWE; storagePath: string; ciphertextLength: number }> {
     const jwsString = typeof params.shc === 'string' ? params.shc : params.shc.asJWS()
@@ -247,12 +242,9 @@ export class SHLManifestBuilder {
    * Encrypts the FHIR resource as a JWE file and uploads it to storage.
    * The resource is serialized as JSON and can be any valid FHIR R4 resource.
    *
-   * @param params - Configuration for adding the FHIR resource
-   * @param params.content - FHIR R4 resource object to add.
-   *   Must have a valid `resourceType` field. Can be any FHIR resource (Patient, Bundle, Observation, etc.)
-   * @param params.enableCompression - Whether to compress the file content before encryption.
-   *   Defaults to true since FHIR JSON can be verbose and benefits from compression.
-   *   Compression uses raw DEFLATE (zip=DEF in JWE header).
+   * @param params - Configuration for adding the FHIR resource. The object should contain:
+   *   - `content`: FHIR R4 resource object to add (must have valid `resourceType` field)
+   *   - `enableCompression`: Optional. Whether to compress the file content before encryption (defaults to true)
    * @returns Promise resolving to object with encrypted file metadata and storage path
    * @returns returns.encryptedFile - Encrypted file object with type and JWE string
    * @returns returns.storagePath - Storage key/path returned by the upload function
@@ -283,9 +275,7 @@ export class SHLManifestBuilder {
    * ```
    */
   async addFHIRResource(params: {
-    /** FHIR resource object */
     content: Resource
-    /** Optional: Enable compression (default: true) */
     enableCompression?: boolean
   }): Promise<{ encryptedFile: SHLFileJWE; storagePath: string; ciphertextLength: number }> {
     const fileContent = JSON.stringify(params.content)
