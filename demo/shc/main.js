@@ -232,6 +232,7 @@ let reader = null;
 let videoStream = null;
 let scanningActive = false;
 let availableCameras = [];
+let currentNumericData = null; // Store the current QR numeric data
 
 // Initialize the application
 async function init() {
@@ -276,6 +277,9 @@ function setupEventListeners() {
   document
     .getElementById("clearBtn")
     .addEventListener("click", clearGeneration);
+  document
+    .getElementById("copyNumericBtn")
+    .addEventListener("click", copyNumericData);
 
   // QR Scanning
   document.getElementById("scanBtn").addEventListener("click", startCameraScan);
@@ -311,7 +315,10 @@ async function generateQRCode() {
 
     // Generate the health card
     const healthCard = await issuer.issue(SAMPLE_FHIR_BUNDLE, {
-      includeAdditionalTypes: ["https://smarthealth.cards#immunization"],
+      includeAdditionalTypes: [
+        "https://smarthealth.cards#immunization",
+        "https://smarthealth.cards#covid19",
+      ],
     });
 
     // Generate QR code
@@ -322,6 +329,10 @@ async function generateQRCode() {
         margin: 1,
       },
     });
+
+    // Generate numeric data for copying
+    const qrNumericStrings = healthCard.asQRNumeric();
+    currentNumericData = qrNumericStrings[0];
 
     // Display the QR code
     displayQRCode(qrCodes[0]);
@@ -346,6 +357,7 @@ async function generateQRCode() {
 // Display QR code in the container
 function displayQRCode(dataUrl) {
   const container = document.getElementById("qrCodeContainer");
+  const copyButtonContainer = document.getElementById("copyButtonContainer");
 
   container.innerHTML = `
     <div>
@@ -355,16 +367,53 @@ function displayQRCode(dataUrl) {
       </p>
     </div>
   `;
+
+  // Show the copy button
+  copyButtonContainer.style.display = "block";
 }
 
 // Clear the generation results
 function clearGeneration() {
   const container = document.getElementById("qrCodeContainer");
   const status = document.getElementById("generationStatus");
+  const copyButtonContainer = document.getElementById("copyButtonContainer");
 
   container.innerHTML =
     '<p class="placeholder">Click "Generate Sample QR Code" to create a QR code</p>';
   status.style.display = "none";
+  copyButtonContainer.style.display = "none";
+  currentNumericData = null;
+}
+
+// Copy numeric data to clipboard
+async function copyNumericData() {
+  if (!currentNumericData) {
+    showGenerationStatus("error", "No numeric data available to copy");
+    return;
+  }
+
+  try {
+    await navigator.clipboard.writeText(currentNumericData);
+    showGenerationStatus("success", "✅ Numeric data copied to clipboard!");
+
+    // Update button text temporarily to show success
+    const copyBtn = document.getElementById("copyNumericBtn");
+    const originalText = copyBtn.textContent;
+    copyBtn.textContent = "Copied";
+    copyBtn.disabled = true;
+
+    // Reset button after 2 seconds
+    setTimeout(() => {
+      copyBtn.textContent = originalText;
+      copyBtn.disabled = false;
+    }, 2000);
+  } catch (error) {
+    console.error("❌ Failed to copy to clipboard:", error);
+    showGenerationStatus(
+      "error",
+      `Failed to copy to clipboard: ${error.message}`
+    );
+  }
 }
 
 // Start camera scanning for QR codes

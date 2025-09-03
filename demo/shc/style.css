@@ -163,6 +163,24 @@ h3 {
   transform: none;
 }
 
+.btn-copy {
+  background: linear-gradient(135deg, #3182ce, #2c5aa0);
+  color: white;
+  font-size: 0.9rem;
+  padding: 8px 16px;
+}
+
+.btn-copy:hover:not(:disabled) {
+  background: linear-gradient(135deg, #2a69ac, #1e3a8a);
+  transform: translateY(-1px);
+  box-shadow: 0 3px 10px rgba(49, 130, 206, 0.4);
+}
+
+.copy-button-container {
+  margin-top: 15px;
+  text-align: center;
+}
+
 /* Status Messages */
 .status-message {
   padding: 12px 20px;
