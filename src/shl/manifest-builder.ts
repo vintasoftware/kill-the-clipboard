@@ -48,7 +48,8 @@ import type {
  *   getFileURL: (path) => {
  *     // Generate short-lived signed URL for path
  *     return myStorage.getSignedURL(path);
- *   }
+ *   },
+ *   maxParallelism: 3 // Process up to 3 files concurrently
  * });
  *
  * // Add files
@@ -72,6 +73,7 @@ export class SHLManifestBuilder {
   private readonly getFileURL: (path: string) => Promise<string>
   private readonly loadFile: (path: string) => Promise<string>
   private readonly _files: SerializedSHLManifestBuilderFile[] = []
+  private readonly maxParallelism: number
 
   /**
    * Create a manifest builder for the given SHL.
@@ -96,6 +98,8 @@ export class SHLManifestBuilder {
    *   Called when building manifests for embedded files.
    * @param params.fetch - Optional fetch implementation for the default loadFile.
    *   Only used if `loadFile` is not provided. Defaults to global fetch.
+   * @param params.maxParallelism - Optional maximum number of concurrent file operations.
+   *   Defaults to 5. Used for parallelizing file loading and URL generation in buildManifest.
    *
    * @example
    * ```typescript
@@ -113,7 +117,8 @@ export class SHLManifestBuilder {
    *   loadFile: async (path) => {
    *     const result = await s3.getObject({ Key: path });
    *     return result.Body.toString();
-   *   }
+   *   },
+   *   maxParallelism: 10
    * });
    * ```
    */
@@ -123,10 +128,16 @@ export class SHLManifestBuilder {
     getFileURL: (path: string) => Promise<string>
     loadFile?: (path: string) => Promise<string>
     fetch?: (url: string, options?: RequestInit) => Promise<Response>
+    maxParallelism?: number
   }) {
     this._shl = params.shl
     this.uploadFile = params.uploadFile
     this.getFileURL = params.getFileURL
+    this.maxParallelism = params.maxParallelism ?? 5
+
+    if (this.maxParallelism <= 0) {
+      throw new SHLManifestError('maxParallelism must be greater than 0')
+    }
 
     // Use provided loadFile or create default implementation
     this.loadFile = params.loadFile ?? this.createDefaultLoadFile(params.fetch ?? fetch)
@@ -417,24 +428,28 @@ export class SHLManifestBuilder {
     const manifestFiles: SHLManifestFileDescriptor[] = []
 
     try {
-      for (const file of this._files) {
-        if (file.ciphertextLength <= embeddedLengthMax) {
-          // Embed the file directly - load the ciphertext from storage
-          const ciphertext = await this.loadFile(file.storagePath)
-          manifestFiles.push({
-            contentType: file.type,
-            embedded: ciphertext,
-          })
-        } else {
-          // Reference file by location with fresh short-lived URL
-          const fileURL = await this.getFileURL(file.storagePath)
-
-          manifestFiles.push({
-            contentType: file.type,
-            location: fileURL,
-          })
+      const fileDescriptors = await this.processBatches(
+        this._files,
+        async (file): Promise<SHLManifestFileDescriptor> => {
+          if (file.ciphertextLength <= embeddedLengthMax) {
+            // Embed the file directly - load the ciphertext from storage
+            const ciphertext = await this.loadFile(file.storagePath)
+            return {
+              contentType: file.type,
+              embedded: ciphertext,
+            }
+          } else {
+            // Reference file by location with fresh short-lived URL
+            const fileURL = await this.getFileURL(file.storagePath)
+            return {
+              contentType: file.type,
+              location: fileURL,
+            }
+          }
         }
-      }
+      )
+
+      manifestFiles.push(...fileDescriptors)
     } catch (error) {
       if (error instanceof SHLError) {
         throw error
@@ -488,6 +503,26 @@ export class SHLManifestBuilder {
   }
 
   /**
+   * Process files in batches with controlled concurrency.
+   *
+   * @param files - Array of files to process
+   * @param processor - Function to process each file
+   * @returns Promise resolving to array of processing results
+   * @private
+   */
+  private async processBatches<T, R>(items: T[], processor: (item: T) => Promise<R>): Promise<R[]> {
+    const results: R[] = []
+
+    for (let i = 0; i < items.length; i += this.maxParallelism) {
+      const batch = items.slice(i, i + this.maxParallelism)
+      const batchResults = await Promise.all(batch.map(processor))
+      results.push(...batchResults)
+    }
+
+    return results
+  }
+
+  /**
    * Reconstruct a builder from serialized state returned by {@link serialize} method.
    *
    * Creates a new SHLManifestBuilder instance from previously serialized state.
@@ -499,6 +534,7 @@ export class SHLManifestBuilder {
    * @param params.getFileURL - Function to generate file URLs (same signature as constructor)
    * @param params.loadFile - Optional function to load file content (same signature as constructor)
    * @param params.fetch - Optional fetch implementation for default loadFile (same signature as constructor)
+   * @param params.maxParallelism - Optional maximum number of concurrent file operations (same signature as constructor)
    * @returns New `SHLManifestBuilder` instance with restored state
    *
    * @example
@@ -524,6 +560,7 @@ export class SHLManifestBuilder {
     getFileURL: (path: string) => Promise<string>
     loadFile?: (path: string) => Promise<string>
     fetch?: (url: string, options?: RequestInit) => Promise<Response>
+    maxParallelism?: number
   }): SHLManifestBuilder {
     // Reconstruct the SHL instance
     const shl = SHL.fromPayload(params.data.shl)
@@ -535,6 +572,7 @@ export class SHLManifestBuilder {
       getFileURL: params.getFileURL,
       ...(params.loadFile && { loadFile: params.loadFile }),
       ...(params.fetch && { fetch: params.fetch }),
+      ...(params.maxParallelism !== undefined && { maxParallelism: params.maxParallelism }),
     })
 
     // Restore the file metadata
