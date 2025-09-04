@@ -515,7 +515,7 @@ To generate and view the full API documentation locally:
 
 ```bash
 # Generate documentation
-pnpm run docs:build
+pnpm docs:build
 
 # The documentation will be generated in the ./docs directory
 # Open docs/index.html in your browser to view the complete API reference
