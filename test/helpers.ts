@@ -1,7 +1,7 @@
 // biome-ignore-all lint/suspicious/noExplicitAny: Tests use `any` for validation scenarios
 import type { Bundle } from '@medplum/fhirtypes'
+import jsQR from 'jsqr'
 import { PNG } from 'pngjs'
-import decodeQR from 'qr/decode.js'
 import type { FHIRBundle } from '@/index'
 
 export const testPrivateKeyPKCS8 = `-----BEGIN PRIVATE KEY-----
@@ -58,27 +58,37 @@ export const createInvalidBundle = (): Bundle => ({
 
 /**
  * Helper function to decode QR code from data URL for testing purposes.
- * Uses the 'qr' package to validate generated QR codes by reading them back.
+ * Uses the 'jsqr' package to validate generated QR codes by reading them back.
  */
 export function decodeQRFromDataURL(dataURL: string): string | null {
   try {
     // Extract base64 data from data URL
     const base64Data = dataURL.replace(/^data:image\/png;base64,/, '')
+    if (!base64Data) {
+      throw new Error('Invalid data URL format')
+    }
+
     const imageBuffer = Buffer.from(base64Data, 'base64')
+    if (imageBuffer.length === 0) {
+      throw new Error('Empty image buffer')
+    }
 
     // Parse PNG to get RGBA data
     const png = PNG.sync.read(imageBuffer)
 
-    // The qr package expects { width, height, data } where data is RGBA bytes
-    const image = {
-      width: png.width,
-      height: png.height,
-      data: png.data, // Already RGBA format from pngjs
+    // Validate PNG dimensions and data
+    if (!png.width || !png.height || !png.data) {
+      throw new Error('Invalid PNG structure')
     }
 
-    // Decode the QR code
-    const result = decodeQR(image)
-    return result || null
+    // jsQR expects Uint8ClampedArray, so convert from Buffer
+    const imageData = new Uint8ClampedArray(png.data)
+
+    // Decode the QR code using jsQR
+    const result = jsQR(imageData, png.width, png.height)
+
+    // Return the decoded data if found
+    return result ? result.data : null
   } catch (error) {
     console.warn('QR decode error:', error)
     return null
