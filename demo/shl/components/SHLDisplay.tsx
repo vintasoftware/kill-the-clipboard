@@ -15,6 +15,7 @@ export function SHLDisplay({ shlUri, onReset }: SHLDisplayProps) {
   const [showQR, setShowQR] = useState(false);
   const [qrCodeDataUrl, setQrCodeDataUrl] = useState<string | null>(null);
   const [qrError, setQrError] = useState<string | null>(null);
+  const [isGeneratingQR, setIsGeneratingQR] = useState(false);
 
   const handleCopy = () => {
     navigator.clipboard.writeText(shlUri);
@@ -33,10 +34,11 @@ export function SHLDisplay({ shlUri, onReset }: SHLDisplayProps) {
 
   // Generate QR code when showQR becomes true
   useEffect(() => {
-    if (showQR && !qrCodeDataUrl && !qrError) {
+    if (showQR && !qrCodeDataUrl && !qrError && !isGeneratingQR) {
       const generateQR = async () => {
+        setIsGeneratingQR(true);
+        setQrError(null);
         try {
-          setQrError(null);
           const shl = SHL.parse(shlUri);
           const dataUrl = await shl.asQR({
             viewerURL: process.env.NEXT_PUBLIC_SHL_VIEWER_URL!,
@@ -47,12 +49,14 @@ export function SHLDisplay({ shlUri, onReset }: SHLDisplayProps) {
           setQrCodeDataUrl(dataUrl);
         } catch (error) {
           setQrError(error instanceof Error ? error.message : 'Failed to generate QR code');
+        } finally {
+          setIsGeneratingQR(false);
         }
       };
 
       generateQR();
     }
-  }, [showQR, qrCodeDataUrl, qrError, shlUri]);
+  }, [showQR, qrCodeDataUrl, qrError, isGeneratingQR, shlUri]);
 
   return (
     <Card withBorder p="xl">
@@ -98,12 +102,14 @@ export function SHLDisplay({ shlUri, onReset }: SHLDisplayProps) {
             leftSection={<IconQrcode size="1rem" />}
             onClick={() => {
               if (showQR) {
-                // Reset QR code state when hiding
+                // Reset all QR-related state when hiding
                 setQrCodeDataUrl(null);
                 setQrError(null);
+                setIsGeneratingQR(false);
               }
               setShowQR(!showQR);
             }}
+            disabled={isGeneratingQR}
           >
             {showQR ? 'Hide QR Code' : 'Show QR Code'}
           </Button>
@@ -122,43 +128,33 @@ export function SHLDisplay({ shlUri, onReset }: SHLDisplayProps) {
               </Alert>
             ) : qrCodeDataUrl ? (
               <Box
-                style={{
-                  display: 'flex',
-                  justifyContent: 'center',
-                  padding: '16px',
-                  backgroundColor: '#f8f9fa',
-                  borderRadius: 8,
-                  border: '1px solid #ddd',
-                }}
+                display="flex"
+                style={{ justifyContent: 'center', borderRadius: 8, border: '1px solid var(--mantine-color-gray-3)' }}
+                p="md"
+                bg="gray.0"
               >
                 {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img
-                  src={qrCodeDataUrl}
-                  alt="Smart Health Link QR Code"
-                  style={{
-                    display: 'block',
-                  }}
-                />
+                <img src={qrCodeDataUrl} alt="Smart Health Link QR Code" />
               </Box>
-            ) : (
+            ) : isGeneratingQR ? (
               <Box
+                w={200}
+                h={200}
+                display="flex"
                 style={{
-                  width: 200,
-                  height: 200,
-                  border: '1px solid #ddd',
-                  borderRadius: 8,
-                  display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
-                  backgroundColor: '#f8f9fa',
+                  border: '1px solid var(--mantine-color-gray-3)',
+                  borderRadius: 8,
                   margin: '0 auto',
                 }}
+                bg="gray.0"
               >
                 <Text size="sm" c="dimmed">
                   Generating QR Code...
                 </Text>
               </Box>
-            )}
+            ) : null}
           </Box>
         )}
 

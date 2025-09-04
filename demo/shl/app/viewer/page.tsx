@@ -12,10 +12,9 @@ import {
   LoadingOverlay,
   Group,
   Code,
-  Badge,
-  Divider,
-  List,
   Image,
+  Collapse,
+  Box,
 } from '@mantine/core';
 import { useForm } from '@mantine/form';
 import { notifications } from '@mantine/notifications';
@@ -40,6 +39,20 @@ export default function ViewerPage() {
   const [isLoading, setIsLoading] = useState(false);
   const [step, setStep] = useState<'uri' | 'credentials' | 'content'>('uri');
   const [qrCodesByCard, setQrCodesByCard] = useState<string[][]>([]);
+  const [error, setError] = useState<string | null>(null);
+  const [expandedCards, setExpandedCards] = useState<Set<number>>(new Set());
+
+  const toggleCardExpansion = (cardIndex: number) => {
+    setExpandedCards((prev) => {
+      const newSet = new Set(prev);
+      if (newSet.has(cardIndex)) {
+        newSet.delete(cardIndex);
+      } else {
+        newSet.add(cardIndex);
+      }
+      return newSet;
+    });
+  };
 
   const form = useForm<ViewerFormValues>({
     initialValues: {
@@ -59,6 +72,7 @@ export default function ViewerPage() {
 
   const handleParseUri = useCallback(
     (uri: string) => {
+      setError(null);
       try {
         // Get the access token from Medplum client
         const accessToken = medplum.getAccessToken();
@@ -66,17 +80,20 @@ export default function ViewerPage() {
           throw new Error('No access token available. Please sign in again.');
         }
 
+        const shlURI = uri.trim();
         const viewer = new SHLViewer({
-          shlinkURI: uri,
+          shlinkURI: shlURI,
           // Provide Medplum-authenticated fetch
           fetch: buildMedplumFetch(medplum),
         });
         setShlViewer(viewer);
         setStep('credentials');
       } catch (error) {
+        const errorMessage = error instanceof Error ? error.message : 'Failed to parse Smart Health Link';
+        setError(errorMessage);
         notifications.show({
           title: 'Invalid SHL URI',
-          message: error instanceof Error ? error.message : 'Failed to parse Smart Health Link',
+          message: errorMessage,
           color: 'red',
         });
       }
@@ -95,25 +112,29 @@ export default function ViewerPage() {
   }, [handleParseUri]);
 
   const handleUriSubmit = (values: { shlUri: string }) => {
-    if (!values.shlUri) {
+    const shlURI = values.shlUri?.trim();
+    if (!shlURI) {
+      const errorMessage = 'Please enter a Smart Health Link URI';
+      setError(errorMessage);
       notifications.show({
         title: 'Error',
-        message: 'Please enter a Smart Health Link URI',
+        message: errorMessage,
         color: 'red',
       });
       return;
     }
-    setShlUri(values.shlUri);
-    handleParseUri(values.shlUri);
+    setShlUri(shlURI);
+    handleParseUri(shlURI);
   };
 
   const handleResolve = async (values: ViewerFormValues) => {
     if (!shlViewer) return;
 
     setIsLoading(true);
+    setError(null);
     try {
       const content = await shlViewer.resolveSHLink({
-        recipient: values.recipient,
+        recipient: values.recipient.trim(),
         passcode: shlViewer.shl.requiresPasscode ? values.passcode : undefined,
         embeddedLengthMax: 4096,
         shcReaderConfig: {
@@ -149,9 +170,21 @@ export default function ViewerPage() {
       }
     } catch (error) {
       console.error('Error resolving SHL:', error);
+      const errorMessage = error instanceof Error ? error.message : 'Failed to resolve Smart Health Link';
+
+      let userFriendlyMessage = errorMessage;
+      if (errorMessage.includes('passcode') || errorMessage.includes('unauthorized') || errorMessage.includes('403')) {
+        userFriendlyMessage = 'Invalid passcode. Please check the passcode and try again.';
+      } else if (errorMessage.includes('not found') || errorMessage.includes('404')) {
+        userFriendlyMessage = 'Smart Health Link not found or has expired.';
+      } else if (errorMessage.includes('network') || errorMessage.includes('fetch')) {
+        userFriendlyMessage = 'Network error. Please check your connection and try again.';
+      }
+
+      setError(userFriendlyMessage);
       notifications.show({
         title: 'Error',
-        message: error instanceof Error ? error.message : 'Failed to resolve Smart Health Link',
+        message: userFriendlyMessage,
         color: 'red',
       });
     } finally {
@@ -163,6 +196,9 @@ export default function ViewerPage() {
     setShlUri('');
     setShlViewer(null);
     setResolvedContent(null);
+    setQrCodesByCard([]);
+    setError(null);
+    setIsLoading(false);
     setStep('uri');
     form.reset();
     window.location.hash = '';
@@ -205,7 +241,12 @@ export default function ViewerPage() {
                     label="Smart Health Link URI"
                     placeholder="shlink:/..."
                     value={shlUri}
-                    onChange={(e) => setShlUri(e.currentTarget.value)}
+                    onChange={(e) => {
+                      setShlUri(e.currentTarget.value);
+                      // Clear error when user starts typing
+                      if (error) setError(null);
+                    }}
+                    error={error}
                     required
                   />
                   <Button type="submit">Parse Link</Button>
@@ -256,6 +297,12 @@ export default function ViewerPage() {
                 </Stack>
               </Alert>
 
+              {error && (
+                <Alert icon={<IconAlertCircle size="1rem" />} color="red" mb="md">
+                  {error}
+                </Alert>
+              )}
+
               <form onSubmit={form.onSubmit(handleResolve)}>
                 <Stack gap="md">
                   <TextInput
@@ -263,6 +310,7 @@ export default function ViewerPage() {
                     description="Enter your name as the recipient of this health information"
                     placeholder="e.g. John Doe"
                     required
+                    disabled={isLoading}
                     {...form.getInputProps('recipient')}
                   />
 
@@ -272,15 +320,16 @@ export default function ViewerPage() {
                       description="Enter the passcode provided with this Smart Health Link"
                       placeholder="Enter passcode"
                       required
+                      disabled={isLoading}
                       {...form.getInputProps('passcode')}
                     />
                   )}
 
                   <Group justify="space-between">
-                    <Button variant="outline" onClick={handleReset}>
+                    <Button variant="outline" onClick={handleReset} disabled={isLoading}>
                       Back
                     </Button>
-                    <Button type="submit" loading={isLoading}>
+                    <Button type="submit" loading={isLoading} disabled={isLoading}>
                       Access Health Information
                     </Button>
                   </Group>
@@ -356,16 +405,16 @@ export default function ViewerPage() {
                             Generating QR code...
                           </Text>
                         )}
-                        <details>
-                          <summary style={{ cursor: 'pointer' }}>
-                            <Text size="sm" c="dimmed">
-                              View card as JWS
-                            </Text>
-                          </summary>
-                          <Code block mt="xs">
-                            {card.asJWS()}
-                          </Code>
-                        </details>
+                        <Box>
+                          <Button size="xs" variant="outline" onClick={() => toggleCardExpansion(index)}>
+                            View card as JWS
+                          </Button>
+                          <Collapse in={expandedCards.has(index)}>
+                            <Code block mt="xs">
+                              {card.asJWS()}
+                            </Code>
+                          </Collapse>
+                        </Box>
                       </Card>
                     ))}
                   </Stack>

@@ -74,7 +74,7 @@ export function CreateSHLForm({ onSHLCreated, onCancel }: CreateSHLFormProps) {
         },
         body: JSON.stringify({
           passcode: values.passcode,
-          label: values.label || undefined,
+          label: values.label.trim() || undefined,
           longTerm: values.longTerm,
         }),
       });
@@ -90,6 +90,7 @@ export function CreateSHLForm({ onSHLCreated, onCancel }: CreateSHLFormProps) {
         message: 'Smart Health Link created successfully',
         color: 'green',
       });
+      form.reset();
       onSHLCreated(shlUri);
     } catch (error) {
       console.error('Error creating SHL:', error);
@@ -105,7 +106,7 @@ export function CreateSHLForm({ onSHLCreated, onCancel }: CreateSHLFormProps) {
 
   return (
     <Card withBorder p="xl" pos="relative">
-      <LoadingOverlay visible={isSubmitting} />
+      <LoadingOverlay visible={isSubmitting} zIndex={1000} overlayProps={{ radius: 'sm', blur: 2 }} />
       <Stack gap="lg">
         <div>
           <Text size="lg" fw={500} mb="xs">
@@ -127,6 +128,7 @@ export function CreateSHLForm({ onSHLCreated, onCancel }: CreateSHLFormProps) {
               description="Set a passcode to protect your health information (minimum 6 characters)"
               placeholder="Enter passcode"
               required
+              disabled={isSubmitting}
               {...form.getInputProps('passcode')}
             />
 
@@ -134,6 +136,7 @@ export function CreateSHLForm({ onSHLCreated, onCancel }: CreateSHLFormProps) {
               label="Confirm Passcode"
               placeholder="Confirm passcode"
               required
+              disabled={isSubmitting}
               {...form.getInputProps('confirmPasscode')}
             />
 
@@ -141,20 +144,22 @@ export function CreateSHLForm({ onSHLCreated, onCancel }: CreateSHLFormProps) {
               label="Label (Optional)"
               description="A short description of this health information (max 80 characters)"
               placeholder="e.g., Annual Physical Results"
+              disabled={isSubmitting}
               {...form.getInputProps('label')}
             />
 
             <Checkbox
               label="Long-term link"
               description="Allow the link to be accessed multiple times (recommended for ongoing care)"
+              disabled={isSubmitting}
               {...form.getInputProps('longTerm', { type: 'checkbox' })}
             />
 
             <Group justify="flex-end" mt="md">
-              <Button variant="outline" onClick={onCancel}>
+              <Button variant="outline" onClick={onCancel} disabled={isSubmitting}>
                 Cancel
               </Button>
-              <Button type="submit" loading={isSubmitting}>
+              <Button type="submit" loading={isSubmitting} disabled={isSubmitting}>
                 Create Smart Health Link
               </Button>
             </Group>

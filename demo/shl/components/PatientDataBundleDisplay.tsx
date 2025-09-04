@@ -1,5 +1,5 @@
-import React from 'react';
-import { Card, Text, Stack, Divider, List, Code } from '@mantine/core';
+import React, { useState } from 'react';
+import { Card, Text, Stack, Divider, List, Code, Collapse, Box, Button } from '@mantine/core';
 import { Bundle } from '@medplum/fhirtypes';
 
 interface PatientDataBundleDisplayProps {
@@ -7,6 +7,7 @@ interface PatientDataBundleDisplayProps {
 }
 
 export const PatientDataBundleDisplay: React.FC<PatientDataBundleDisplayProps> = ({ bundle }) => {
+  const [showRawData, setShowRawData] = useState(false);
   const entries = Array.isArray(bundle.entry) ? bundle.entry : [];
   const getResources = (type: string) =>
     entries.map((e: any) => e.resource).filter((r: any) => r?.resourceType === type);
@@ -90,16 +91,16 @@ export const PatientDataBundleDisplay: React.FC<PatientDataBundleDisplayProps> =
         </Stack>
       )}
 
-      <details>
-        <summary style={{ cursor: 'pointer', marginTop: '8px' }}>
-          <Text size="sm" c="dimmed">
-            View raw data
-          </Text>
-        </summary>
-        <Code block mt="xs">
-          {JSON.stringify(bundle, null, 2)}
-        </Code>
-      </details>
+      <Box mt="xs">
+        <Button size="xs" variant="outline" onClick={() => setShowRawData(!showRawData)}>
+          View raw data
+        </Button>
+        <Collapse in={showRawData}>
+          <Code block mt="xs">
+            {JSON.stringify(bundle, null, 2)}
+          </Code>
+        </Collapse>
+      </Box>
     </Card>
   );
 };
