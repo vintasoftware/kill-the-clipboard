@@ -2,7 +2,7 @@
 import { beforeEach, describe, expect, it } from 'vitest'
 import {
   type FHIRBundle,
-  FhirValidationError,
+  FHIRValidationError,
   JWSError,
   JWSProcessor,
   QRCodeError,
@@ -109,14 +109,14 @@ describe('SmartHealthCard', () => {
     it('should throw error for invalid FHIR Bundle', async () => {
       const invalidBundle = createInvalidBundle()
 
-      await expect(issuer.issue(invalidBundle)).rejects.toThrow(FhirValidationError)
+      await expect(issuer.issue(invalidBundle)).rejects.toThrow(FHIRValidationError)
       await expect(issuer.issue(invalidBundle)).rejects.toThrow(
         'Invalid bundle: must be a FHIR Bundle resource'
       )
     })
 
     it('should throw error for null bundle', async () => {
-      await expect(issuer.issue(null as unknown as any)).rejects.toThrow(FhirValidationError)
+      await expect(issuer.issue(null as unknown as any)).rejects.toThrow(FHIRValidationError)
     })
 
     it('should include correct issuer in JWT payload', async () => {

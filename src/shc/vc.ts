@@ -1,4 +1,4 @@
-import { FhirValidationError } from './errors.js'
+import { FHIRValidationError } from './errors.js'
 import type { FHIRBundle, VerifiableCredential, VerifiableCredentialParams } from './types.js'
 
 /**
@@ -15,11 +15,11 @@ export class VerifiableCredentialProcessor {
    * @param fhirBundle - FHIR Bundle to create credential from
    * @param config - Optional Verifiable Credential parameters. See {@link VerifiableCredentialParams}.
    * @returns Verifiable Credential structure
-   * @throws {@link FhirValidationError} When the input bundle is invalid
+   * @throws {@link FHIRValidationError} When the input bundle is invalid
    */
   create(fhirBundle: FHIRBundle, config: VerifiableCredentialParams = {}): VerifiableCredential {
     if (!fhirBundle || fhirBundle.resourceType !== 'Bundle') {
-      throw new FhirValidationError('Invalid FHIR Bundle provided')
+      throw new FHIRValidationError('Invalid FHIR Bundle provided')
     }
 
     const fhirVersion = config.fhirVersion || '4.0.1'
@@ -43,12 +43,12 @@ export class VerifiableCredentialProcessor {
    *
    * @param vc - Verifiable Credential to validate
    * @returns `true` if validation passes
-   * @throws {@link FhirValidationError} if validation fails
+   * @throws {@link FHIRValidationError} if validation fails
    */
   validate(vc: VerifiableCredential): boolean {
     try {
       if (!vc || !vc.vc) {
-        throw new FhirValidationError('Invalid VC: missing vc property')
+        throw new FHIRValidationError('Invalid VC: missing vc property')
       }
 
       this.validateTypes(vc.vc.type)
@@ -56,11 +56,11 @@ export class VerifiableCredentialProcessor {
 
       return true
     } catch (error) {
-      if (error instanceof FhirValidationError) {
+      if (error instanceof FHIRValidationError) {
         throw error
       }
       const errorMessage = error instanceof Error ? error.message : String(error)
-      throw new FhirValidationError(`VC validation failed: ${errorMessage}`)
+      throw new FHIRValidationError(`VC validation failed: ${errorMessage}`)
     }
   }
 
@@ -78,15 +78,15 @@ export class VerifiableCredentialProcessor {
   /** Validates the type array */
   private validateTypes(types: string[]): void {
     if (!Array.isArray(types)) {
-      throw new FhirValidationError('VC type must be an array')
+      throw new FHIRValidationError('VC type must be an array')
     }
 
     if (types.length < 1) {
-      throw new FhirValidationError('VC type must contain at least 1 element')
+      throw new FHIRValidationError('VC type must contain at least 1 element')
     }
 
     if (!types.includes('https://smarthealth.cards#health-card')) {
-      throw new FhirValidationError('VC type must include https://smarthealth.cards#health-card')
+      throw new FHIRValidationError('VC type must include https://smarthealth.cards#health-card')
     }
   }
 
@@ -96,26 +96,26 @@ export class VerifiableCredentialProcessor {
     fhirBundle: FHIRBundle
   }): void {
     if (!credentialSubject) {
-      throw new FhirValidationError('VC credentialSubject is required')
+      throw new FHIRValidationError('VC credentialSubject is required')
     }
 
     if (!credentialSubject.fhirVersion) {
-      throw new FhirValidationError('VC credentialSubject must include fhirVersion')
+      throw new FHIRValidationError('VC credentialSubject must include fhirVersion')
     }
 
     const fhirVersionRegex = /^\d+\.\d+\.\d+$/
     if (!fhirVersionRegex.test(credentialSubject.fhirVersion)) {
-      throw new FhirValidationError(
+      throw new FHIRValidationError(
         'VC fhirVersion must be in semantic version format (e.g., 4.0.1)'
       )
     }
 
     if (!credentialSubject.fhirBundle) {
-      throw new FhirValidationError('VC credentialSubject must include fhirBundle')
+      throw new FHIRValidationError('VC credentialSubject must include fhirBundle')
     }
 
     if (credentialSubject.fhirBundle.resourceType !== 'Bundle') {
-      throw new FhirValidationError('VC fhirBundle must be a valid FHIR Bundle')
+      throw new FHIRValidationError('VC fhirBundle must be a valid FHIR Bundle')
     }
   }
 }

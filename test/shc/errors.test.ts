@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import {
-  FhirValidationError,
+  FHIRValidationError,
   FileFormatError,
   InvalidBundleReferenceError,
   JWSError,
@@ -30,11 +30,11 @@ describe('Error Classes', () => {
     })
   })
 
-  describe('FhirValidationError', () => {
+  describe('FHIRValidationError', () => {
     it('should create FHIR validation error', () => {
-      const error = new FhirValidationError('FHIR validation failed')
+      const error = new FHIRValidationError('FHIR validation failed')
       expect(error).toBeInstanceOf(SmartHealthCardError)
-      expect(error.name).toBe('FhirValidationError')
+      expect(error.name).toBe('FHIRValidationError')
       expect(error.message).toBe('FHIR validation failed')
       expect(error.code).toBe('FHIR_VALIDATION_ERROR')
     })

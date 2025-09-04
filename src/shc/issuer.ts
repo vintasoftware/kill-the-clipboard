@@ -60,7 +60,7 @@ export class SmartHealthCardIssuer {
    * @param fhirBundle - FHIR R4 Bundle containing medical data
    * @param config - Optional Verifiable Credential parameters. See {@link VerifiableCredentialParams}.
    * @returns Promise resolving to SmartHealthCard object
-   * @throws {@link FhirValidationError} When FHIR bundle or VC structure is invalid
+   * @throws {@link FHIRValidationError} When FHIR bundle or VC structure is invalid
    * @throws {@link JWSError} When signing fails
    *
    * @example

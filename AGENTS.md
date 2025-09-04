@@ -33,7 +33,7 @@ This document provides essential context for AI models interacting with this pro
     * **SmartHealthCardReader**: Client/server-side verification and QR scanning
     * **SHL, SHLManifestBuilder**: Server-side SHL creation and manifest building
     * **SHLViewer**: Client-side SHL resolution and decryption
-* **Error Handling:** Structured error hierarchy with specific error types (`SmartHealthCardError`, `FhirValidationError`, `JWSError`, `QRCodeError`)
+* **Error Handling:** Structured error hierarchy with specific error types (`SmartHealthCardError`, `FHIRValidationError`, `JWSError`, `QRCodeError`)
 * **Demo Applications:**
     * `demo/shc/`: Vanilla JS browser demo for SMART Health Cards QR generation and scanning
     * `demo/shl/`: Next.js full-stack with Medplum demo for Smart Health Links generation and viewing

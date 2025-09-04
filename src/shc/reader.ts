@@ -54,7 +54,7 @@ export class SmartHealthCardReader {
    * @returns Promise resolving to verified SmartHealthCard object
    * @throws {@link FileFormatError} If the file is not valid JSON or missing the `verifiableCredential` array
    * @throws {@link JWSError} If the embedded JWS is malformed or signature verification fails (propagated from {@link fromJWS})
-   * @throws {@link FhirValidationError} If the decoded VC payload or embedded FHIR Bundle is invalid (propagated from {@link fromJWS})
+   * @throws {@link FHIRValidationError} If the decoded VC payload or embedded FHIR Bundle is invalid (propagated from {@link fromJWS})
    * @throws {@link VerificationError} For unexpected errors during verification (propagated from {@link fromJWS})
    */
   async fromFileContent(fileContent: string | Blob): Promise<SmartHealthCard> {
@@ -104,7 +104,7 @@ export class SmartHealthCardReader {
    * @param jws - JWS string to verify
    * @returns Promise resolving to verified SmartHealthCard object
    * @throws {@link JWSError} If the JWS is malformed, signature verification fails, or the public key cannot be imported
-   * @throws {@link FhirValidationError} If the decoded VC payload or embedded FHIR Bundle is invalid
+   * @throws {@link FHIRValidationError} If the decoded VC payload or embedded FHIR Bundle is invalid
    * @throws {@link VerificationError} For unexpected errors during verification
    */
   async fromJWS(jws: string): Promise<SmartHealthCard> {
@@ -194,7 +194,7 @@ export class SmartHealthCardReader {
    * @returns Promise resolving to verified SmartHealthCard object
    * @throws {@link QRCodeError} If the QR numeric string is malformed, contains out-of-range digit pairs, or decoding fails
    * @throws {@link JWSError} If the reconstructed JWS is malformed or signature verification fails (propagated from {@link fromJWS})
-   * @throws {@link FhirValidationError} If the decoded VC payload or embedded FHIR Bundle is invalid (propagated from {@link fromJWS})
+   * @throws {@link FHIRValidationError} If the decoded VC payload or embedded FHIR Bundle is invalid (propagated from {@link fromJWS})
    * @throws {@link VerificationError} For unexpected errors during verification (propagated from {@link fromJWS})
    *
    * @example
@@ -213,7 +213,7 @@ export class SmartHealthCardReader {
    * @returns Promise resolving to verified SmartHealthCard object
    * @throws {@link QRCodeError} If any chunk has invalid prefix, index/total, missing parts, out-of-range digit pairs, or decoding fails
    * @throws {@link JWSError} If the reconstructed JWS is malformed or signature verification fails (propagated from {@link fromJWS})
-   * @throws {@link FhirValidationError} If the decoded VC payload or embedded FHIR Bundle is invalid (propagated from {@link fromJWS})
+   * @throws {@link FHIRValidationError} If the decoded VC payload or embedded FHIR Bundle is invalid (propagated from {@link fromJWS})
    * @throws {@link VerificationError} For unexpected errors during verification (propagated from {@link fromJWS})
    *
    * @example

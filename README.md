@@ -387,7 +387,7 @@ import {
   SmartHealthCardIssuer,
   SmartHealthCardReader,
   SmartHealthCardError,
-  FhirValidationError,
+  FHIRValidationError,
   JWSError,
   QRCodeError 
 } from 'kill-the-clipboard';
@@ -399,7 +399,7 @@ try {
   const healthCard = await issuer.issue(fhirBundle);
   const qrCodes = await healthCard.asQR();
 } catch (error) {
-  if (error instanceof FhirValidationError) {
+  if (error instanceof FHIRValidationError) {
     console.error('FHIR Bundle validation failed:', error.message);
   } else if (error instanceof JWSError) {
     console.error('JWT/JWS processing failed:', error.message);

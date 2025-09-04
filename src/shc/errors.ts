@@ -25,10 +25,10 @@ export class SmartHealthCardError extends Error {
  * @group SHC
  * @category Errors
  */
-export class FhirValidationError extends SmartHealthCardError {
+export class FHIRValidationError extends SmartHealthCardError {
   constructor(message: string) {
     super(message, 'FHIR_VALIDATION_ERROR')
-    this.name = 'FhirValidationError'
+    this.name = 'FHIRValidationError'
   }
 }
 

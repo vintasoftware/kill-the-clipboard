@@ -1,7 +1,7 @@
 // biome-ignore-all lint/suspicious/noExplicitAny: The test needs to use `any` to check validation errors
 import type { Bundle } from '@medplum/fhirtypes'
 import { beforeEach, describe, expect, it } from 'vitest'
-import { FHIRBundleProcessor, FhirValidationError } from '@/index'
+import { FHIRBundleProcessor, FHIRValidationError } from '@/index'
 import { createInvalidBundle, createValidFHIRBundle } from '../helpers'
 
 describe('FHIRBundleProcessor', () => {
@@ -45,17 +45,17 @@ describe('FHIRBundleProcessor', () => {
       expect(bundle.type).toBe(originalType)
     })
 
-    it('should throw FhirValidationError for null bundle', () => {
-      expect(() => processor.process(null as unknown as Bundle)).toThrow(FhirValidationError)
+    it('should throw FHIRValidationError for null bundle', () => {
+      expect(() => processor.process(null as unknown as Bundle)).toThrow(FHIRValidationError)
       expect(() => processor.process(null as unknown as Bundle)).toThrow(
         'Invalid bundle: must be a FHIR Bundle resource'
       )
     })
 
-    it('should throw FhirValidationError for invalid bundle', () => {
+    it('should throw FHIRValidationError for invalid bundle', () => {
       const invalidBundle = createInvalidBundle()
 
-      expect(() => processor.process(invalidBundle)).toThrow(FhirValidationError)
+      expect(() => processor.process(invalidBundle)).toThrow(FHIRValidationError)
       expect(() => processor.process(invalidBundle)).toThrow(
         'Invalid bundle: must be a FHIR Bundle resource'
       )
@@ -68,24 +68,24 @@ describe('FHIRBundleProcessor', () => {
       expect(processor.validate(bundle)).toBe(true)
     })
 
-    it('should throw FhirValidationError for null bundle', () => {
-      expect(() => processor.validate(null as unknown as Bundle)).toThrow(FhirValidationError)
+    it('should throw FHIRValidationError for null bundle', () => {
+      expect(() => processor.validate(null as unknown as Bundle)).toThrow(FHIRValidationError)
       expect(() => processor.validate(null as unknown as Bundle)).toThrow(
         'Bundle cannot be null or undefined'
       )
     })
 
-    it('should throw FhirValidationError for wrong resource type', () => {
+    it('should throw FHIRValidationError for wrong resource type', () => {
       const invalidBundle = createInvalidBundle()
 
-      expect(() => processor.validate(invalidBundle)).toThrow(FhirValidationError)
+      expect(() => processor.validate(invalidBundle)).toThrow(FHIRValidationError)
       expect(() => processor.validate(invalidBundle)).toThrow('Resource must be of type Bundle')
     })
 
-    it('should throw FhirValidationError for invalid Bundle.type', () => {
+    it('should throw FHIRValidationError for invalid Bundle.type', () => {
       const bundle = createValidFHIRBundle()
       ;(bundle as any).type = 'invalid-type'
-      expect(() => processor.validate(bundle)).toThrow(FhirValidationError)
+      expect(() => processor.validate(bundle)).toThrow(FHIRValidationError)
       expect(() => processor.validate(bundle)).toThrow('Invalid bundle.type: invalid-type')
     })
 
@@ -105,27 +105,27 @@ describe('FHIRBundleProcessor', () => {
       }
     })
 
-    it('should throw FhirValidationError for non-array entry', () => {
+    it('should throw FHIRValidationError for non-array entry', () => {
       const bundle = createValidFHIRBundle()
       bundle.entry = 'not-an-array' as any
 
-      expect(() => processor.validate(bundle)).toThrow(FhirValidationError)
+      expect(() => processor.validate(bundle)).toThrow(FHIRValidationError)
       expect(() => processor.validate(bundle)).toThrow('Bundle.entry must be an array')
     })
 
-    it('should throw FhirValidationError for entry without resource', () => {
+    it('should throw FHIRValidationError for entry without resource', () => {
       const bundle = createValidFHIRBundle()
       bundle.entry = [{ fullUrl: 'test' }] as any
 
-      expect(() => processor.validate(bundle)).toThrow(FhirValidationError)
+      expect(() => processor.validate(bundle)).toThrow(FHIRValidationError)
       expect(() => processor.validate(bundle)).toThrow('Bundle.entry[0] must contain a resource')
     })
 
-    it('should throw FhirValidationError for resource without resourceType', () => {
+    it('should throw FHIRValidationError for resource without resourceType', () => {
       const bundle = createValidFHIRBundle()
       bundle.entry = [{ resource: { id: '123' } }] as any
 
-      expect(() => processor.validate(bundle)).toThrow(FhirValidationError)
+      expect(() => processor.validate(bundle)).toThrow(FHIRValidationError)
       expect(() => processor.validate(bundle)).toThrow(
         'Bundle.entry[0].resource must have a resourceType'
       )
