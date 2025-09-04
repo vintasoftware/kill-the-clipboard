@@ -43,8 +43,8 @@ export default function ViewerPage() {
 
   const form = useForm<ViewerFormValues>({
     initialValues: {
-      recipient: 'Flavio',
-      passcode: '123456',
+      recipient: '',
+      passcode: '',
     },
     validate: {
       recipient: (value) => (!value ? 'Recipient name is required' : null),
@@ -261,7 +261,7 @@ export default function ViewerPage() {
                   <TextInput
                     label="Your Name"
                     description="Enter your name as the recipient of this health information"
-                    placeholder="John Doe"
+                    placeholder="e.g. John Doe"
                     required
                     {...form.getInputProps('recipient')}
                   />
