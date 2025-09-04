@@ -208,7 +208,7 @@
 <ol>
 <li>Create an <code>SHL</code> instance with <code>SHL.generate({ baseManifestURL, manifestPath, label?, flag? })</code></li>
 <li>Use <code>SHLManifestBuilder</code> with implementations for <code>uploadFile</code>, <code>getFileURL</code>, and <code>loadFile</code> that persist encrypted files and return retrievable URLs</li>
-<li>Add content: <code>addFHIRResource({ content })</code>, <code>addHealthCard({ shc, enableCompression? })</code></li>
+<li>Add content: <code>addFHIRResource({ content })</code>, <code>addHealthCard({ shc })</code></li>
 <li>Persist the builder state via <code>serialize()</code></li>
 <li>Return the SHLink URI to clients via <code>shl.toURI()</code></li>
 </ol>
