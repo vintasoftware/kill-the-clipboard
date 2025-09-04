@@ -1,3 +1,4 @@
+import type { Resource } from '@medplum/fhirtypes'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import {
   decryptSHLFile,
@@ -12,6 +13,7 @@ describe('SHLManifestBuilder', () => {
   let shl: SHL
   let uploadedFiles: Map<string, string>
   let manifestBuilder: SHLManifestBuilder
+  let removedFiles: Set<string>
 
   beforeEach(() => {
     shl = SHL.generate({
@@ -19,6 +21,7 @@ describe('SHLManifestBuilder', () => {
       manifestPath: '/manifest.json',
     })
     uploadedFiles = new Map()
+    removedFiles = new Set()
     manifestBuilder = new SHLManifestBuilder({
       shl,
       uploadFile: async (content: string) => {
@@ -31,6 +34,19 @@ describe('SHLManifestBuilder', () => {
         const content = uploadedFiles.get(path)
         if (!content) throw new Error(`File not found: ${path}`)
         return content
+      },
+      removeFile: async (path: string) => {
+        if (!uploadedFiles.has(path)) {
+          throw new Error(`File not found for removal: ${path}`)
+        }
+        uploadedFiles.delete(path)
+        removedFiles.add(path)
+      },
+      updateFile: async (path: string, content: string) => {
+        if (!uploadedFiles.has(path)) {
+          throw new Error(`File not found for update: ${path}`)
+        }
+        uploadedFiles.set(path, content)
       },
     })
   })
@@ -562,5 +578,451 @@ describe('SHLManifestBuilder', () => {
     await expect(builder.buildManifest({ embeddedLengthMax: 1_000_000 })).rejects.toThrow(
       'Failed to build manifest: boom'
     )
+  })
+
+  describe('File Removal', () => {
+    it('should remove FHIR resource files successfully', async () => {
+      const fhirBundle = createValidFHIRBundle()
+      const result = await manifestBuilder.addFHIRResource({ content: fhirBundle })
+      const storagePath = result.storagePath
+
+      expect(manifestBuilder.files).toHaveLength(1)
+      expect(uploadedFiles.has(storagePath)).toBe(true)
+      expect(removedFiles.has(storagePath)).toBe(false)
+
+      await manifestBuilder.removeFile(storagePath)
+
+      expect(manifestBuilder.files).toHaveLength(0)
+      expect(uploadedFiles.has(storagePath)).toBe(false)
+      expect(removedFiles.has(storagePath)).toBe(true)
+    })
+
+    it('should remove Smart Health Card files successfully', async () => {
+      const issuer = new SmartHealthCardIssuer({
+        issuer: 'https://example.com',
+        privateKey: testPrivateKeyPKCS8,
+        publicKey: testPublicKeySPKI,
+      })
+      const healthCard = await issuer.issue(createValidFHIRBundle())
+      const result = await manifestBuilder.addHealthCard({ shc: healthCard })
+      const storagePath = result.storagePath
+
+      expect(manifestBuilder.files).toHaveLength(1)
+      expect(uploadedFiles.has(storagePath)).toBe(true)
+
+      await manifestBuilder.removeFile(storagePath)
+
+      expect(manifestBuilder.files).toHaveLength(0)
+      expect(uploadedFiles.has(storagePath)).toBe(false)
+      expect(removedFiles.has(storagePath)).toBe(true)
+    })
+
+    it('should throw error when removeFile function is not provided', async () => {
+      const builderWithoutRemove = new SHLManifestBuilder({
+        shl,
+        uploadFile: async (content: string) => {
+          const fileId = `file-${uploadedFiles.size + 1}`
+          uploadedFiles.set(fileId, content)
+          return fileId
+        },
+        getFileURL: async (path: string) => `https://files.example.org/${path}`,
+      })
+
+      const result = await builderWithoutRemove.addFHIRResource({
+        content: createValidFHIRBundle(),
+      })
+
+      await expect(builderWithoutRemove.removeFile(result.storagePath)).rejects.toThrow(
+        'File removal is not supported. Provide a removeFile function in the constructor to enable file removal.'
+      )
+    })
+
+    it('should throw error when file not found in manifest', async () => {
+      await expect(manifestBuilder.removeFile('nonexistent-file')).rejects.toThrow(
+        "File with storage path 'nonexistent-file' not found in manifest"
+      )
+    })
+
+    it('should handle storage errors during file removal', async () => {
+      const builderWithFailingRemove = new SHLManifestBuilder({
+        shl,
+        uploadFile: async (content: string) => {
+          const fileId = `file-${uploadedFiles.size + 1}`
+          uploadedFiles.set(fileId, content)
+          return fileId
+        },
+        getFileURL: async (path: string) => `https://files.example.org/${path}`,
+        removeFile: async () => {
+          throw new Error('Storage removal failed')
+        },
+      })
+
+      const result = await builderWithFailingRemove.addFHIRResource({
+        content: createValidFHIRBundle(),
+      })
+
+      await expect(builderWithFailingRemove.removeFile(result.storagePath)).rejects.toThrow(
+        'Failed to remove file from storage: Storage removal failed'
+      )
+    })
+  })
+
+  describe('FHIR Resource Updates', () => {
+    it('should update FHIR resource files successfully', async () => {
+      const originalBundle = createValidFHIRBundle()
+      const result = await manifestBuilder.addFHIRResource({ content: originalBundle })
+      const storagePath = result.storagePath
+      const originalSize = result.ciphertextLength
+
+      const updatedBundle = {
+        ...originalBundle,
+        entry: [
+          ...(originalBundle.entry || []),
+          {
+            fullUrl: 'https://example.org/fhir/Patient/456',
+            resource: {
+              resourceType: 'Patient' as const,
+              id: '456',
+              name: [{ family: 'Updated', given: ['Patient'] }],
+            },
+          },
+        ],
+      }
+
+      await manifestBuilder.updateFHIRResource(storagePath, updatedBundle as Resource)
+
+      expect(manifestBuilder.files).toHaveLength(1)
+      const updatedFile = manifestBuilder.files[0]
+      expect(updatedFile).toBeDefined()
+      expect(updatedFile?.storagePath).toBe(storagePath)
+      expect(updatedFile?.type).toBe('application/fhir+json')
+      expect(updatedFile?.ciphertextLength).not.toBe(originalSize) // Size should change
+
+      // Verify the content was actually updated
+      const encryptedContent = uploadedFiles.get(storagePath)
+      expect(encryptedContent).toBeDefined()
+      const { content: decryptedJson } = await decryptSHLFile({
+        jwe: encryptedContent as string,
+        key: shl.key,
+      })
+      const decryptedBundle = JSON.parse(decryptedJson)
+      expect(decryptedBundle).toEqual(updatedBundle)
+    })
+
+    it('should throw error when updateFile function is not provided', async () => {
+      const builderWithoutUpdate = new SHLManifestBuilder({
+        shl,
+        uploadFile: async (content: string) => {
+          const fileId = `file-${uploadedFiles.size + 1}`
+          uploadedFiles.set(fileId, content)
+          return fileId
+        },
+        getFileURL: async (path: string) => `https://files.example.org/${path}`,
+      })
+
+      const result = await builderWithoutUpdate.addFHIRResource({
+        content: createValidFHIRBundle(),
+      })
+
+      await expect(
+        builderWithoutUpdate.updateFHIRResource(result.storagePath, createValidFHIRBundle())
+      ).rejects.toThrow(
+        'File updates are not supported. Provide an updateFile function in the constructor to enable file updates.'
+      )
+    })
+
+    it('should throw error when file not found in manifest', async () => {
+      await expect(
+        manifestBuilder.updateFHIRResource('nonexistent-file', createValidFHIRBundle())
+      ).rejects.toThrow("File with storage path 'nonexistent-file' not found in manifest")
+    })
+
+    it('should throw error when trying to update non-FHIR file', async () => {
+      const issuer = new SmartHealthCardIssuer({
+        issuer: 'https://example.com',
+        privateKey: testPrivateKeyPKCS8,
+        publicKey: testPublicKeySPKI,
+      })
+      const healthCard = await issuer.issue(createValidFHIRBundle())
+      const result = await manifestBuilder.addHealthCard({ shc: healthCard })
+
+      await expect(
+        manifestBuilder.updateFHIRResource(result.storagePath, createValidFHIRBundle())
+      ).rejects.toThrow(
+        `File at storage path '${result.storagePath}' is not a FHIR resource (type: application/smart-health-card)`
+      )
+    })
+
+    it('should handle storage errors during FHIR resource update', async () => {
+      const builderWithFailingUpdate = new SHLManifestBuilder({
+        shl,
+        uploadFile: async (content: string) => {
+          const fileId = `file-${uploadedFiles.size + 1}`
+          uploadedFiles.set(fileId, content)
+          return fileId
+        },
+        getFileURL: async (path: string) => `https://files.example.org/${path}`,
+        updateFile: async () => {
+          throw new Error('Storage update failed')
+        },
+      })
+
+      const result = await builderWithFailingUpdate.addFHIRResource({
+        content: createValidFHIRBundle(),
+      })
+
+      await expect(
+        builderWithFailingUpdate.updateFHIRResource(result.storagePath, createValidFHIRBundle())
+      ).rejects.toThrow('Failed to update FHIR resource in storage: Storage update failed')
+    })
+
+    it('should handle compression options when updating FHIR resources', async () => {
+      const originalBundle = createValidFHIRBundle()
+      const result = await manifestBuilder.addFHIRResource({
+        content: originalBundle,
+        enableCompression: true,
+      })
+
+      const updatedBundle = { ...originalBundle, id: 'updated' }
+      await manifestBuilder.updateFHIRResource(result.storagePath, updatedBundle, false)
+
+      // Verify the file was updated and compression setting was applied
+      const encryptedContent = uploadedFiles.get(result.storagePath)
+      expect(encryptedContent).toBeDefined()
+      const [protectedHeaderB64u] = (encryptedContent as string).split('.') as [string, ...string[]]
+      const { base64url } = await import('jose')
+      const bytes = base64url.decode(protectedHeaderB64u)
+      const json = new TextDecoder().decode(bytes)
+      const header = JSON.parse(json) as Record<string, unknown>
+
+      // Should not have zip header when compression disabled
+      expect('zip' in header).toBe(false)
+    })
+  })
+
+  describe('Smart Health Card Updates', () => {
+    it('should update Smart Health Card files successfully', async () => {
+      const issuer = new SmartHealthCardIssuer({
+        issuer: 'https://example.com',
+        privateKey: testPrivateKeyPKCS8,
+        publicKey: testPublicKeySPKI,
+      })
+
+      const originalHealthCard = await issuer.issue(createValidFHIRBundle())
+      const result = await manifestBuilder.addHealthCard({ shc: originalHealthCard })
+      const storagePath = result.storagePath
+
+      const updatedBundle = {
+        ...createValidFHIRBundle(),
+        id: 'updated-bundle',
+      }
+      const updatedHealthCard = await issuer.issue(updatedBundle)
+
+      await manifestBuilder.updateHealthCard(storagePath, updatedHealthCard)
+
+      expect(manifestBuilder.files).toHaveLength(1)
+      const updatedFile = manifestBuilder.files[0]
+      expect(updatedFile).toBeDefined()
+      expect(updatedFile?.storagePath).toBe(storagePath)
+      expect(updatedFile?.type).toBe('application/smart-health-card')
+
+      // Verify the content was actually updated
+      const encryptedContent = uploadedFiles.get(storagePath)
+      expect(encryptedContent).toBeDefined()
+      const { content: decryptedJson } = await decryptSHLFile({
+        jwe: encryptedContent as string,
+        key: shl.key,
+      })
+      const decryptedFile = JSON.parse(decryptedJson)
+      expect(decryptedFile.verifiableCredential).toEqual([updatedHealthCard.asJWS()])
+    })
+
+    it('should update Smart Health Card files with JWS string', async () => {
+      const issuer = new SmartHealthCardIssuer({
+        issuer: 'https://example.com',
+        privateKey: testPrivateKeyPKCS8,
+        publicKey: testPublicKeySPKI,
+      })
+
+      const originalHealthCard = await issuer.issue(createValidFHIRBundle())
+      const result = await manifestBuilder.addHealthCard({ shc: originalHealthCard })
+
+      const updatedBundle = { ...createValidFHIRBundle(), id: 'updated' }
+      const updatedHealthCard = await issuer.issue(updatedBundle)
+      const updatedJWS = updatedHealthCard.asJWS()
+
+      await manifestBuilder.updateHealthCard(result.storagePath, updatedJWS)
+
+      // Verify the content was updated
+      const encryptedContent = uploadedFiles.get(result.storagePath)
+      expect(encryptedContent).toBeDefined()
+      const { content: decryptedJson } = await decryptSHLFile({
+        jwe: encryptedContent as string,
+        key: shl.key,
+      })
+      const decryptedFile = JSON.parse(decryptedJson)
+      expect(decryptedFile.verifiableCredential).toEqual([updatedJWS])
+    })
+
+    it('should throw error when trying to update non-Smart Health Card file', async () => {
+      const result = await manifestBuilder.addFHIRResource({ content: createValidFHIRBundle() })
+
+      const issuer = new SmartHealthCardIssuer({
+        issuer: 'https://example.com',
+        privateKey: testPrivateKeyPKCS8,
+        publicKey: testPublicKeySPKI,
+      })
+      const healthCard = await issuer.issue(createValidFHIRBundle())
+
+      await expect(
+        manifestBuilder.updateHealthCard(result.storagePath, healthCard)
+      ).rejects.toThrow(
+        `File at storage path '${result.storagePath}' is not a Smart Health Card (type: application/fhir+json)`
+      )
+    })
+
+    it('should handle storage errors during Smart Health Card update', async () => {
+      const builderWithFailingUpdate = new SHLManifestBuilder({
+        shl,
+        uploadFile: async (content: string) => {
+          const fileId = `file-${uploadedFiles.size + 1}`
+          uploadedFiles.set(fileId, content)
+          return fileId
+        },
+        getFileURL: async (path: string) => `https://files.example.org/${path}`,
+        updateFile: async () => {
+          throw new Error('Storage update failed')
+        },
+      })
+
+      const issuer = new SmartHealthCardIssuer({
+        issuer: 'https://example.com',
+        privateKey: testPrivateKeyPKCS8,
+        publicKey: testPublicKeySPKI,
+      })
+      const healthCard = await issuer.issue(createValidFHIRBundle())
+      const result = await builderWithFailingUpdate.addHealthCard({ shc: healthCard })
+
+      const updatedHealthCard = await issuer.issue({ ...createValidFHIRBundle(), id: 'updated' })
+
+      await expect(
+        builderWithFailingUpdate.updateHealthCard(result.storagePath, updatedHealthCard)
+      ).rejects.toThrow('Failed to update Smart Health Card in storage: Storage update failed')
+    })
+  })
+
+  describe('File Finding', () => {
+    it('should find existing files by storage path', async () => {
+      const fhirResult = await manifestBuilder.addFHIRResource({ content: createValidFHIRBundle() })
+
+      const issuer = new SmartHealthCardIssuer({
+        issuer: 'https://example.com',
+        privateKey: testPrivateKeyPKCS8,
+        publicKey: testPublicKeySPKI,
+      })
+      const healthCard = await issuer.issue(createValidFHIRBundle())
+      const shcResult = await manifestBuilder.addHealthCard({ shc: healthCard })
+
+      const foundFhir = manifestBuilder.findFile(fhirResult.storagePath)
+      const foundShc = manifestBuilder.findFile(shcResult.storagePath)
+
+      expect(foundFhir).not.toBeNull()
+      expect(foundFhir?.type).toBe('application/fhir+json')
+      expect(foundFhir?.storagePath).toBe(fhirResult.storagePath)
+
+      expect(foundShc).not.toBeNull()
+      expect(foundShc?.type).toBe('application/smart-health-card')
+      expect(foundShc?.storagePath).toBe(shcResult.storagePath)
+    })
+
+    it('should return null for non-existent files', () => {
+      const found = manifestBuilder.findFile('nonexistent-file')
+      expect(found).toBeNull()
+    })
+
+    it('should return null for removed files', async () => {
+      const result = await manifestBuilder.addFHIRResource({ content: createValidFHIRBundle() })
+      const storagePath = result.storagePath
+
+      expect(manifestBuilder.findFile(storagePath)).not.toBeNull()
+      await manifestBuilder.removeFile(storagePath)
+      expect(manifestBuilder.findFile(storagePath)).toBeNull()
+    })
+  })
+
+  describe('Serialization with File Management Functions', () => {
+    it('should deserialize builder with file management functions', async () => {
+      const issuer = new SmartHealthCardIssuer({
+        issuer: 'https://example.com',
+        privateKey: testPrivateKeyPKCS8,
+        publicKey: testPublicKeySPKI,
+      })
+      const healthCard = await issuer.issue(createValidFHIRBundle())
+      await manifestBuilder.addHealthCard({ shc: healthCard })
+      await manifestBuilder.addFHIRResource({ content: createValidFHIRBundle() })
+
+      const serialized = manifestBuilder.serialize()
+
+      const newUploadedFiles = new Map<string, string>()
+      const newRemovedFiles = new Set<string>()
+
+      const deserializedBuilder = SHLManifestBuilder.deserialize({
+        data: serialized,
+        uploadFile: async (content: string) => {
+          const fileId = `new-file-${newUploadedFiles.size + 1}`
+          newUploadedFiles.set(fileId, content)
+          return fileId
+        },
+        getFileURL: async (path: string) => `https://newfiles.example.org/${path}`,
+        loadFile: async (path: string) => {
+          // Simulate loading from original or new storage
+          return uploadedFiles.get(path) || newUploadedFiles.get(path) || ''
+        },
+        removeFile: async (path: string) => {
+          uploadedFiles.delete(path)
+          newUploadedFiles.delete(path)
+          newRemovedFiles.add(path)
+        },
+        updateFile: async (path: string, content: string) => {
+          if (uploadedFiles.has(path)) {
+            uploadedFiles.set(path, content)
+          } else {
+            newUploadedFiles.set(path, content)
+          }
+        },
+      })
+
+      expect(deserializedBuilder.files).toHaveLength(2)
+
+      // Test that file operations work on deserialized builder
+      const fhirFile = deserializedBuilder.files.find(f => f.type === 'application/fhir+json')
+      expect(fhirFile).toBeDefined()
+      const fhirStoragePath = fhirFile?.storagePath as string
+      await deserializedBuilder.removeFile(fhirStoragePath)
+      expect(deserializedBuilder.files).toHaveLength(1)
+      expect(newRemovedFiles.has(fhirStoragePath)).toBe(true)
+    })
+
+    it('should handle deserialization without optional file management functions', async () => {
+      const serialized = manifestBuilder.serialize()
+
+      const deserializedBuilder = SHLManifestBuilder.deserialize({
+        data: serialized,
+        uploadFile: async () => 'new-file',
+        getFileURL: async (path: string) => `https://example.org/${path}`,
+      })
+
+      expect(deserializedBuilder.files).toHaveLength(0)
+
+      // Operations requiring file management functions should throw
+      await expect(deserializedBuilder.removeFile('any-path')).rejects.toThrow(
+        'File removal is not supported'
+      )
+
+      const result = await deserializedBuilder.addFHIRResource({ content: createValidFHIRBundle() })
+      await expect(
+        deserializedBuilder.updateFHIRResource(result.storagePath, createValidFHIRBundle())
+      ).rejects.toThrow('File updates are not supported')
+    })
   })
 })

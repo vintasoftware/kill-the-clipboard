@@ -72,6 +72,10 @@ export class SHLManifestBuilder {
   ) => Promise<string>
   private readonly getFileURL: (path: string) => Promise<string>
   private readonly loadFile: (path: string) => Promise<string>
+  private readonly _removeFile?: ((path: string) => Promise<void>) | undefined
+  private readonly updateFile?:
+    | ((path: string, content: string, contentType?: SHLFileContentType) => Promise<void>)
+    | undefined
   private readonly _files: SerializedSHLManifestBuilderFile[] = []
   private readonly maxParallelism: number
 
@@ -96,6 +100,10 @@ export class SHLManifestBuilder {
    *   Receives a storage path and returns the JWE content as a string.
    *   If not provided, defaults to fetching via `getFileURL()` with the provided fetch implementation.
    *   Called when building manifests for embedded files.
+   * @param params.removeFile - Optional function to remove files from storage.
+   *   Receives a storage path and removes the file. Required for file removal operations.
+   * @param params.updateFile - Optional function to update files in storage.
+   *   Receives a storage path, new content, and optional content type. Required for file update operations.
    * @param params.fetch - Optional fetch implementation for the default loadFile.
    *   Only used if `loadFile` is not provided. Defaults to global fetch.
    * @param params.maxParallelism - Optional maximum number of concurrent file operations.
@@ -118,6 +126,12 @@ export class SHLManifestBuilder {
    *     const result = await s3.getObject({ Key: path });
    *     return result.Body.toString();
    *   },
+   *   removeFile: async (path) => {
+   *     await s3.deleteObject({ Key: path });
+   *   },
+   *   updateFile: async (path, content, contentType) => {
+   *     await s3.putObject({ Key: path, Body: content, ContentType: 'application/jose' });
+   *   },
    *   maxParallelism: 10
    * });
    * ```
@@ -127,12 +141,16 @@ export class SHLManifestBuilder {
     uploadFile: (content: string, contentType?: SHLFileContentType) => Promise<string>
     getFileURL: (path: string) => Promise<string>
     loadFile?: (path: string) => Promise<string>
+    removeFile?: (path: string) => Promise<void>
+    updateFile?: (path: string, content: string, contentType?: SHLFileContentType) => Promise<void>
     fetch?: (url: string, options?: RequestInit) => Promise<Response>
     maxParallelism?: number
   }) {
     this._shl = params.shl
     this.uploadFile = params.uploadFile
     this.getFileURL = params.getFileURL
+    this._removeFile = params.removeFile
+    this.updateFile = params.updateFile
     this.maxParallelism = params.maxParallelism ?? 5
 
     if (this.maxParallelism <= 0) {
@@ -306,6 +324,241 @@ export class SHLManifestBuilder {
       ciphertextLength: encryptedFile.jwe.length,
     })
     return { encryptedFile, storagePath, ciphertextLength: encryptedFile.jwe.length }
+  }
+
+  /**
+   * Remove a file from the manifest and storage.
+   *
+   * Removes the file metadata from the builder's internal state and calls the
+   * `removeFile` function to delete the actual file from storage.
+   * The file is identified by its storage path.
+   *
+   * @param storagePath - Storage path of the file to remove (as returned by uploadFile)
+   * @returns Promise that resolves when the file is removed from both manifest and storage
+   * @throws {@link SHLManifestError} When removeFile function is not provided or file not found
+   * @throws {@link SHLNetworkError} When storage removal fails
+   *
+   * @example
+   * ```typescript
+   * // Remove a specific file
+   * // Note: This requires providing removeFile function in constructor
+   * await builder.removeFile('shl-files/abc123.jwe');
+   * ```
+   */
+  async removeFile(storagePath: string): Promise<void> {
+    if (!this._removeFile) {
+      throw new SHLManifestError(
+        'File removal is not supported. Provide a removeFile function in the constructor to enable file removal.'
+      )
+    }
+
+    // Find the file in the manifest
+    const fileIndex = this._files.findIndex(file => file.storagePath === storagePath)
+    if (fileIndex === -1) {
+      throw new SHLManifestError(`File with storage path '${storagePath}' not found in manifest`)
+    }
+
+    try {
+      // Remove from storage first
+      await this._removeFile(storagePath)
+
+      // Remove from manifest
+      this._files.splice(fileIndex, 1)
+    } catch (error) {
+      if (error instanceof SHLError) {
+        throw error
+      }
+      const errorMessage = error instanceof Error ? error.message : String(error)
+      throw new SHLNetworkError(`Failed to remove file from storage: ${errorMessage}`)
+    }
+  }
+
+  /**
+   * Update a FHIR resource file in the manifest and storage.
+   *
+   * Replaces an existing FHIR resource file with new content. The file is identified
+   * by its storage path. The updated content is encrypted and stored using the same
+   * storage path, and the manifest metadata is updated accordingly.
+   *
+   * @param storagePath - Storage path of the file to update (as returned by uploadFile)
+   * @param content - New FHIR resource content to store
+   * @param enableCompression - Whether to compress the file content before encryption (defaults to true)
+   * @returns Promise that resolves when the file is updated in both manifest and storage
+   * @throws {@link SHLManifestError} When updateFile function is not provided, file not found, or file is not a FHIR resource
+   * @throws {@link SHLNetworkError} When storage update fails
+   *
+   * @example
+   * ```typescript
+   * // Update a FHIR Bundle
+   * // Note: This requires providing updateFile function in constructor
+   * await builder.updateFHIRResource('shl-files/bundle123.jwe', {
+   *   resourceType: 'Bundle',
+   *   type: 'collection',
+   *   entry: [
+   *     { resource: { resourceType: 'Patient', id: '456', ... } }
+   *   ]
+   * });
+   * ```
+   */
+  async updateFHIRResource(
+    storagePath: string,
+    content: Resource,
+    enableCompression?: boolean
+  ): Promise<void> {
+    if (!this.updateFile) {
+      throw new SHLManifestError(
+        'File updates are not supported. Provide an updateFile function in the constructor to enable file updates.'
+      )
+    }
+
+    // Find the file in the manifest
+    const fileIndex = this._files.findIndex(file => file.storagePath === storagePath)
+    if (fileIndex === -1) {
+      throw new SHLManifestError(`File with storage path '${storagePath}' not found in manifest`)
+    }
+
+    const existingFile = this._files[fileIndex]
+    if (!existingFile) {
+      throw new SHLManifestError(`File with storage path '${storagePath}' not found in manifest`)
+    }
+
+    if (existingFile.type !== 'application/fhir+json') {
+      throw new SHLManifestError(
+        `File at storage path '${storagePath}' is not a FHIR resource (type: ${existingFile.type})`
+      )
+    }
+
+    try {
+      // Encrypt the new content
+      const encryptedFile = await this.encryptFile({
+        content: JSON.stringify(content),
+        type: 'application/fhir+json',
+        enableCompression: enableCompression ?? true,
+      })
+
+      // Update in storage
+      await this.updateFile(storagePath, encryptedFile.jwe, encryptedFile.type)
+
+      // Update manifest metadata
+      this._files[fileIndex] = {
+        type: encryptedFile.type,
+        storagePath,
+        ciphertextLength: encryptedFile.jwe.length,
+      }
+    } catch (error) {
+      if (error instanceof SHLError) {
+        throw error
+      }
+      const errorMessage = error instanceof Error ? error.message : String(error)
+      throw new SHLNetworkError(`Failed to update FHIR resource in storage: ${errorMessage}`)
+    }
+  }
+
+  /**
+   * Update a Smart Health Card file in the manifest and storage.
+   *
+   * Replaces an existing Smart Health Card file with new content. The file is identified
+   * by its storage path. The updated content is encrypted and stored using the same
+   * storage path, and the manifest metadata is updated accordingly.
+   *
+   * @param storagePath - Storage path of the file to update (as returned by uploadFile)
+   * @param shc - New Smart Health Card to store (JWS string or SmartHealthCard object)
+   * @param enableCompression - Whether to compress the file content before encryption (defaults to false for SHCs)
+   * @returns Promise that resolves when the file is updated in both manifest and storage
+   * @throws {@link SHLManifestError} When updateFile function is not provided, file not found, or file is not a Smart Health Card
+   * @throws {@link SHLNetworkError} When storage update fails
+   *
+   * @example
+   * ```typescript
+   * // Update with SmartHealthCard object
+   * // Note: This requires providing updateFile function in constructor
+   * await builder.updateHealthCard('shl-files/card123.jwe', myUpdatedHealthCard);
+   *
+   * // Update with JWS string
+   * await builder.updateHealthCard('shl-files/card123.jwe', 'eyJhbGciOiJFUzI1NiIsImtpZCI6...');
+   * ```
+   */
+  async updateHealthCard(
+    storagePath: string,
+    shc: SmartHealthCard | string,
+    enableCompression?: boolean
+  ): Promise<void> {
+    if (!this.updateFile) {
+      throw new SHLManifestError(
+        'File updates are not supported. Provide an updateFile function in the constructor to enable file updates.'
+      )
+    }
+
+    // Find the file in the manifest
+    const fileIndex = this._files.findIndex(file => file.storagePath === storagePath)
+    if (fileIndex === -1) {
+      throw new SHLManifestError(`File with storage path '${storagePath}' not found in manifest`)
+    }
+
+    const existingFile = this._files[fileIndex]
+    if (!existingFile) {
+      throw new SHLManifestError(`File with storage path '${storagePath}' not found in manifest`)
+    }
+
+    if (existingFile.type !== 'application/smart-health-card') {
+      throw new SHLManifestError(
+        `File at storage path '${storagePath}' is not a Smart Health Card (type: ${existingFile.type})`
+      )
+    }
+
+    try {
+      // Prepare content in SHC format
+      const jwsString = typeof shc === 'string' ? shc : shc.asJWS()
+      const fileContent = JSON.stringify({ verifiableCredential: [jwsString] })
+
+      // Encrypt the new content
+      const encryptedFile = await this.encryptFile({
+        content: fileContent,
+        type: 'application/smart-health-card',
+        enableCompression: enableCompression ?? false,
+      })
+
+      // Update in storage
+      await this.updateFile(storagePath, encryptedFile.jwe, encryptedFile.type)
+
+      // Update manifest metadata
+      this._files[fileIndex] = {
+        type: encryptedFile.type,
+        storagePath,
+        ciphertextLength: encryptedFile.jwe.length,
+      }
+    } catch (error) {
+      if (error instanceof SHLError) {
+        throw error
+      }
+      const errorMessage = error instanceof Error ? error.message : String(error)
+      throw new SHLNetworkError(`Failed to update Smart Health Card in storage: ${errorMessage}`)
+    }
+  }
+
+  /**
+   * Find a file in the manifest by storage path.
+   *
+   * Returns the file metadata for the specified storage path, or null if not found.
+   * Useful for checking if a file exists before attempting updates or for getting
+   * file information.
+   *
+   * @param storagePath - Storage path to search for
+   * @returns File metadata object or null if not found
+   *
+   * @example
+   * ```typescript
+   * const fileInfo = builder.findFile('shl-files/bundle123.jwe');
+   * if (fileInfo) {
+   *   console.log('File type:', fileInfo.type);
+   *   console.log('File size:', fileInfo.ciphertextLength);
+   * } else {
+   *   console.log('File not found');
+   * }
+   * ```
+   */
+  findFile(storagePath: string): SerializedSHLManifestBuilderFile | null {
+    return this._files.find(file => file.storagePath === storagePath) ?? null
   }
 
   /**
@@ -547,7 +800,9 @@ export class SHLManifestBuilder {
    *   data: savedState,
    *   uploadFile: async (content) => await storage.upload(content),
    *   getFileURL: async (path) => await storage.getSignedURL(path),
-   *   loadFile: async (path) => await storage.download(path)
+   *   loadFile: async (path) => await storage.download(path),
+   *   removeFile: async (path) => await storage.delete(path),
+   *   updateFile: async (path, content) => await storage.update(path, content)
    * });
    *
    * // Builder is ready to use
@@ -559,6 +814,8 @@ export class SHLManifestBuilder {
     uploadFile: (content: string, contentType?: SHLFileContentType) => Promise<string>
     getFileURL: (path: string) => Promise<string>
     loadFile?: (path: string) => Promise<string>
+    removeFile?: (path: string) => Promise<void>
+    updateFile?: (path: string, content: string, contentType?: SHLFileContentType) => Promise<void>
     fetch?: (url: string, options?: RequestInit) => Promise<Response>
     maxParallelism?: number
   }): SHLManifestBuilder {
@@ -571,6 +828,8 @@ export class SHLManifestBuilder {
       uploadFile: params.uploadFile,
       getFileURL: params.getFileURL,
       ...(params.loadFile && { loadFile: params.loadFile }),
+      ...(params.removeFile && { removeFile: params.removeFile }),
+      ...(params.updateFile && { updateFile: params.updateFile }),
       ...(params.fetch && { fetch: params.fetch }),
       ...(params.maxParallelism !== undefined && { maxParallelism: params.maxParallelism }),
     })
