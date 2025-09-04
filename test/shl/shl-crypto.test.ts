@@ -9,30 +9,13 @@ function generateB64uKey(): string {
 }
 
 describe('SHL Crypto', () => {
-  it('encrypts and decrypts without compression, preserves cty', async () => {
+  it('encrypts and decrypts content, preserves cty', async () => {
     const key = generateB64uKey()
     const content = JSON.stringify({ foo: 'bar' })
     const contentType = 'application/fhir+json' as const
 
-    const jwe = await encryptSHLFile({ content, key, contentType, enableCompression: false })
+    const jwe = await encryptSHLFile({ content, key, contentType })
     expect(jwe.split('.')).toHaveLength(5)
-
-    const { content: decrypted, contentType: cty } = await decryptSHLFile({ jwe, key })
-    expect(cty).toBe(contentType)
-    expect(decrypted).toBe(content)
-  })
-
-  it('encrypts with compression and decrypts, sets zip=DEF header', async () => {
-    const key = generateB64uKey()
-    const content = JSON.stringify({ big: 'x'.repeat(2000) })
-    const contentType = 'application/fhir+json' as const
-
-    const jwe = await encryptSHLFile({ content, key, contentType, enableCompression: true })
-    const [protectedHeaderB64u] = jwe.split('.')
-    const headerJson = new TextDecoder().decode(base64url.decode(protectedHeaderB64u as string))
-    const header = JSON.parse(headerJson) as Record<string, unknown>
-    expect(header.zip).toBe('DEF')
-    expect(header.cty).toBe(contentType)
 
     const { content: decrypted, contentType: cty } = await decryptSHLFile({ jwe, key })
     expect(cty).toBe(contentType)

@@ -34,7 +34,6 @@ import type {
  * - SHLink URI parsing and payload validation
  * - Manifest fetching with POST requests
  * - File decryption using JWE with A256GCM
- * - Content decompression when zip=DEF is used
  * - Smart Health Card and FHIR resource extraction
  *
  * @example

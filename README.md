@@ -153,7 +153,7 @@ Server responsibilities are required for a functional SHL implementation. Refer 
 - On the server side, during SHLink creation:
     1. Create an `SHL` instance with `SHL.generate({ baseManifestURL, manifestPath, label?, flag? })`
     2. Use `SHLManifestBuilder` with implementations for `uploadFile`, `getFileURL`, and `loadFile` that persist encrypted files and return retrievable URLs
-    3. Add content: `addFHIRResource({ content })`, `addHealthCard({ shc, enableCompression? })`
+    3. Add content: `addFHIRResource({ content })`, `addHealthCard({ shc })`
     4. Persist the builder state via `serialize()`
     5. Return the SHLink URI to clients via `shl.toURI()`
 - On the client side, during SHLink resolution:

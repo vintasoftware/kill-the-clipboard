@@ -27,7 +27,6 @@ import type {
  * The builder supports:
  * - Smart Health Card files (JWS format)
  * - FHIR JSON resources
- * - Optional compression with raw DEFLATE
  * - Embedded vs location-based file serving
  * - Serialization/deserialization for persistence
  *
@@ -217,7 +216,6 @@ export class SHLManifestBuilder {
    *
    * @param params - Configuration for adding the health card. The object should contain:
    *   - `shc`: Smart Health Card to add (JWS string or SmartHealthCard object)
-   *   - `enableCompression`: Optional. Whether to compress the file content before encryption (defaults to false, as SHCs are typically already compressed)
    * @returns Promise resolving to object with encrypted file metadata and storage path
    * @returns returns.encryptedFile - Encrypted file object with type and JWE string
    * @returns returns.storagePath - Storage key/path returned by the upload function
@@ -233,17 +231,10 @@ export class SHLManifestBuilder {
    *
    * // Add from JWS string
    * await builder.addHealthCard({ shc: 'eyJhbGciOiJFUzI1NiIsImtpZCI6IjNLZmRnLVh3UC03Z...' });
-   *
-   * // Add with compression (not recommended for SHCs)
-   * await builder.addHealthCard({
-   *   shc: mySmartHealthCard,
-   *   enableCompression: true
-   * });
    * ```
    */
   async addHealthCard(params: {
     shc: SmartHealthCard | string
-    enableCompression?: boolean
   }): Promise<{ encryptedFile: SHLFileJWE; storagePath: string; ciphertextLength: number }> {
     const jwsString = typeof params.shc === 'string' ? params.shc : params.shc.asJWS()
     const fileContent = JSON.stringify({ verifiableCredential: [jwsString] })
@@ -251,7 +242,6 @@ export class SHLManifestBuilder {
     const encryptedFile = await this.encryptFile({
       content: fileContent,
       type: 'application/smart-health-card',
-      enableCompression: params.enableCompression ?? false,
     })
 
     // Upload the encrypted file and store metadata
@@ -273,7 +263,6 @@ export class SHLManifestBuilder {
    *
    * @param params - Configuration for adding the FHIR resource. The object should contain:
    *   - `content`: FHIR R4 resource object to add (must have valid `resourceType` field)
-   *   - `enableCompression`: Optional. Whether to compress the file content before encryption (defaults to true)
    * @returns Promise resolving to object with encrypted file metadata and storage path
    * @returns returns.encryptedFile - Encrypted file object with type and JWE string
    * @returns returns.storagePath - Storage key/path returned by the upload function
@@ -295,24 +284,16 @@ export class SHLManifestBuilder {
    *   }
    * });
    * console.log('Added FHIR resource:', result.storagePath, 'Size:', result.ciphertextLength);
-   *
-   * // Add without compression
-   * await builder.addFHIRResource({
-   *   content: myFhirResource,
-   *   enableCompression: false
-   * });
    * ```
    */
   async addFHIRResource(params: {
     content: Resource
-    enableCompression?: boolean
   }): Promise<{ encryptedFile: SHLFileJWE; storagePath: string; ciphertextLength: number }> {
     const fileContent = JSON.stringify(params.content)
 
     const encryptedFile = await this.encryptFile({
       content: fileContent,
       type: 'application/fhir+json',
-      enableCompression: params.enableCompression ?? true,
     })
 
     // Upload the encrypted file and store metadata
@@ -382,7 +363,6 @@ export class SHLManifestBuilder {
    *
    * @param storagePath - Storage path of the file to update (as returned by uploadFile)
    * @param content - New FHIR resource content to store
-   * @param enableCompression - Whether to compress the file content before encryption (defaults to true)
    * @returns Promise that resolves when the file is updated in both manifest and storage
    * @throws {@link SHLManifestError} When updateFile function is not provided, file not found, or file is not a FHIR resource
    * @throws {@link SHLNetworkError} When storage update fails
@@ -400,11 +380,7 @@ export class SHLManifestBuilder {
    * });
    * ```
    */
-  async updateFHIRResource(
-    storagePath: string,
-    content: Resource,
-    enableCompression?: boolean
-  ): Promise<void> {
+  async updateFHIRResource(storagePath: string, content: Resource): Promise<void> {
     if (!this.updateFile) {
       throw new SHLManifestError(
         'File updates are not supported. Provide an updateFile function in the constructor to enable file updates.'
@@ -433,7 +409,6 @@ export class SHLManifestBuilder {
       const encryptedFile = await this.encryptFile({
         content: JSON.stringify(content),
         type: 'application/fhir+json',
-        enableCompression: enableCompression ?? true,
       })
 
       // Update in storage
@@ -463,7 +438,6 @@ export class SHLManifestBuilder {
    *
    * @param storagePath - Storage path of the file to update (as returned by uploadFile)
    * @param shc - New Smart Health Card to store (JWS string or SmartHealthCard object)
-   * @param enableCompression - Whether to compress the file content before encryption (defaults to false for SHCs)
    * @returns Promise that resolves when the file is updated in both manifest and storage
    * @throws {@link SHLManifestError} When updateFile function is not provided, file not found, or file is not a Smart Health Card
    * @throws {@link SHLNetworkError} When storage update fails
@@ -478,11 +452,7 @@ export class SHLManifestBuilder {
    * await builder.updateHealthCard('shl-files/card123.jwe', 'eyJhbGciOiJFUzI1NiIsImtpZCI6...');
    * ```
    */
-  async updateHealthCard(
-    storagePath: string,
-    shc: SmartHealthCard | string,
-    enableCompression?: boolean
-  ): Promise<void> {
+  async updateHealthCard(storagePath: string, shc: SmartHealthCard | string): Promise<void> {
     if (!this.updateFile) {
       throw new SHLManifestError(
         'File updates are not supported. Provide an updateFile function in the constructor to enable file updates.'
@@ -515,7 +485,6 @@ export class SHLManifestBuilder {
       const encryptedFile = await this.encryptFile({
         content: fileContent,
         type: 'application/smart-health-card',
-        enableCompression: enableCompression ?? false,
       })
 
       // Update in storage
@@ -846,12 +815,10 @@ export class SHLManifestBuilder {
    * Uses JWE Compact Serialization with:
    * - Algorithm: 'dir' (direct key agreement)
    * - Encryption: 'A256GCM' (AES-256 in GCM mode)
-   * - Compression: Optional 'DEF' (raw DEFLATE) when enabled
    * - Content Type: Set in 'cty' header for proper decryption
    *
    * @param params.content - Content to encrypt (JSON string)
    * @param params.type - Content type for the cty header
-   * @param params.enableCompression - Whether to compress before encryption
    * @returns Promise resolving to encrypted file object with JWE and metadata ({@link SHLFileJWE})
    *
    * @private
@@ -859,13 +826,11 @@ export class SHLManifestBuilder {
   private async encryptFile(params: {
     content: string
     type: SHLFileContentType
-    enableCompression?: boolean
   }): Promise<SHLFileJWE> {
     const jwe = await encryptSHLFile({
       content: params.content,
       key: this._shl.key,
       contentType: params.type,
-      enableCompression: params.enableCompression ?? false,
     })
 
     return {
