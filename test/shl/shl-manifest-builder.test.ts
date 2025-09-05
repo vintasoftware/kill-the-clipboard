@@ -1,4 +1,4 @@
-import type { Resource } from '@medplum/fhirtypes'
+import type { List, Resource } from '@medplum/fhirtypes'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import {
   decryptSHLFile,
@@ -52,6 +52,7 @@ describe('SHLManifestBuilder', () => {
   })
 
   it('should add SMART Health Cards to manifest', async () => {
+    const beforeTime = new Date()
     const issuer = new SmartHealthCardIssuer({
       issuer: 'https://example.com',
       privateKey: testPrivateKeyPKCS8,
@@ -59,6 +60,7 @@ describe('SHLManifestBuilder', () => {
     })
     const healthCard = await issuer.issue(createValidFHIRBundle())
     await manifestBuilder.addHealthCard({ shc: healthCard })
+    const afterTime = new Date()
 
     expect(manifestBuilder.files).toHaveLength(1)
     // biome-ignore lint/style/noNonNullAssertion: files length already asserted to == 1
@@ -66,6 +68,12 @@ describe('SHLManifestBuilder', () => {
     expect(fileMetadata.type).toBe('application/smart-health-card')
     expect(fileMetadata.storagePath).toMatch(/^file-\d+$/)
     expect(fileMetadata.ciphertextLength).toBeGreaterThan(0)
+
+    // Check lastUpdated is automatically set
+    expect(fileMetadata.lastUpdated).toBeDefined()
+    const lastUpdated = new Date(fileMetadata.lastUpdated as string)
+    expect(lastUpdated.getTime()).toBeGreaterThanOrEqual(beforeTime.getTime())
+    expect(lastUpdated.getTime()).toBeLessThanOrEqual(afterTime.getTime())
 
     // Decrypt and verify content
     const jwe = uploadedFiles.get(fileMetadata.storagePath)
@@ -80,14 +88,23 @@ describe('SHLManifestBuilder', () => {
   })
 
   it('should add FHIR resources to manifest', async () => {
+    const beforeTime = new Date()
     const fhirBundle = createValidFHIRBundle()
     await manifestBuilder.addFHIRResource({ content: fhirBundle })
+    const afterTime = new Date()
+
     expect(manifestBuilder.files).toHaveLength(1)
     // biome-ignore lint/style/noNonNullAssertion: files length already asserted to == 1
     const fileMetadata = manifestBuilder.files[0]!
     expect(fileMetadata.type).toBe('application/fhir+json')
     expect(fileMetadata.storagePath).toMatch(/^file-\d+$/)
     expect(fileMetadata.ciphertextLength).toBeGreaterThan(0)
+
+    // Check lastUpdated is automatically set
+    expect(fileMetadata.lastUpdated).toBeDefined()
+    const lastUpdated = new Date(fileMetadata.lastUpdated as string)
+    expect(lastUpdated.getTime()).toBeGreaterThanOrEqual(beforeTime.getTime())
+    expect(lastUpdated.getTime()).toBeLessThanOrEqual(afterTime.getTime())
 
     // Decrypt and verify content
     const jwe = uploadedFiles.get(fileMetadata.storagePath)
@@ -126,12 +143,38 @@ describe('SHLManifestBuilder', () => {
 
     if ('location' in firstFile) {
       expect(firstFile.location).toMatch(/^https:\/\/files\.example\.org\/file-\d+$/)
+    } else {
+      throw new Error('firstFile is not a location file')
     }
   })
 
   it('should build an empty manifest if no files are added', async () => {
     const manifest = await manifestBuilder.buildManifest()
     expect(manifest.files).toHaveLength(0)
+  })
+
+  it('should include status and list fields in manifest when provided', async () => {
+    await manifestBuilder.addFHIRResource({ content: createValidFHIRBundle() })
+
+    const testList: List = {
+      resourceType: 'List',
+      status: 'current',
+      mode: 'snapshot',
+      title: 'Patient Summary',
+    }
+
+    const manifestWithFields = await manifestBuilder.buildManifest({
+      status: 'can-change',
+      list: testList,
+    })
+
+    expect(manifestWithFields.status).toBe('can-change')
+    expect(manifestWithFields.list).toEqual(testList)
+
+    // Test manifest without optional fields
+    const manifestWithoutFields = await manifestBuilder.buildManifest()
+    expect(manifestWithoutFields.status).toBeUndefined()
+    expect(manifestWithoutFields.list).toBeUndefined()
   })
 
   it('should use default loadFile implementation when not provided', async () => {
@@ -659,7 +702,9 @@ describe('SHLManifestBuilder', () => {
         ],
       }
 
+      const beforeUpdate = new Date()
       await manifestBuilder.updateFHIRResource(storagePath, updatedBundle as Resource)
+      const afterUpdate = new Date()
 
       expect(manifestBuilder.files).toHaveLength(1)
       const updatedFile = manifestBuilder.files[0]
@@ -667,6 +712,13 @@ describe('SHLManifestBuilder', () => {
       expect(updatedFile?.storagePath).toBe(storagePath)
       expect(updatedFile?.type).toBe('application/fhir+json')
       expect(updatedFile?.ciphertextLength).not.toBe(originalSize) // Size should change
+      if (updatedFile?.lastUpdated) {
+        const lastUpdated = new Date(updatedFile.lastUpdated).getTime()
+        expect(lastUpdated).toBeGreaterThanOrEqual(beforeUpdate.getTime())
+        expect(lastUpdated).toBeLessThanOrEqual(afterUpdate.getTime())
+      } else {
+        throw new Error('lastUpdated is not defined')
+      }
 
       // Verify the content was actually updated
       const encryptedContent = uploadedFiles.get(storagePath)
@@ -765,13 +817,22 @@ describe('SHLManifestBuilder', () => {
       }
       const updatedHealthCard = await issuer.issue(updatedBundle)
 
+      const beforeUpdate = new Date()
       await manifestBuilder.updateHealthCard(storagePath, updatedHealthCard)
+      const afterUpdate = new Date()
 
       expect(manifestBuilder.files).toHaveLength(1)
       const updatedFile = manifestBuilder.files[0]
       expect(updatedFile).toBeDefined()
       expect(updatedFile?.storagePath).toBe(storagePath)
       expect(updatedFile?.type).toBe('application/smart-health-card')
+      if (updatedFile?.lastUpdated) {
+        const lastUpdated = new Date(updatedFile.lastUpdated).getTime()
+        expect(lastUpdated).toBeGreaterThanOrEqual(beforeUpdate.getTime())
+        expect(lastUpdated).toBeLessThanOrEqual(afterUpdate.getTime())
+      } else {
+        throw new Error('lastUpdated is not defined')
+      }
 
       // Verify the content was actually updated
       const encryptedContent = uploadedFiles.get(storagePath)

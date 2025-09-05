@@ -1,5 +1,5 @@
 // Types for Smart Health Links
-import type { Resource } from '@medplum/fhirtypes'
+import type { List, Resource } from '@medplum/fhirtypes'
 import type { SmartHealthCard } from '../shc/shc.js'
 import type { QREncodeParams } from '../shc/types.js'
 
@@ -189,6 +189,11 @@ export interface SHLManifestV1EmbeddedDescriptor {
    * Complete JWE string that can be decrypted using the SHL key.
    */
   embedded: string
+  /**
+   * Optional timestamp of the last update to this file.
+   * ISO 8601 datetime string indicating when the file was last modified.
+   */
+  lastUpdated?: string
 }
 
 /**
@@ -213,6 +218,11 @@ export interface SHLManifestV1LocationDescriptor {
    * Short-lived URL for downloading the encrypted content.
    */
   location: string
+  /**
+   * Optional timestamp of the last update to this file.
+   * ISO 8601 datetime string indicating when the file was last modified.
+   */
+  lastUpdated?: string
 }
 
 /**
@@ -241,10 +251,23 @@ export type SHLManifestFileDescriptor =
  * @example
  * ```typescript
  * const manifest: SHLManifestV1 = {
+ *   status: 'finalized',
+ *   list: {
+ *     resourceType: 'List',
+ *     id: 'patient-summary',
+ *     status: 'current',
+ *     mode: 'snapshot',
+ *     title: 'Patient Health Summary',
+ *     entry: [
+ *       { item: { reference: 'Patient/123' } },
+ *       { item: { reference: 'Observation/456' } }
+ *     ]
+ *   },
  *   files: [
  *     {
  *       contentType: 'application/smart-health-card',
- *       embedded: 'eyJhbGciOiJkaXIiLCJlbmMiOiJBMjU2R0NNIi4uLg==' // Small file
+ *       embedded: 'eyJhbGciOiJkaXIiLCJlbmMiOiJBMjU2R0NNIi4uLg==', // Small file
+ *       lastUpdated: '2024-01-15T10:30:00Z'
  *     },
  *     {
  *       contentType: 'application/fhir+json',
@@ -259,7 +282,18 @@ export type SHLManifestFileDescriptor =
  * @category Types
  */
 export interface SHLManifestV1 {
+  /**
+   * Optional status indicating whether files may change in the future.
+   */
+  status?: 'finalized' | 'can-change' | 'no-longer-valid'
+  /**
+   * Array of file descriptors.
+   */
   files: SHLManifestFileDescriptor[]
+  /**
+   * Optional FHIR List resource providing metadata about the collection of files.
+   */
+  list?: List
 }
 
 /**
@@ -309,6 +343,12 @@ export interface SerializedSHLManifestBuilderFile {
    * Used to decide between embedding vs. location-based serving without loading content.
    */
   ciphertextLength: number
+  /**
+   * Optional timestamp of the last update to this file.
+   * ISO 8601 datetime string indicating when the file was last modified.
+   * Used to populate the lastUpdated field in manifest file descriptors.
+   */
+  lastUpdated?: string
 }
 
 /**

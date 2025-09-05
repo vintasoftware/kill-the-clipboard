@@ -1,4 +1,4 @@
-import type { Resource } from '@medplum/fhirtypes'
+import type { List, Resource } from '@medplum/fhirtypes'
 import type { SmartHealthCard } from '../shc/shc.js'
 import { encryptSHLFile } from './crypto.js'
 import { SHLError, SHLManifestError, SHLNetworkError } from './errors.js'
@@ -251,6 +251,7 @@ export class SHLManifestBuilder {
       type: encryptedFile.type,
       storagePath,
       ciphertextLength: encryptedFile.jwe.length,
+      lastUpdated: new Date().toISOString(),
     })
     return { encryptedFile, storagePath, ciphertextLength: encryptedFile.jwe.length }
   }
@@ -303,6 +304,7 @@ export class SHLManifestBuilder {
       type: encryptedFile.type,
       storagePath,
       ciphertextLength: encryptedFile.jwe.length,
+      lastUpdated: new Date().toISOString(),
     })
     return { encryptedFile, storagePath, ciphertextLength: encryptedFile.jwe.length }
   }
@@ -363,6 +365,8 @@ export class SHLManifestBuilder {
    *
    * @param storagePath - Storage path of the file to update (as returned by uploadFile)
    * @param content - New FHIR resource content to store
+   * @param lastUpdated - Optional custom timestamp for the update. If not provided,
+   *   the current time will be used.
    * @returns Promise that resolves when the file is updated in both manifest and storage
    * @throws {@link SHLManifestError} When updateFile function is not provided, file not found, or file is not a FHIR resource
    * @throws {@link SHLNetworkError} When storage update fails
@@ -380,7 +384,11 @@ export class SHLManifestBuilder {
    * });
    * ```
    */
-  async updateFHIRResource(storagePath: string, content: Resource): Promise<void> {
+  async updateFHIRResource(
+    storagePath: string,
+    content: Resource,
+    lastUpdated?: Date
+  ): Promise<void> {
     if (!this.updateFile) {
       throw new SHLManifestError(
         'File updates are not supported. Provide an updateFile function in the constructor to enable file updates.'
@@ -419,6 +427,7 @@ export class SHLManifestBuilder {
         type: encryptedFile.type,
         storagePath,
         ciphertextLength: encryptedFile.jwe.length,
+        lastUpdated: (lastUpdated ?? new Date()).toISOString(),
       }
     } catch (error) {
       if (error instanceof SHLError) {
@@ -438,6 +447,8 @@ export class SHLManifestBuilder {
    *
    * @param storagePath - Storage path of the file to update (as returned by uploadFile)
    * @param shc - New Smart Health Card to store (JWS string or SmartHealthCard object)
+   * @param lastUpdated - Optional custom timestamp for the update. If not provided,
+   *   the current time will be used.
    * @returns Promise that resolves when the file is updated in both manifest and storage
    * @throws {@link SHLManifestError} When updateFile function is not provided, file not found, or file is not a Smart Health Card
    * @throws {@link SHLNetworkError} When storage update fails
@@ -452,7 +463,11 @@ export class SHLManifestBuilder {
    * await builder.updateHealthCard('shl-files/card123.jwe', 'eyJhbGciOiJFUzI1NiIsImtpZCI6...');
    * ```
    */
-  async updateHealthCard(storagePath: string, shc: SmartHealthCard | string): Promise<void> {
+  async updateHealthCard(
+    storagePath: string,
+    shc: SmartHealthCard | string,
+    lastUpdated?: Date
+  ): Promise<void> {
     if (!this.updateFile) {
       throw new SHLManifestError(
         'File updates are not supported. Provide an updateFile function in the constructor to enable file updates.'
@@ -495,6 +510,7 @@ export class SHLManifestBuilder {
         type: encryptedFile.type,
         storagePath,
         ciphertextLength: encryptedFile.jwe.length,
+        lastUpdated: (lastUpdated ?? new Date()).toISOString(),
       }
     } catch (error) {
       if (error instanceof SHLError) {
@@ -628,24 +644,38 @@ export class SHLManifestBuilder {
    *   Files with ciphertext length ≤ this value will be embedded directly in the manifest.
    *   Files larger than this will be referenced by location URLs.
    *   Defaults to 16384 (16 KiB). Typical range: 4096-32768.
+   * @param params.status - Optional value indicating whether files may change in the future.
+   *   When provided, will be included in the manifest root.
+   * @param params.list - Optional FHIR List resource to include in the manifest root.
+   *   Provides metadata about the collection of files.
    * @returns Promise resolving to SHL manifest object conforming to v1 specification ({@link SHLManifestV1})
    * @throws {@link SHLManifestError} When a stored file cannot be loaded or content is missing
    * @throws {@link SHLNetworkError} When storage network requests fail
    *
    * @example
    * ```typescript
-   * // Use default 16KB threshold
+   * // Use default settings
    * const manifest = await builder.buildManifest();
    *
-   * // Prefer smaller embedded files (4KB)
-   * const manifest = await builder.buildManifest({ embeddedLengthMax: 4096 });
-   *
-   * // Prefer larger embedded files (32KB)
-   * const manifest = await builder.buildManifest({ embeddedLengthMax: 32768 });
+   * // Custom settings with can-change status and FHIR List
+   * const manifest = await builder.buildManifest({
+   *   embeddedLengthMax: 4096,
+   *   status: "can-change",
+   *   list: {
+   *     resourceType: 'List',
+   *     status: 'current',
+   *     mode: 'working',
+   *     title: 'Patient Summary'
+   *   }
+   * });
    * ```
    */
-  async buildManifest(params: { embeddedLengthMax?: number } = {}): Promise<SHLManifestV1> {
+  async buildManifest(
+    params: { embeddedLengthMax?: number; status?: SHLManifestV1['status']; list?: List } = {}
+  ): Promise<SHLManifestV1> {
     const embeddedLengthMax = params.embeddedLengthMax ?? 16384 // 16 KiB default
+    const status = params.status
+    const list = params.list
 
     const manifestFiles: SHLManifestFileDescriptor[] = []
 
@@ -653,12 +683,17 @@ export class SHLManifestBuilder {
       const fileDescriptors = await this.processBatches(
         this._files,
         async (file): Promise<SHLManifestFileDescriptor> => {
+          const baseDescriptor = {
+            ...(file.lastUpdated && { lastUpdated: file.lastUpdated }),
+          }
+
           if (file.ciphertextLength <= embeddedLengthMax) {
             // Embed the file directly - load the ciphertext from storage
             const ciphertext = await this.loadFile(file.storagePath)
             return {
               contentType: file.type,
               embedded: ciphertext,
+              ...baseDescriptor,
             }
           } else {
             // Reference file by location with fresh short-lived URL
@@ -666,6 +701,7 @@ export class SHLManifestBuilder {
             return {
               contentType: file.type,
               location: fileURL,
+              ...baseDescriptor,
             }
           }
         }
@@ -681,7 +717,11 @@ export class SHLManifestBuilder {
       )
     }
 
-    return { files: manifestFiles }
+    return {
+      files: manifestFiles,
+      ...(status && { status }),
+      ...(list && { list }),
+    }
   }
 
   /**

@@ -1,5 +1,7 @@
 # Kill the Clipboard TypeScript Library
 
+![Tests Badge](https://github.com/vintasoftware/kill-the-clipboard/actions/workflows/test-coverage.yml/badge.svg)
+
 JavaScript/TypeScript universal (browser and node) library to generate QR codes containing medical records for patients to share with providers. Implements both the [SMART Health Cards Framework](https://smarthealth.cards/) and [Smart Health Links Specification](https://hl7.org/fhir/uv/smart-health-cards-and-links/links-specification.html) for handling FHIR-based medical records, enabling patients to "Kill the Clipboard" by sharing health data via secure, verifiable QR codes.
 
 This aligns with the [CMS Interoperability Framework](https://www.cms.gov/health-technology-ecosystem/interoperability-framework) call to action for Patient Facing Apps to "Kill the Clipboard":
