@@ -1,12 +1,6 @@
 // SmartHealthCardReader class
 import { importJWK } from 'jose'
-import {
-  CredentialValidationError,
-  FileFormatError,
-  QRCodeError,
-  SmartHealthCardError,
-  VerificationError,
-} from './errors.js'
+import { FileFormatError, QRCodeError, SmartHealthCardError, VerificationError } from './errors.js'
 import { FHIRBundleProcessor } from './fhir/bundle-processor.js'
 import { JWSProcessor } from './jws/jws-processor.js'
 import { QRCodeGenerator } from './qr/qr-code-generator.js'
