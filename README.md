@@ -153,17 +153,17 @@ SHLinks enable encrypted, link-based sharing of health information. The flow inv
 Server responsibilities are required for a functional SHL implementation. Refer to the demo code in `demo/shl/` for a full working example (manifest endpoint, storage handlers, and passcode handling). In summary, the SHL generation and resolution flow involves:
 
 - On the server side, during SHLink creation:
-    1. Create an `SHL` instance with `SHL.generate({ baseManifestURL, manifestPath, label?, flag? })`
+    1. Create an `SHL` instance with `SHL.generate({ baseManifestURL, manifestPath, expirationDate?, label?, flag? })`
     2. Use `SHLManifestBuilder` with implementations for `uploadFile`, `getFileURL`, and `loadFile` that persist encrypted files and return retrievable URLs
     3. Add content: `addFHIRResource({ content })`, `addHealthCard({ shc })`
     4. Persist the builder state via `serialize()`
     5. Return the SHLink URI to clients via `shl.toURI()`
 - On the client side, during SHLink resolution:
     1. Create a `SHLViewer` instance with the SHLink URI
-    2. Resolve the SHLink using `resolveSHLink({ recipient, embeddedLengthMax, shcReaderConfig? })`
+    2. Resolve the SHLink using `resolveSHLink({ recipient, passcode?, embeddedLengthMax?, shcReaderConfig? })`
 - On the server side, after client resolves the SHLink:
     1. Implement a POST manifest endpoint at `baseManifestURL + manifestPath`
-    2. On each manifest request, `deserialize()` the builder, call `buildManifest({ embeddedLengthMax })`, and return the manifest JSON
+    2. On each manifest request, `deserialize()` the builder, call `buildManifest({ embeddedLengthMax? })`, and return the manifest JSON
 
 #### Complete SHL End-to-End Example
 
