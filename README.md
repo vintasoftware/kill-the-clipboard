@@ -1,6 +1,6 @@
 # Kill the Clipboard TypeScript Library
 
-JavaScript/TypeScript universal (browser and node) library to generate QR codes containing medical records for patients to share with providers. Implements both the [SMART Health Cards Framework](https://smarthealth.cards/) and [Smart Health Links Protocol](https://docs.smarthealthit.org/smart-health-links/spec) for handling FHIR-based medical records, enabling patients to "Kill the Clipboard" by sharing health data via secure, verifiable QR codes.
+JavaScript/TypeScript universal (browser and node) library to generate QR codes containing medical records for patients to share with providers. Implements both the [SMART Health Cards Framework](https://smarthealth.cards/) and [Smart Health Links Specification](src/shc/) for handling FHIR-based medical records, enabling patients to "Kill the Clipboard" by sharing health data via secure, verifiable QR codes.
 
 This aligns with the [CMS Interoperability Framework](https://www.cms.gov/health-technology-ecosystem/interoperability-framework) call to action for Patient Facing Apps to "Kill the Clipboard":
 
