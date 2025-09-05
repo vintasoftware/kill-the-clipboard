@@ -1,7 +1,7 @@
 import type { List, Resource } from '@medplum/fhirtypes'
 import type { SmartHealthCard } from '../shc/shc.js'
 import { encryptSHLFile } from './crypto.js'
-import { SHLError, SHLManifestError, SHLNetworkError } from './errors.js'
+import { SHLError, SHLExpiredError, SHLManifestError, SHLNetworkError } from './errors.js'
 import { SHL } from './shl.js'
 import type {
   SerializedSHLManifestBuilder,
@@ -649,6 +649,7 @@ export class SHLManifestBuilder {
    * @param params.list - Optional FHIR List resource to include in the manifest root.
    *   Provides metadata about the collection of files.
    * @returns Promise resolving to SHL manifest object conforming to v1 specification ({@link SHLManifestV1})
+   * @throws {@link SHLExpiredError} When the SHL has expired (exp field < current time)
    * @throws {@link SHLManifestError} When a stored file cannot be loaded or content is missing
    * @throws {@link SHLNetworkError} When storage network requests fail
    *
@@ -676,6 +677,11 @@ export class SHLManifestBuilder {
     const embeddedLengthMax = params.embeddedLengthMax ?? 16384 // 16 KiB default
     const status = params.status
     const list = params.list
+
+    // Check expiration
+    if (this._shl.exp && this._shl.exp < Math.floor(Date.now() / 1000)) {
+      throw new SHLExpiredError('SHL has expired')
+    }
 
     const manifestFiles: SHLManifestFileDescriptor[] = []
 

@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { MedplumClient } from '@medplum/core';
-import { SHLManifestBuilder } from 'kill-the-clipboard';
+import { SHLExpiredError, SHLManifestBuilder } from 'kill-the-clipboard';
 import { buildMedplumFetch } from '@/lib/medplum-fetch';
 import { getManifestBuilder, getStoredPasscode } from '@/lib/storage';
 import { verifyPasscode } from '@/lib/auth';
@@ -85,9 +85,20 @@ export async function POST(
     fetch: buildMedplumFetch(medplum),
   });
 
-  // Build and return the manifest
-  const manifest = await manifestBuilder.buildManifest({ embeddedLengthMax });
+  try {
+    // Build and return the manifest
+    const manifest = await manifestBuilder.buildManifest({ embeddedLengthMax });
 
-  const response = NextResponse.json(manifest);
-  return response;
+    const response = NextResponse.json(manifest);
+    return response;
+  } catch (error) {
+    if (error instanceof SHLExpiredError) {
+      return NextResponse.json(
+        { error: 'Smart Health Link not found' },
+        { status: 404 }
+      );
+    }
+    // Re-throw other errors
+    throw error;
+  }
 }

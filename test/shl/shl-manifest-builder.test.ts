@@ -3,6 +3,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import {
   decryptSHLFile,
   SHL,
+  SHLExpiredError,
   SHLManifestBuilder,
   SHLNetworkError,
   SmartHealthCardIssuer,
@@ -1031,6 +1032,64 @@ describe('SHLManifestBuilder', () => {
       await expect(
         deserializedBuilder.updateFHIRResource(result.storagePath, createValidFHIRBundle())
       ).rejects.toThrow('File updates are not supported')
+    })
+  })
+
+  describe('SHL Expiration', () => {
+    it('should work normally for SHL with expiration in the future', async () => {
+      const futureDate = new Date(Date.now() + 24 * 60 * 60 * 1000) // 24 hours from now
+      const shlWithFutureExpiration = SHL.generate({
+        baseManifestURL: 'https://shl.example.org/manifests/',
+        manifestPath: '/manifest.json',
+        expirationDate: futureDate,
+      })
+
+      const builderWithFutureExpiration = new SHLManifestBuilder({
+        shl: shlWithFutureExpiration,
+        uploadFile: async (content: string) => {
+          const fileId = `file-${uploadedFiles.size + 1}`
+          uploadedFiles.set(fileId, content)
+          return fileId
+        },
+        getFileURL: async (path: string) => `https://files.example.org/${path}`,
+        loadFile: async (path: string) => {
+          const content = uploadedFiles.get(path)
+          if (!content) throw new Error(`File not found: ${path}`)
+          return content
+        },
+      })
+
+      await builderWithFutureExpiration.addFHIRResource({ content: createValidFHIRBundle() })
+      const manifest = await builderWithFutureExpiration.buildManifest()
+      expect(manifest.files).toHaveLength(1)
+    })
+
+    it('should throw SHLExpiredError for expired SHL', async () => {
+      const pastDate = new Date(Date.now() - 1000) // 1 second ago
+      const expiredShl = SHL.generate({
+        baseManifestURL: 'https://shl.example.org/manifests/',
+        manifestPath: '/manifest.json',
+        expirationDate: pastDate,
+      })
+
+      const builderWithExpiredShl = new SHLManifestBuilder({
+        shl: expiredShl,
+        uploadFile: async (content: string) => {
+          const fileId = `file-${uploadedFiles.size + 1}`
+          uploadedFiles.set(fileId, content)
+          return fileId
+        },
+        getFileURL: async (path: string) => `https://files.example.org/${path}`,
+        loadFile: async (path: string) => {
+          const content = uploadedFiles.get(path)
+          if (!content) throw new Error(`File not found: ${path}`)
+          return content
+        },
+      })
+
+      await builderWithExpiredShl.addFHIRResource({ content: createValidFHIRBundle() })
+      await expect(builderWithExpiredShl.buildManifest()).rejects.toThrow(SHLExpiredError)
+      await expect(builderWithExpiredShl.buildManifest()).rejects.toThrow('SHL has expired')
     })
   })
 })
