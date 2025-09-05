@@ -173,9 +173,7 @@ Here's a condensed single-file example demonstrating the complete SHL workflow f
 import { 
   SHL, 
   SHLManifestBuilder, 
-  SHLViewer, 
-  SmartHealthCardIssuer,
-  FHIRBundleProcessor 
+  SHLViewer
 } from 'kill-the-clipboard';
 
 // Mock storage for this example
