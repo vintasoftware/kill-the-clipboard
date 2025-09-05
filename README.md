@@ -281,6 +281,26 @@ console.log('Resolved FHIR resources:', resolved.fhirResources);
 
 This example above demonstrates the complete lifecycle: SHL generation, content addition, serialization for server storage, manifest serving, and client-side resolution. In a real application, you would implement persistent storage for the serialized builder state and serve the manifest endpoint from your backend server.
 
+### Error Handling
+
+The library provides granular error handling with specific error codes for different failure scenarios. Check each method documentation for the specific errors that can be thrown.
+
+## API Reference Documentation
+
+Available at [https://vintasoftware.github.io/kill-the-clipboard/](https://vintasoftware.github.io/kill-the-clipboard/).
+
+### Generating Documentation
+
+To generate and view the full API documentation locally:
+
+```bash
+# Generate documentation
+pnpm docs:build
+
+# The documentation will be generated in the ./docs directory
+# Open docs/index.html in your browser to view the complete API reference
+```
+
 ## Advanced Usage
 
 ### Smart Health Cards Advanced Usage
@@ -314,19 +334,19 @@ const bundle = await healthCard.asBundle({ optimizeForQR: true, strictReferences
 const fileContent = await healthCard.asFileContent();
 
 // Use individual processors for more control
-const fhirProcessor = new FHIRBundleProcessor();
+const bundleProcessor = new FHIRBundleProcessor();
 const vcProcessor = new VerifiableCredentialProcessor();
 const jwsProcessor = new JWSProcessor();
 
 // Process FHIR Bundle (standard processing)
-const processedBundle = fhirProcessor.process(fhirBundle);
-fhirProcessor.validate(processedBundle);
+const processedBundle = bundleProcessor.process(fhirBundle);
+bundleProcessor.validate(processedBundle);
 
 // Or process with QR code optimizations (shorter resource references, removes unnecessary fields)
 // Use 'strictReferences' option. When true, missing references throw an error.
 // When false, original references are preserved if target resource is not found in bundle.
-const optimizedBundle = fhirProcessor.processForQR(fhirBundle, { strictReferences: true });
-fhirProcessor.validate(optimizedBundle);
+const optimizedBundle = bundleProcessor.processForQR(fhirBundle, { strictReferences: true });
+bundleProcessor.validate(optimizedBundle);
 
 // Create Verifiable Credential
 const vc = vcProcessor.create(processedBundle, {
@@ -378,54 +398,6 @@ const reconstructedJWS = await qrGenerator.decodeQR(scannedData);
 const chunks = qrGenerator.chunkJWS(jws); // Returns array of shc:/ prefixed strings
 const numericData = qrGenerator.encodeJWSToNumeric(jws);
 const decodedJWS = qrGenerator.decodeNumericToJWS(numericData);
-```
-
-### Smart Health Cards Error Handling
-
-```typescript
-import { 
-  SmartHealthCardIssuer,
-  SmartHealthCardReader,
-  SmartHealthCardError,
-  FHIRValidationError,
-  JWSError,
-  QRCodeError 
-} from 'kill-the-clipboard';
-
-const issuer = new SmartHealthCardIssuer(config);
-const reader = new SmartHealthCardReader({ publicKey: config.publicKey });
-
-try {
-  const healthCard = await issuer.issue(fhirBundle);
-  const qrCodes = await healthCard.asQR();
-} catch (error) {
-  if (error instanceof FHIRValidationError) {
-    console.error('FHIR Bundle validation failed:', error.message);
-  } else if (error instanceof JWSError) {
-    console.error('JWT/JWS processing failed:', error.message);
-  } else if (error instanceof QRCodeError) {
-    console.error('QR code processing failed:', error.message);
-  } else if (error instanceof SmartHealthCardError) {
-    console.error('SMART Health Card error:', error.message, error.code);
-  } else {
-    console.error('Unexpected error:', error);
-  }
-}
-
-try {
-  const verifiedCard = await reader.fromJWS(jws);
-  const bundle = await verifiedCard.asBundle();
-} catch (error) {
-  console.error('Verification failed:', error.message);
-}
-
-try {
-  const qrNumeric = 'shc:/56762959532654603460292540772804336028...';
-  const verifiedCard = await reader.fromQRNumeric(qrNumeric);
-  const bundle = await verifiedCard.asBundle();
-} catch (error) {
-  console.error('QR numeric verification failed:', error.message);
-}
 ```
 
 ### Smart Health Cards File Operations
@@ -503,22 +475,6 @@ const config = {
   privateKey: privateKeyPKCS8,
   publicKey: publicKeySPKI,
 };
-```
-
-## API Reference Documentation
-
-Available at [https://vintasoftware.github.io/kill-the-clipboard/](https://vintasoftware.github.io/kill-the-clipboard/).
-
-### Generating Documentation
-
-To generate and view the full API documentation locally:
-
-```bash
-# Generate documentation
-pnpm docs:build
-
-# The documentation will be generated in the ./docs directory
-# Open docs/index.html in your browser to view the complete API reference
 ```
 
 ## Security notes and limitations

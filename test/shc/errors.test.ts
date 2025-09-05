@@ -1,10 +1,14 @@
 import { describe, expect, it } from 'vitest'
 import {
-  FHIRValidationError,
+  BundleValidationError,
+  CredentialValidationError,
+  ExpirationError,
   FileFormatError,
   InvalidBundleReferenceError,
   JWSError,
+  PayloadValidationError,
   QRCodeError,
+  SignatureVerificationError,
   SmartHealthCardError,
   VerificationError,
 } from '@/index'
@@ -30,13 +34,13 @@ describe('Error Classes', () => {
     })
   })
 
-  describe('FHIRValidationError', () => {
+  describe('CredentialValidationError', () => {
     it('should create FHIR validation error', () => {
-      const error = new FHIRValidationError('FHIR validation failed')
+      const error = new CredentialValidationError('FHIR validation failed')
       expect(error).toBeInstanceOf(SmartHealthCardError)
-      expect(error.name).toBe('FHIRValidationError')
+      expect(error.name).toBe('CredentialValidationError')
       expect(error.message).toBe('FHIR validation failed')
-      expect(error.code).toBe('FHIR_VALIDATION_ERROR')
+      expect(error.code).toBe('FAILED_VALIDATION')
     })
   })
 
@@ -77,6 +81,56 @@ describe('Error Classes', () => {
       expect(error.name).toBe('VerificationError')
       expect(error.message).toBe('Verification failed')
       expect(error.code).toBe('VERIFICATION_ERROR')
+    })
+  })
+
+  describe('SignatureVerificationError', () => {
+    it('should create signature verification error with bad-signature code', () => {
+      const error = new SignatureVerificationError('Invalid signature')
+      expect(error).toBeInstanceOf(SmartHealthCardError)
+      expect(error.name).toBe('SignatureVerificationError')
+      expect(error.message).toBe('Invalid signature')
+      expect(error.code).toBe('BAD_SIGNATURE')
+    })
+  })
+
+  describe('ExpirationError', () => {
+    it('should create expiration error with expired code', () => {
+      const error = new ExpirationError('Health card has expired')
+      expect(error).toBeInstanceOf(SmartHealthCardError)
+      expect(error.name).toBe('ExpirationError')
+      expect(error.message).toBe('Health card has expired')
+      expect(error.code).toBe('EXPIRED')
+    })
+  })
+
+  describe('PayloadValidationError', () => {
+    it('should create payload validation error with failed-validation code', () => {
+      const error = new PayloadValidationError('Missing issuer field')
+      expect(error).toBeInstanceOf(SmartHealthCardError)
+      expect(error.name).toBe('PayloadValidationError')
+      expect(error.message).toBe('Missing issuer field')
+      expect(error.code).toBe('FAILED_VALIDATION')
+    })
+  })
+
+  describe('BundleValidationError', () => {
+    it('should create bundle validation error with failed-validation code', () => {
+      const error = new BundleValidationError('Invalid FHIR Bundle structure')
+      expect(error).toBeInstanceOf(SmartHealthCardError)
+      expect(error.name).toBe('BundleValidationError')
+      expect(error.message).toBe('Invalid FHIR Bundle structure')
+      expect(error.code).toBe('FAILED_VALIDATION')
+    })
+  })
+
+  describe('CredentialValidationError', () => {
+    it('should create credential validation error with failed-validation code', () => {
+      const error = new CredentialValidationError('Invalid verifiable credential')
+      expect(error).toBeInstanceOf(SmartHealthCardError)
+      expect(error.name).toBe('CredentialValidationError')
+      expect(error.message).toBe('Invalid verifiable credential')
+      expect(error.code).toBe('FAILED_VALIDATION')
     })
   })
 })

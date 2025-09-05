@@ -1,11 +1,11 @@
 // biome-ignore-all lint/suspicious/noExplicitAny: The test needs to use `any` to test error cases
 import { beforeEach, describe, expect, it } from 'vitest'
 import {
+  BundleValidationError,
   type FHIRBundle,
-  FHIRValidationError,
-  JWSError,
   JWSProcessor,
   QRCodeError,
+  SignatureVerificationError,
   type SmartHealthCardConfig,
   SmartHealthCardIssuer,
   SmartHealthCardReader,
@@ -109,14 +109,14 @@ describe('SmartHealthCard', () => {
     it('should throw error for invalid FHIR Bundle', async () => {
       const invalidBundle = createInvalidBundle()
 
-      await expect(issuer.issue(invalidBundle)).rejects.toThrow(FHIRValidationError)
+      await expect(issuer.issue(invalidBundle)).rejects.toThrow(BundleValidationError)
       await expect(issuer.issue(invalidBundle)).rejects.toThrow(
         'Invalid bundle: must be a FHIR Bundle resource'
       )
     })
 
     it('should throw error for null bundle', async () => {
-      await expect(issuer.issue(null as unknown as any)).rejects.toThrow(FHIRValidationError)
+      await expect(issuer.issue(null as unknown as any)).rejects.toThrow(BundleValidationError)
     })
 
     it('should include correct issuer in JWT payload', async () => {
@@ -153,7 +153,36 @@ describe('SmartHealthCard', () => {
     })
 
     it('should throw error for invalid JWS', async () => {
-      await expect(reader.fromJWS('invalid.jws.signature')).rejects.toThrow(JWSError)
+      await expect(reader.fromJWS('invalid.jws.signature')).rejects.toThrow(
+        SignatureVerificationError
+      )
+    })
+
+    it('should throw error for invalid JWS FHIR Bundle payload', async () => {
+      const jwsProcessor = new JWSProcessor()
+
+      const invalidBundle = {
+        resourceType: 'Bundle',
+        type: 'not-a-valid-type',
+        entry: [{ resource: { resourceType: 'Patient' } }],
+      } as unknown as FHIRBundle
+
+      const payload: any = {
+        iss: issuerConfig.issuer,
+        nbf: Math.floor(Date.now() / 1000),
+        vc: {
+          type: ['https://smarthealth.cards#health-card'],
+          credentialSubject: {
+            fhirVersion: '4.0.1',
+            fhirBundle: invalidBundle,
+          },
+        },
+      }
+
+      const jws = await jwsProcessor.sign(payload, testPrivateKeyPKCS8, testPublicKeySPKI)
+
+      await expect(reader.fromJWS(jws)).rejects.toThrow(BundleValidationError)
+      await expect(reader.fromJWS(jws)).rejects.toThrow('Invalid bundle.type: not-a-valid-type')
     })
 
     it('should throw error for tampered health card', async () => {
@@ -162,7 +191,7 @@ describe('SmartHealthCard', () => {
 
       const tamperedCard = `${jws.slice(0, -5)}XXXXX`
 
-      await expect(reader.fromJWS(tamperedCard)).rejects.toThrow(JWSError)
+      await expect(reader.fromJWS(tamperedCard)).rejects.toThrow(SignatureVerificationError)
     })
 
     it('should validate round-trip: issue then verify', async () => {
@@ -342,8 +371,10 @@ describe('SmartHealthCard', () => {
         expect(qrString).toMatch(/^shc:\/\d+\/\d+\//)
         const parts = qrString.split('/')
         expect(parts).toHaveLength(4)
-        expect(parseInt(parts[1])).toBe(index + 1)
-        expect(parseInt(parts[2])).toBe(chunkedQRStrings.length)
+        // biome-ignore lint/style/noNonNullAssertion: checked above
+        expect(parseInt(parts[1]!)).toBe(index + 1)
+        // biome-ignore lint/style/noNonNullAssertion: checked above
+        expect(parseInt(parts[2]!)).toBe(chunkedQRStrings.length)
       })
     })
   })
@@ -354,7 +385,8 @@ describe('SmartHealthCard', () => {
       const qrNumericStrings = healthCard.asQRNumeric()
       expect(qrNumericStrings).toHaveLength(1)
 
-      const verifiedHealthCard = await reader.fromQRNumeric(qrNumericStrings[0])
+      // biome-ignore lint/style/noNonNullAssertion: checked above
+      const verifiedHealthCard = await reader.fromQRNumeric(qrNumericStrings[0]!)
       expect(verifiedHealthCard).toBeDefined()
       const verifiedBundle = await verifiedHealthCard.asBundle()
       expect(verifiedBundle).toEqual(validBundle)
@@ -411,7 +443,8 @@ describe('SmartHealthCard', () => {
       const qrNumericChunks = healthCard.asQRNumeric()
       expect(qrNumericChunks).toHaveLength(1)
 
-      const verifiedHealthCard = await reader.fromQRNumeric(qrNumericChunks[0])
+      // biome-ignore lint/style/noNonNullAssertion: checked above
+      const verifiedHealthCard = await reader.fromQRNumeric(qrNumericChunks[0]!)
       expect(verifiedHealthCard).toBeDefined()
       const verifiedBundle = await verifiedHealthCard.asBundle()
       expect(verifiedBundle).toEqual(validBundle)

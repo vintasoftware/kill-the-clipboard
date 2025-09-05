@@ -1,9 +1,12 @@
 // biome-ignore-all lint/suspicious/noExplicitAny: The test needs to use `any` to check validation errors
 import { beforeEach, describe, expect, it } from 'vitest'
 import {
+  ExpirationError,
   type FHIRBundle,
   JWSError,
   JWSProcessor,
+  PayloadValidationError,
+  SignatureVerificationError,
   type SmartHealthCardJWT,
   type VerifiableCredential,
   VerifiableCredentialProcessor,
@@ -76,7 +79,7 @@ describe('JWSProcessor', () => {
       expect(verified.nbf).toBe(validJWTPayload.nbf)
     })
 
-    it('should throw JWSError for invalid payload', async () => {
+    it('should throw PayloadValidationError for invalid payload', async () => {
       const invalidPayload = {
         nbf: Math.floor(Date.now() / 1000),
         vc: validVC.vc,
@@ -84,17 +87,20 @@ describe('JWSProcessor', () => {
 
       await expect(
         processor.sign(invalidPayload, testPrivateKeyPKCS8, testPublicKeySPKI)
-      ).rejects.toThrow(JWSError)
+      ).rejects.toThrow(PayloadValidationError)
+      await expect(
+        processor.sign(invalidPayload, testPrivateKeyPKCS8, testPublicKeySPKI)
+      ).rejects.toThrow("'iss' (issuer) is required")
     })
 
-    it('should throw JWSError for null payload', async () => {
+    it('should throw PayloadValidationError for null payload', async () => {
       await expect(
         processor.sign(
           null as unknown as SmartHealthCardJWT,
           testPrivateKeyPKCS8,
           testPublicKeySPKI
         )
-      ).rejects.toThrow(JWSError)
+      ).rejects.toThrow(PayloadValidationError)
       await expect(
         processor.sign(
           null as unknown as SmartHealthCardJWT,
@@ -104,37 +110,37 @@ describe('JWSProcessor', () => {
       ).rejects.toThrow('Invalid JWT payload: must be an object')
     })
 
-    it('should throw JWSError for missing issuer', async () => {
+    it('should throw PayloadValidationError for missing issuer', async () => {
       const invalidPayload = { ...validJWTPayload }
       delete (invalidPayload as Record<string, unknown>).iss
 
       await expect(
         processor.sign(invalidPayload, testPrivateKeyPKCS8, testPublicKeySPKI)
-      ).rejects.toThrow(JWSError)
+      ).rejects.toThrow(PayloadValidationError)
       await expect(
         processor.sign(invalidPayload, testPrivateKeyPKCS8, testPublicKeySPKI)
       ).rejects.toThrow("'iss' (issuer) is required")
     })
 
-    it('should throw JWSError for missing nbf', async () => {
+    it('should throw PayloadValidationError for missing nbf', async () => {
       const invalidPayload = { ...validJWTPayload }
       delete (invalidPayload as Record<string, unknown>).nbf
 
       await expect(
         processor.sign(invalidPayload, testPrivateKeyPKCS8, testPublicKeySPKI)
-      ).rejects.toThrow(JWSError)
+      ).rejects.toThrow(PayloadValidationError)
       await expect(
         processor.sign(invalidPayload, testPrivateKeyPKCS8, testPublicKeySPKI)
       ).rejects.toThrow("'nbf' (not before) is required")
     })
 
-    it('should throw JWSError for invalid exp vs nbf', async () => {
+    it('should throw PayloadValidationError for invalid exp vs nbf', async () => {
       const invalidPayload = { ...validJWTPayload }
       invalidPayload.exp = invalidPayload.nbf - 1000
 
       await expect(
         processor.sign(invalidPayload, testPrivateKeyPKCS8, testPublicKeySPKI)
-      ).rejects.toThrow(JWSError)
+      ).rejects.toThrow(PayloadValidationError)
       await expect(
         processor.sign(invalidPayload, testPrivateKeyPKCS8, testPublicKeySPKI)
       ).rejects.toThrow("'exp' must be greater than 'nbf'")
@@ -177,32 +183,46 @@ describe('JWSProcessor', () => {
       expect(verifiedPayload.vc).toEqual(validJWTPayload.vc)
     })
 
-    it('should throw JWSError for invalid JWS format', async () => {
-      await expect(processor.verify('invalid.jws', testPublicKeySPKI)).rejects.toThrow(JWSError)
+    it('should throw SignatureVerificationError for invalid JWS format', async () => {
       await expect(processor.verify('invalid.jws', testPublicKeySPKI)).rejects.toThrow(
-        'JWS verification failed: Invalid Compact JWS'
+        SignatureVerificationError
+      )
+      await expect(processor.verify('invalid.jws', testPublicKeySPKI)).rejects.toThrow(
+        'Invalid JWS signature: Invalid Compact JWS'
       )
     })
 
-    it('should throw JWSError for empty JWS', async () => {
-      await expect(processor.verify('', testPublicKeySPKI)).rejects.toThrow(JWSError)
+    it('should throw PayloadValidationError for empty JWS', async () => {
+      await expect(processor.verify('', testPublicKeySPKI)).rejects.toThrow(PayloadValidationError)
       await expect(processor.verify('', testPublicKeySPKI)).rejects.toThrow(
         'Invalid JWS: must be a non-empty string'
       )
     })
 
-    it('should throw JWSError for non-string JWS', async () => {
+    it('should throw PayloadValidationError for non-string JWS', async () => {
       await expect(processor.verify(null as unknown as string, testPublicKeySPKI)).rejects.toThrow(
-        JWSError
+        PayloadValidationError
       )
       await expect(processor.verify(123 as unknown as string, testPublicKeySPKI)).rejects.toThrow(
-        JWSError
+        PayloadValidationError
       )
     })
 
-    it('should throw JWSError for wrong public key', async () => {
+    it('should throw JWSError for wrong public key format', async () => {
       const jws = await processor.sign(validJWTPayload, testPrivateKeyPKCS8, testPublicKeySPKI)
       await expect(processor.verify(jws, 'wrong-public-key')).rejects.toThrow(JWSError)
+    })
+
+    it('should throw SignatureVerificationError for valid but mismatched key', async () => {
+      // Generate a different valid ES256 key pair for testing signature mismatch
+      const { generateKeyPair, exportSPKI } = await import('jose')
+      const wrongKeyPair = await generateKeyPair('ES256')
+      const wrongPublicKeySPKI = await exportSPKI(wrongKeyPair.publicKey)
+
+      const jws = await processor.sign(validJWTPayload, testPrivateKeyPKCS8, testPublicKeySPKI)
+      await expect(processor.verify(jws, wrongPublicKeySPKI)).rejects.toThrow(
+        SignatureVerificationError
+      )
     })
 
     it('should verify an uncompressed JWS (no zip header)', async () => {
@@ -227,7 +247,7 @@ describe('JWSProcessor', () => {
       }
       const jws = await processor.sign(expiredPayload, testPrivateKeyPKCS8, testPublicKeySPKI)
 
-      await expect(processor.verify(jws, testPublicKeySPKI)).rejects.toThrow(JWSError)
+      await expect(processor.verify(jws, testPublicKeySPKI)).rejects.toThrow(ExpirationError)
       await expect(processor.verify(jws, testPublicKeySPKI)).rejects.toThrow(
         'SMART Health Card has expired'
       )
@@ -278,7 +298,7 @@ describe('JWSProcessor', () => {
       for (const testCase of testCases) {
         await expect(
           processor.sign(testCase.payload as any, testPrivateKeyPKCS8, testPublicKeySPKI)
-        ).rejects.toThrow(JWSError)
+        ).rejects.toThrow(PayloadValidationError)
         await expect(
           processor.sign(testCase.payload as any, testPrivateKeyPKCS8, testPublicKeySPKI)
         ).rejects.toThrow(testCase.error)

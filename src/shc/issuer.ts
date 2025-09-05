@@ -23,7 +23,7 @@ import { VerifiableCredentialProcessor } from './vc.js'
  */
 export class SmartHealthCardIssuer {
   private config: SmartHealthCardConfig
-  private fhirProcessor: FHIRBundleProcessor
+  private bundleProcessor: FHIRBundleProcessor
   private vcProcessor: VerifiableCredentialProcessor
   private jwsProcessor: JWSProcessor
 
@@ -49,7 +49,7 @@ export class SmartHealthCardIssuer {
       strictReferences: config.strictReferences ?? true,
     }
 
-    this.fhirProcessor = new FHIRBundleProcessor()
+    this.bundleProcessor = new FHIRBundleProcessor()
     this.vcProcessor = new VerifiableCredentialProcessor()
     this.jwsProcessor = new JWSProcessor()
   }
@@ -60,7 +60,7 @@ export class SmartHealthCardIssuer {
    * @param fhirBundle - FHIR R4 Bundle containing medical data
    * @param config - Optional Verifiable Credential parameters. See {@link VerifiableCredentialParams}.
    * @returns Promise resolving to SmartHealthCard object
-   * @throws {@link FHIRValidationError} When FHIR bundle or VC structure is invalid
+   * @throws {@link CredentialValidationError} When FHIR bundle is invalid
    * @throws {@link JWSError} When signing fails
    *
    * @example
@@ -88,11 +88,11 @@ export class SmartHealthCardIssuer {
   ): Promise<string> {
     // Step 1: Process and validate FHIR Bundle
     const processedBundle = this.config.enableQROptimization
-      ? this.fhirProcessor.processForQR(fhirBundle, {
+      ? this.bundleProcessor.processForQR(fhirBundle, {
           strictReferences: this.config.strictReferences,
         })
-      : this.fhirProcessor.process(fhirBundle)
-    this.fhirProcessor.validate(processedBundle)
+      : this.bundleProcessor.process(fhirBundle)
+    this.bundleProcessor.validate(processedBundle)
 
     // Step 2: Create Verifiable Credential
     const vc = this.vcProcessor.create(processedBundle, vcOptions)

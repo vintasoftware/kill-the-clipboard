@@ -90,15 +90,14 @@ export class SmartHealthCard {
    * @param config.strictReferences - Whether to enforce strict reference validation during QR optimization
    * @returns Promise resolving to FHIR Bundle
    * @throws {@link InvalidBundleReferenceError} If `optimizeForQR` is true and a reference target is missing when `strictReferences` is true
-   * @throws {@link FHIRValidationError} If the bundle fails validation during QR optimization
    */
   async asBundle(
     config: { optimizeForQR?: boolean; strictReferences?: boolean } = {}
   ): Promise<FHIRBundle> {
     const { optimizeForQR = false, strictReferences = true } = config
     if (optimizeForQR) {
-      const fhirProcessor = new FHIRBundleProcessor()
-      return fhirProcessor.processForQR(this.originalBundle, { strictReferences })
+      const bundleProcessor = new FHIRBundleProcessor()
+      return bundleProcessor.processForQR(this.originalBundle, { strictReferences })
     }
     return this.originalBundle
   }

@@ -10,7 +10,13 @@ import {
   importSPKI,
 } from 'jose'
 import { compressDeflateRaw, decompressDeflateRaw } from '../../common/compression.js'
-import { JWSError } from '../errors.js'
+import {
+  ExpirationError,
+  JWSError,
+  PayloadValidationError,
+  SignatureVerificationError,
+  SmartHealthCardError,
+} from '../errors.js'
 import type { SmartHealthCardJWT } from '../types.js'
 
 /**
@@ -30,7 +36,8 @@ export class JWSProcessor {
    * @param config.enableCompression - Whether to compress payload with raw DEFLATE (default: true).
    *  When `enableCompression` is true, compresses payload before signing and sets `zip: "DEF"`.
    * @returns Promise resolving to JWS string
-   * @throws {@link JWSError} When signing fails, key import fails, or payload is invalid
+   * @throws {@link PayloadValidationError} When payload structure validation fails
+   * @throws {@link JWSError} When signing fails or key import fails
    */
   async sign(
     payload: SmartHealthCardJWT,
@@ -75,7 +82,7 @@ export class JWSProcessor {
       const jws = await new CompactSign(payloadBytes).setProtectedHeader(header).sign(key)
       return jws
     } catch (error) {
-      if (error instanceof JWSError) {
+      if (error instanceof SmartHealthCardError) {
         throw error
       }
       const errorMessage = error instanceof Error ? error.message : String(error)
@@ -111,7 +118,10 @@ export class JWSProcessor {
    *  When true (default), expired health cards will be rejected.
    *  Set to false to allow expired cards to be accepted.
    * @returns Promise resolving to decoded JWT payload
-   * @throws {@link JWSError} When verification fails or JWS is invalid
+   * @throws {@link SignatureVerificationError} When JWS signature verification fails
+   * @throws {@link ExpirationError} When health card has expired
+   * @throws {@link PayloadValidationError} When payload structure validation fails
+   * @throws {@link JWSError} When other JWS processing fails
    *
    * @remarks To inspect headers without verification, use `jose.decodeProtectedHeader(jws)` from the `jose` library.
    */
@@ -122,7 +132,7 @@ export class JWSProcessor {
   ): Promise<SmartHealthCardJWT> {
     try {
       if (!jws || typeof jws !== 'string') {
-        throw new JWSError('Invalid JWS: must be a non-empty string')
+        throw new PayloadValidationError('Invalid JWS: must be a non-empty string')
       }
 
       // Import key
@@ -134,7 +144,16 @@ export class JWSProcessor {
       }
 
       // Verify signature over original compact JWS
-      const { payload, protectedHeader } = await compactVerify(jws, key)
+      let payload: Uint8Array
+      let protectedHeader: { zip?: 'DEF' | string }
+      try {
+        const result = await compactVerify(jws, key)
+        payload = result.payload
+        protectedHeader = result.protectedHeader as { zip?: 'DEF' | string }
+      } catch (error) {
+        const errorMessage = error instanceof Error ? error.message : String(error)
+        throw new SignatureVerificationError(`Invalid JWS signature: ${errorMessage}`)
+      }
 
       // Decompress payload if zip: 'DEF'
       let payloadBytes = payload
@@ -154,13 +173,13 @@ export class JWSProcessor {
       if (verifyExpiration) {
         const nowSeconds = Math.floor(Date.now() / 1000)
         if (typeof smartPayload.exp === 'number' && smartPayload.exp < nowSeconds) {
-          throw new JWSError('SMART Health Card has expired')
+          throw new ExpirationError('SMART Health Card has expired')
         }
       }
 
       return smartPayload
     } catch (error) {
-      if (error instanceof JWSError) {
+      if (error instanceof SmartHealthCardError) {
         throw error
       }
       const errorMessage = error instanceof Error ? error.message : String(error)
@@ -173,30 +192,36 @@ export class JWSProcessor {
    */
   private validateJWTPayload(payload: SmartHealthCardJWT): void {
     if (!payload || typeof payload !== 'object') {
-      throw new JWSError('Invalid JWT payload: must be an object')
+      throw new PayloadValidationError('Invalid JWT payload: must be an object')
     }
 
     // Validate required fields per SMART Health Cards spec
     if (!payload.iss || typeof payload.iss !== 'string') {
-      throw new JWSError("Invalid JWT payload: 'iss' (issuer) is required and must be a string")
+      throw new PayloadValidationError(
+        "Invalid JWT payload: 'iss' (issuer) is required and must be a string"
+      )
     }
 
     if (!payload.nbf || typeof payload.nbf !== 'number') {
-      throw new JWSError("Invalid JWT payload: 'nbf' (not before) is required and must be a number")
+      throw new PayloadValidationError(
+        "Invalid JWT payload: 'nbf' (not before) is required and must be a number"
+      )
     }
 
     // exp is optional but if present must be a number
     if (payload.exp !== undefined && typeof payload.exp !== 'number') {
-      throw new JWSError("Invalid JWT payload: 'exp' (expiration) must be a number if provided")
+      throw new PayloadValidationError(
+        "Invalid JWT payload: 'exp' (expiration) must be a number if provided"
+      )
     }
 
     // Validate exp > nbf if both are present
     if (payload.exp && payload.exp <= payload.nbf) {
-      throw new JWSError("Invalid JWT payload: 'exp' must be greater than 'nbf'")
+      throw new PayloadValidationError("Invalid JWT payload: 'exp' must be greater than 'nbf'")
     }
 
     if (!payload.vc || typeof payload.vc !== 'object') {
-      throw new JWSError(
+      throw new PayloadValidationError(
         "Invalid JWT payload: 'vc' (verifiable credential) is required and must be an object"
       )
     }
@@ -206,13 +231,18 @@ export class JWSProcessor {
    * Parses a Compact JWS without verifying its signature to extract protected header and payload.
    * If the header indicates zip: 'DEF', the payload will be decompressed.
    * This is safe for metadata discovery (e.g., resolving JWKS by iss/kid) but MUST NOT be used to trust content.
+   *
+   * @param jws - JWS string to parse
+   * @returns Promise resolving to header and payload objects
+   * @throws {@link PayloadValidationError} When JWS string is invalid
+   * @throws {@link JWSError} When JWS parsing fails
    */
   async parseUnverified(
     jws: string
   ): Promise<{ header: { kid?: string; zip?: 'DEF' | string }; payload: SmartHealthCardJWT }> {
     try {
       if (!jws || typeof jws !== 'string') {
-        throw new JWSError('Invalid JWS: must be a non-empty string')
+        throw new PayloadValidationError('Invalid JWS: must be a non-empty string')
       }
 
       const parts = jws.split('.')
@@ -232,7 +262,7 @@ export class JWSProcessor {
 
       return { header, payload }
     } catch (error) {
-      if (error instanceof JWSError) {
+      if (error instanceof SmartHealthCardError) {
         throw error
       }
       const message = error instanceof Error ? error.message : String(error)

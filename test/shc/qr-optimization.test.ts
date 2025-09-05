@@ -11,11 +11,11 @@ import {
 import { createValidFHIRBundle, testPrivateKeyPKCS8, testPublicKeySPKI } from '../helpers'
 
 describe('QR Optimization Features', () => {
-  let fhirProcessor: FHIRBundleProcessor
+  let bundleProcessor: FHIRBundleProcessor
   let validBundle: FHIRBundle
 
   beforeEach(() => {
-    fhirProcessor = new FHIRBundleProcessor()
+    bundleProcessor = new FHIRBundleProcessor()
     validBundle = createValidFHIRBundle()
   })
 
@@ -83,7 +83,7 @@ describe('QR Optimization Features', () => {
         ],
       }
 
-      optimizedBundle = fhirProcessor.processForQR(bundleWithAllElements, {
+      optimizedBundle = bundleProcessor.processForQR(bundleWithAllElements, {
         strictReferences: true,
       })
     })
@@ -155,7 +155,7 @@ describe('QR Optimization Features', () => {
         ],
       }
 
-      const optimized = fhirProcessor.processForQR(bundleWithDisplayFields, {
+      const optimized = bundleProcessor.processForQR(bundleWithDisplayFields, {
         strictReferences: true,
       })
       const patient = optimized.entry?.[0]?.resource as Patient
@@ -192,7 +192,7 @@ describe('QR Optimization Features', () => {
       }
 
       expect(() =>
-        fhirProcessor.processForQR(bundleWithDisplayFields, { strictReferences: true })
+        bundleProcessor.processForQR(bundleWithDisplayFields, { strictReferences: true })
       ).toThrow('Reference "Practitioner/456" not found in bundle resources')
     })
 
@@ -212,7 +212,7 @@ describe('QR Optimization Features', () => {
         ],
       }
 
-      const optimized = fhirProcessor.processForQR(bundleWithDisplayFields, {
+      const optimized = bundleProcessor.processForQR(bundleWithDisplayFields, {
         strictReferences: false,
       })
       const patient = optimized.entry?.[0]?.resource as Patient
@@ -238,7 +238,9 @@ describe('QR Optimization Features', () => {
         ],
       }
 
-      const optimized = fhirProcessor.processForQR(bundleWithNullValues, { strictReferences: true })
+      const optimized = bundleProcessor.processForQR(bundleWithNullValues, {
+        strictReferences: true,
+      })
       const patient = optimized.entry?.[0]?.resource as Patient
       expect(patient).not.toHaveProperty('name')
       expect(patient).not.toHaveProperty('identifier')
@@ -272,7 +274,7 @@ describe('QR Optimization Features', () => {
         ],
       }
 
-      const optimized = fhirProcessor.processForQR(bundleWithIds, { strictReferences: true })
+      const optimized = bundleProcessor.processForQR(bundleWithIds, { strictReferences: true })
       optimized.entry?.forEach(entry => {
         expect(entry.resource).not.toHaveProperty('id')
       })
@@ -292,7 +294,7 @@ describe('QR Optimization Features', () => {
       ],
     }
 
-    const optimized = fhirProcessor.processForQR(bundleWithRootId, { strictReferences: true })
+    const optimized = bundleProcessor.processForQR(bundleWithRootId, { strictReferences: true })
     expect(optimized).not.toHaveProperty('id')
     expect(optimized.entry).toBeDefined()
     expect(optimized.entry?.length).toBe(1)

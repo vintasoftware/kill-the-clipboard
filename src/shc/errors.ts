@@ -19,20 +19,6 @@ export class SmartHealthCardError extends Error {
 }
 
 /**
- * Error thrown when FHIR Bundle validation fails.
- *
- * @public
- * @group SHC
- * @category Errors
- */
-export class FHIRValidationError extends SmartHealthCardError {
-  constructor(message: string) {
-    super(message, 'FHIR_VALIDATION_ERROR')
-    this.name = 'FHIRValidationError'
-  }
-}
-
-/**
  * Error thrown when JWT/JWS processing fails.
  *
  * @public
@@ -99,5 +85,75 @@ export class VerificationError extends SmartHealthCardError {
   constructor(message: string) {
     super(message, 'VERIFICATION_ERROR')
     this.name = 'VerificationError'
+  }
+}
+
+/**
+ * Error thrown when JWT/JWS signature verification fails.
+ *
+ * @public
+ * @group SHC
+ * @category Errors
+ */
+export class SignatureVerificationError extends SmartHealthCardError {
+  constructor(message: string) {
+    super(message, 'BAD_SIGNATURE')
+    this.name = 'SignatureVerificationError'
+  }
+}
+
+/**
+ * Error thrown when a SMART Health Card has expired.
+ *
+ * @public
+ * @group SHC
+ * @category Errors
+ */
+export class ExpirationError extends SmartHealthCardError {
+  constructor(message: string) {
+    super(message, 'EXPIRED')
+    this.name = 'ExpirationError'
+  }
+}
+
+/**
+ * Error thrown when JWT payload validation fails due to missing or invalid fields.
+ *
+ * @public
+ * @group SHC
+ * @category Errors
+ */
+export class PayloadValidationError extends SmartHealthCardError {
+  constructor(message: string) {
+    super(message, 'FAILED_VALIDATION')
+    this.name = 'PayloadValidationError'
+  }
+}
+
+/**
+ * Error thrown when FHIR Bundle structure validation fails due to missing or invalid fields.
+ *
+ * @public
+ * @group SHC
+ * @category Errors
+ */
+export class BundleValidationError extends SmartHealthCardError {
+  constructor(message: string) {
+    super(message, 'FAILED_VALIDATION')
+    this.name = 'BundleValidationError'
+  }
+}
+
+/**
+ * Error thrown when Verifiable Credential validation fails due to missing or invalid fields.
+ *
+ * @public
+ * @group SHC
+ * @category Errors
+ */
+export class CredentialValidationError extends SmartHealthCardError {
+  constructor(message: string) {
+    super(message, 'FAILED_VALIDATION')
+    this.name = 'CredentialValidationError'
   }
 }

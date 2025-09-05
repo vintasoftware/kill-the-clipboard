@@ -1,6 +1,13 @@
 // SmartHealthCardReader class
 import { importJWK } from 'jose'
-import { FileFormatError, QRCodeError, SmartHealthCardError, VerificationError } from './errors.js'
+import {
+  CredentialValidationError,
+  FileFormatError,
+  QRCodeError,
+  SmartHealthCardError,
+  VerificationError,
+} from './errors.js'
+import { FHIRBundleProcessor } from './fhir/bundle-processor.js'
 import { JWSProcessor } from './jws/jws-processor.js'
 import { QRCodeGenerator } from './qr/qr-code-generator.js'
 import { SmartHealthCard } from './shc.js'
@@ -20,6 +27,7 @@ import { VerifiableCredentialProcessor } from './vc.js'
  */
 export class SmartHealthCardReader {
   private config: SmartHealthCardReaderConfig
+  private bundleProcessor: FHIRBundleProcessor
   private vcProcessor: VerifiableCredentialProcessor
   private jwsProcessor: JWSProcessor
 
@@ -43,6 +51,7 @@ export class SmartHealthCardReader {
       verifyExpiration: config.verifyExpiration ?? true,
     }
 
+    this.bundleProcessor = new FHIRBundleProcessor()
     this.vcProcessor = new VerifiableCredentialProcessor()
     this.jwsProcessor = new JWSProcessor()
   }
@@ -53,9 +62,13 @@ export class SmartHealthCardReader {
    * @param fileContent - File content as string or Blob from .smart-health-card files
    * @returns Promise resolving to verified SmartHealthCard object
    * @throws {@link FileFormatError} If the file is not valid JSON or missing the `verifiableCredential` array
-   * @throws {@link JWSError} If the embedded JWS is malformed or signature verification fails (propagated from {@link fromJWS})
-   * @throws {@link FHIRValidationError} If the decoded VC payload or embedded FHIR Bundle is invalid (propagated from {@link fromJWS})
-   * @throws {@link VerificationError} For unexpected errors during verification (propagated from {@link fromJWS})
+   * @throws {@link SignatureVerificationError} If JWS signature verification fails
+   * @throws {@link ExpirationError} If the health card has expired
+   * @throws {@link PayloadValidationError} If JWT payload validation fails
+   * @throws {@link BundleValidationError} If FHIR Bundle validation fails
+   * @throws {@link CredentialValidationError} If verifiable credential validation fails
+   * @throws {@link JWSError} If JWS processing fails
+   * @throws {@link VerificationError} For unexpected errors during verification or JWKS resolution (propagated from {@link fromJWS})
    */
   async fromFileContent(fileContent: string | Blob): Promise<SmartHealthCard> {
     let contentString: string
@@ -103,9 +116,13 @@ export class SmartHealthCardReader {
    *
    * @param jws - JWS string to verify
    * @returns Promise resolving to verified SmartHealthCard object
-   * @throws {@link JWSError} If the JWS is malformed, signature verification fails, or the public key cannot be imported
-   * @throws {@link FHIRValidationError} If the decoded VC payload or embedded FHIR Bundle is invalid
-   * @throws {@link VerificationError} For unexpected errors during verification
+   * @throws {@link SignatureVerificationError} If JWS signature verification fails
+   * @throws {@link ExpirationError} If the health card has expired
+   * @throws {@link PayloadValidationError} If JWT payload validation fails
+   * @throws {@link BundleValidationError} If FHIR Bundle validation fails
+   * @throws {@link CredentialValidationError} If verifiable credential validation fails
+   * @throws {@link JWSError} If JWS processing fails
+   * @throws {@link VerificationError} For unexpected errors during verification or JWKS resolution
    */
   async fromJWS(jws: string): Promise<SmartHealthCard> {
     try {
@@ -120,13 +137,15 @@ export class SmartHealthCardReader {
         verifyExpiration: this.config.verifyExpiration,
       })
 
-      // Step 2: Validate the VC
+      // Step 2: Validate the FHIR Bundle
+      const originalBundle = payload.vc.credentialSubject.fhirBundle
+      this.bundleProcessor.validate(originalBundle)
+
+      // Step 3: Validate the VC
       const vc: VerifiableCredential = { vc: payload.vc }
       this.vcProcessor.validate(vc)
 
-      // Step 3: Extract and return the original FHIR Bundle
-      const originalBundle = vc.vc.credentialSubject.fhirBundle
-
+      // Step 4: Return the original FHIR Bundle
       return new SmartHealthCard(jws, originalBundle)
     } catch (error) {
       if (error instanceof SmartHealthCardError) {
@@ -193,9 +212,13 @@ export class SmartHealthCardReader {
    * @param qrNumeric - Single QR code numeric string (format: `shc:/...`)
    * @returns Promise resolving to verified SmartHealthCard object
    * @throws {@link QRCodeError} If the QR numeric string is malformed, contains out-of-range digit pairs, or decoding fails
-   * @throws {@link JWSError} If the reconstructed JWS is malformed or signature verification fails (propagated from {@link fromJWS})
-   * @throws {@link FHIRValidationError} If the decoded VC payload or embedded FHIR Bundle is invalid (propagated from {@link fromJWS})
-   * @throws {@link VerificationError} For unexpected errors during verification (propagated from {@link fromJWS})
+   * @throws {@link SignatureVerificationError} If JWS signature verification fails
+   * @throws {@link ExpirationError} If the health card has expired
+   * @throws {@link PayloadValidationError} If JWT payload validation fails
+   * @throws {@link BundleValidationError} If FHIR Bundle validation fails
+   * @throws {@link CredentialValidationError} If verifiable credential validation fails
+   * @throws {@link JWSError} If JWS processing fails
+   * @throws {@link VerificationError} For unexpected errors during verification or JWKS resolution (propagated from {@link fromJWS})
    *
    * @example
    * ```typescript
@@ -212,9 +235,13 @@ export class SmartHealthCardReader {
    * @param qrNumericChunks - Array of chunked QR code numeric strings (format: `shc:/index/total/...`)
    * @returns Promise resolving to verified SmartHealthCard object
    * @throws {@link QRCodeError} If any chunk has invalid prefix, index/total, missing parts, out-of-range digit pairs, or decoding fails
-   * @throws {@link JWSError} If the reconstructed JWS is malformed or signature verification fails (propagated from {@link fromJWS})
-   * @throws {@link FHIRValidationError} If the decoded VC payload or embedded FHIR Bundle is invalid (propagated from {@link fromJWS})
-   * @throws {@link VerificationError} For unexpected errors during verification (propagated from {@link fromJWS})
+   * @throws {@link SignatureVerificationError} If JWS signature verification fails
+   * @throws {@link ExpirationError} If the health card has expired
+   * @throws {@link PayloadValidationError} If JWT payload validation fails
+   * @throws {@link BundleValidationError} If FHIR Bundle validation fails
+   * @throws {@link CredentialValidationError} If verifiable credential validation fails
+   * @throws {@link JWSError} If JWS processing fails
+   * @throws {@link VerificationError} For unexpected errors during verification or JWKS resolution (propagated from {@link fromJWS})
    *
    * @example
    * ```typescript

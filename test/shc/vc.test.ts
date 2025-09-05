@@ -2,8 +2,8 @@
 import type { Bundle } from '@medplum/fhirtypes'
 import { beforeEach, describe, expect, it } from 'vitest'
 import {
+  CredentialValidationError,
   type FHIRBundle,
-  FHIRValidationError,
   type VerifiableCredential,
   type VerifiableCredentialParams,
   VerifiableCredentialProcessor,
@@ -70,17 +70,17 @@ describe('VerifiableCredentialProcessor', () => {
       expect(vc.vc.type).toContain('https://example.org/vaccination')
     })
 
-    it('should throw FHIRValidationError for null bundle', () => {
-      expect(() => processor.create(null as unknown as Bundle)).toThrow(FHIRValidationError)
+    it('should throw CredentialValidationError for null bundle', () => {
+      expect(() => processor.create(null as unknown as Bundle)).toThrow(CredentialValidationError)
       expect(() => processor.create(null as unknown as Bundle)).toThrow(
         'Invalid FHIR Bundle provided'
       )
     })
 
-    it('should throw FHIRValidationError for invalid bundle', () => {
+    it('should throw CredentialValidationError for invalid bundle', () => {
       const invalidBundle = createInvalidBundle()
 
-      expect(() => processor.create(invalidBundle)).toThrow(FHIRValidationError)
+      expect(() => processor.create(invalidBundle)).toThrow(CredentialValidationError)
       expect(() => processor.create(invalidBundle)).toThrow('Invalid FHIR Bundle provided')
     })
   })
@@ -96,19 +96,19 @@ describe('VerifiableCredentialProcessor', () => {
       expect(processor.validate(validVC)).toBe(true)
     })
 
-    it('should throw FHIRValidationError for null VC', () => {
+    it('should throw CredentialValidationError for null VC', () => {
       expect(() => processor.validate(null as unknown as VerifiableCredential)).toThrow(
-        FHIRValidationError
+        CredentialValidationError
       )
       expect(() => processor.validate(null as unknown as VerifiableCredential)).toThrow(
         'Invalid VC: missing vc property'
       )
     })
 
-    it('should throw FHIRValidationError for VC without vc property', () => {
+    it('should throw CredentialValidationError for VC without vc property', () => {
       const invalidVC = {} as VerifiableCredential
 
-      expect(() => processor.validate(invalidVC)).toThrow(FHIRValidationError)
+      expect(() => processor.validate(invalidVC)).toThrow(CredentialValidationError)
       expect(() => processor.validate(invalidVC)).toThrow('Invalid VC: missing vc property')
     })
 
@@ -117,7 +117,7 @@ describe('VerifiableCredentialProcessor', () => {
         const invalidVC = { ...validVC }
         invalidVC.vc.type = 'not-an-array' as any
 
-        expect(() => processor.validate(invalidVC)).toThrow(FHIRValidationError)
+        expect(() => processor.validate(invalidVC)).toThrow(CredentialValidationError)
         expect(() => processor.validate(invalidVC)).toThrow('VC type must be an array')
       })
 
@@ -125,7 +125,7 @@ describe('VerifiableCredentialProcessor', () => {
         const invalidVC = { ...validVC }
         invalidVC.vc.type = []
 
-        expect(() => processor.validate(invalidVC)).toThrow(FHIRValidationError)
+        expect(() => processor.validate(invalidVC)).toThrow(CredentialValidationError)
         expect(() => processor.validate(invalidVC)).toThrow(
           'VC type must contain at least 1 element'
         )
@@ -135,7 +135,7 @@ describe('VerifiableCredentialProcessor', () => {
         const invalidVC = { ...validVC }
         invalidVC.vc.type = ['SomeOtherType']
 
-        expect(() => processor.validate(invalidVC)).toThrow(FHIRValidationError)
+        expect(() => processor.validate(invalidVC)).toThrow(CredentialValidationError)
         expect(() => processor.validate(invalidVC)).toThrow(
           'VC type must include https://smarthealth.cards#health-card'
         )
@@ -147,7 +147,7 @@ describe('VerifiableCredentialProcessor', () => {
         const invalidVC = { ...validVC }
         delete (invalidVC.vc as Record<string, unknown>).credentialSubject
 
-        expect(() => processor.validate(invalidVC)).toThrow(FHIRValidationError)
+        expect(() => processor.validate(invalidVC)).toThrow(CredentialValidationError)
         expect(() => processor.validate(invalidVC)).toThrow('VC credentialSubject is required')
       })
 
@@ -155,7 +155,7 @@ describe('VerifiableCredentialProcessor', () => {
         const invalidVC = { ...validVC }
         delete (invalidVC.vc.credentialSubject as Record<string, unknown>).fhirVersion
 
-        expect(() => processor.validate(invalidVC)).toThrow(FHIRValidationError)
+        expect(() => processor.validate(invalidVC)).toThrow(CredentialValidationError)
         expect(() => processor.validate(invalidVC)).toThrow(
           'VC credentialSubject must include fhirVersion'
         )
@@ -165,7 +165,7 @@ describe('VerifiableCredentialProcessor', () => {
         const invalidVC = { ...validVC }
         invalidVC.vc.credentialSubject.fhirVersion = 'invalid-version'
 
-        expect(() => processor.validate(invalidVC)).toThrow(FHIRValidationError)
+        expect(() => processor.validate(invalidVC)).toThrow(CredentialValidationError)
         expect(() => processor.validate(invalidVC)).toThrow(
           'VC fhirVersion must be in semantic version format (e.g., 4.0.1)'
         )
@@ -185,7 +185,7 @@ describe('VerifiableCredentialProcessor', () => {
         const invalidVC = { ...validVC }
         delete (invalidVC.vc.credentialSubject as Record<string, unknown>).fhirBundle
 
-        expect(() => processor.validate(invalidVC)).toThrow(FHIRValidationError)
+        expect(() => processor.validate(invalidVC)).toThrow(CredentialValidationError)
         expect(() => processor.validate(invalidVC)).toThrow(
           'VC credentialSubject must include fhirBundle'
         )
@@ -197,7 +197,7 @@ describe('VerifiableCredentialProcessor', () => {
           resourceType: 'Patient',
         } as any
 
-        expect(() => processor.validate(invalidVC)).toThrow(FHIRValidationError)
+        expect(() => processor.validate(invalidVC)).toThrow(CredentialValidationError)
         expect(() => processor.validate(invalidVC)).toThrow(
           'VC fhirBundle must be a valid FHIR Bundle'
         )

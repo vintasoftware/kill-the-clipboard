@@ -1,6 +1,6 @@
 // FHIR Bundle processing for SMART Health Cards
 
-import { FHIRValidationError, InvalidBundleReferenceError } from '../errors.js'
+import { BundleValidationError, InvalidBundleReferenceError } from '../errors.js'
 import type { FHIRBundle } from '../types.js'
 
 /**
@@ -16,11 +16,11 @@ export class FHIRBundleProcessor {
    *
    * @param bundle - FHIR Bundle to process
    * @returns Processed FHIR Bundle
-   * @throws {@link FHIRValidationError} When bundle is not a valid FHIR Bundle
+   * @throws {@link BundleValidationError} When bundle is not a valid FHIR Bundle
    */
   process(bundle: FHIRBundle): FHIRBundle {
     if (!bundle || bundle.resourceType !== 'Bundle') {
-      throw new FHIRValidationError('Invalid bundle: must be a FHIR Bundle resource')
+      throw new BundleValidationError('Invalid bundle: must be a FHIR Bundle resource')
     }
 
     // Create a deep copy to avoid modifying the original
@@ -223,17 +223,17 @@ export class FHIRBundleProcessor {
    *
    * @param bundle - FHIR Bundle to validate
    * @returns `true` if validation passes
-   * @throws {@link FHIRValidationError} if validation fails
+   * @throws {@link BundleValidationError} if validation fails
    */
   validate(bundle: FHIRBundle): boolean {
     try {
       // Basic structure validation
       if (!bundle) {
-        throw new FHIRValidationError('Bundle cannot be null or undefined')
+        throw new BundleValidationError('Bundle cannot be null or undefined')
       }
 
       if (bundle.resourceType !== 'Bundle') {
-        throw new FHIRValidationError('Resource must be of type Bundle')
+        throw new BundleValidationError('Resource must be of type Bundle')
       }
 
       // Enforce FHIR Bundle.type value set (R4) if provided
@@ -252,23 +252,23 @@ export class FHIRBundleProcessor {
           'collection',
         ])
         if (!allowedTypes.has(bundle.type as string)) {
-          throw new FHIRValidationError(`Invalid bundle.type: ${bundle.type}`)
+          throw new BundleValidationError(`Invalid bundle.type: ${bundle.type}`)
         }
       }
 
       // Validate entries if present
       if (bundle.entry) {
         if (!Array.isArray(bundle.entry)) {
-          throw new FHIRValidationError('Bundle.entry must be an array')
+          throw new BundleValidationError('Bundle.entry must be an array')
         }
 
         for (const [index, entry] of bundle.entry.entries()) {
           if (!entry.resource) {
-            throw new FHIRValidationError(`Bundle.entry[${index}] must contain a resource`)
+            throw new BundleValidationError(`Bundle.entry[${index}] must contain a resource`)
           }
 
           if (!entry.resource.resourceType) {
-            throw new FHIRValidationError(
+            throw new BundleValidationError(
               `Bundle.entry[${index}].resource must have a resourceType`
             )
           }
@@ -277,11 +277,11 @@ export class FHIRBundleProcessor {
 
       return true
     } catch (error) {
-      if (error instanceof FHIRValidationError) {
+      if (error instanceof BundleValidationError) {
         throw error
       }
       const errorMessage = error instanceof Error ? error.message : String(error)
-      throw new FHIRValidationError(`Bundle validation failed: ${errorMessage}`)
+      throw new BundleValidationError(`Bundle validation failed: ${errorMessage}`)
     }
   }
 }
