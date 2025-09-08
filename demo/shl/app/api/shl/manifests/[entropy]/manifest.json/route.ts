@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { MedplumClient } from '@medplum/core';
 import { SHLExpiredError, SHLManifestBuilder } from 'kill-the-clipboard';
 import { buildMedplumFetch } from '@/lib/medplum-fetch';
-import { getManifestBuilder, getStoredPasscode } from '@/lib/storage';
+import { getManifestBuilder, getStoredPasscode, isSHLInvalidated, incrementFailedAttempts } from '@/lib/storage';
 import { verifyPasscode } from '@/lib/auth';
 import { createManifestFileHandlers } from '@/lib/medplum-file-handlers';
 
@@ -50,6 +50,17 @@ export async function POST(
     );
   }
 
+  // Get the maximum allowed failed attempts from environment variable (default: 100)
+  const maxFailedAttempts = parseInt(process.env.SHL_MAX_FAILED_ATTEMPTS || '100', 10);
+
+  // Check if SHL is invalidated due to too many failed attempts
+  if (await isSHLInvalidated(entropy)) {
+    return NextResponse.json(
+      { error: 'Smart Health Link not found' },
+      { status: 404 }
+    );
+  }
+
   // Retrieve the stored manifest builder state
   const builderState = await getManifestBuilder(entropy);
   if (!builderState) {
@@ -70,8 +81,19 @@ export async function POST(
     }
 
     if (!(await verifyPasscode(passcode, storedPasscodeHash))) {
+      // Increment failed attempts and check if SHL should be invalidated
+      const { attempts, invalidated } = await incrementFailedAttempts(entropy, maxFailedAttempts);
+
+      if (invalidated) {
+        // Return 404 instead of 401 to hide the fact that the SHL exists
+        return NextResponse.json(
+          { error: 'Smart Health Link not found' },
+          { status: 404 }
+        );
+      }
+
       return NextResponse.json(
-        { error: 'Invalid passcode' },
+        { error: 'Invalid passcode', remainingAttempts: maxFailedAttempts - attempts },
         { status: 401 }
       );
     }

@@ -1,5 +1,4 @@
 'use client';
-import '@mantine/core/styles.css';
 import { MedplumClient } from '@medplum/core';
 import { MedplumProvider } from '@medplum/react';
 import '@medplum/react/styles.css';

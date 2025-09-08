@@ -17,15 +17,6 @@ export function SHLDisplay({ shlUri, onReset }: SHLDisplayProps) {
   const [qrError, setQrError] = useState<string | null>(null);
   const [isGeneratingQR, setIsGeneratingQR] = useState(false);
 
-  const handleCopy = () => {
-    navigator.clipboard.writeText(shlUri);
-    notifications.show({
-      title: 'Copied!',
-      message: 'Smart Health Link copied to clipboard',
-      color: 'green',
-    });
-  };
-
   const handleView = () => {
     // Open the SHL viewer in a new tab
     const viewerUrl = `${window.location.origin}/viewer#${shlUri}`;
@@ -63,7 +54,7 @@ export function SHLDisplay({ shlUri, onReset }: SHLDisplayProps) {
       <Stack gap="lg">
         <div>
           <Title order={2} mb="xs">
-            Smart Health Link Created!
+            Smart Health Link Created
           </Title>
           <Text size="sm" c="dimmed">
             Your health information is now securely accessible via this link.

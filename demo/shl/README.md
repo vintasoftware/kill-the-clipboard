@@ -14,6 +14,7 @@ This is a Next.js demo application that demonstrates Smart Health Links (SHL) fu
 - **Smart Health Link Viewer**: Resolves `shlink:/...`, prompts for passcode if needed, fetches manifest, decrypts files, and displays FHIR resources
     - **Manifest serving**: POST manifest endpoint; embeds JWEs ≤ 4 KiB, otherwise returns JWE file URLs
     - **Optional long-term flag (`L`)**: Flag is settable on creation; no polling implemented yet
+    - **Failed attempt tracking**: Tracks failed passcode attempts and permanently invalidates SHLs after exceeding the configured limit (default: 100 attempts)
 
 ## URL Paths
 

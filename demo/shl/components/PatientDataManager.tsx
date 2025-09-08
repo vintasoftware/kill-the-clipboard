@@ -64,13 +64,6 @@ function AddSampleDataControl(props: { onAdded: () => Promise<void> | void }) {
       ];
 
       await Promise.all(allSamples.map((sample) => medplum.createResource(sample)));
-
-      notifications.show({
-        title: 'Success',
-        message: 'Sample health data added successfully',
-        color: 'green',
-      });
-
       await onAdded();
     } catch (error) {
       console.error('Error adding sample data:', error);
@@ -124,13 +117,6 @@ function DeletePatientDataControl(props: { onDeleted: () => Promise<void> | void
       ];
 
       await Promise.all(resourcesToDelete.map((r) => medplum.deleteResource(r.resourceType as any, r.id)));
-
-      notifications.show({
-        title: 'Deleted',
-        message: 'All Allergies, Conditions, Medications, and Observations were deleted',
-        color: 'green',
-      });
-
       await onDeleted();
     } catch (error) {
       console.error('Error deleting health data:', error);

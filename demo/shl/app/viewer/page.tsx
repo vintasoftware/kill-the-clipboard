@@ -40,6 +40,7 @@ export default function ViewerPage() {
   const [step, setStep] = useState<'uri' | 'credentials' | 'content'>('uri');
   const [qrCodesByCard, setQrCodesByCard] = useState<string[][]>([]);
   const [error, setError] = useState<string | null>(null);
+  const [isInvalidated, setIsInvalidated] = useState(false);
   const [expandedCards, setExpandedCards] = useState<Set<number>>(new Set());
 
   const toggleCardExpansion = (cardIndex: number) => {
@@ -73,6 +74,7 @@ export default function ViewerPage() {
   const handleParseUri = useCallback(
     (uri: string) => {
       setError(null);
+      setIsInvalidated(false);
       try {
         // Get the access token from Medplum client
         const accessToken = medplum.getAccessToken();
@@ -91,11 +93,6 @@ export default function ViewerPage() {
       } catch (error) {
         const errorMessage = error instanceof Error ? error.message : 'Failed to parse Smart Health Link';
         setError(errorMessage);
-        notifications.show({
-          title: 'Invalid SHL URI',
-          message: errorMessage,
-          color: 'red',
-        });
       }
     },
     [medplum]
@@ -116,11 +113,6 @@ export default function ViewerPage() {
     if (!shlURI) {
       const errorMessage = 'Please enter a Smart Health Link URI';
       setError(errorMessage);
-      notifications.show({
-        title: 'Error',
-        message: errorMessage,
-        color: 'red',
-      });
       return;
     }
     setShlUri(shlURI);
@@ -144,11 +136,6 @@ export default function ViewerPage() {
 
       setResolvedContent(content);
       setStep('content');
-      notifications.show({
-        title: 'Success!',
-        message: 'Smart Health Link resolved successfully',
-        color: 'green',
-      });
 
       // Generate QR codes for any Smart Health Cards present
       if (content.smartHealthCards?.length) {
@@ -173,20 +160,20 @@ export default function ViewerPage() {
       const errorMessage = error instanceof Error ? error.message : 'Failed to resolve Smart Health Link';
 
       let userFriendlyMessage = errorMessage;
+      let isLinkInvalidated = false;
+
       if (errorMessage.includes('passcode') || errorMessage.includes('unauthorized') || errorMessage.includes('403')) {
         userFriendlyMessage = 'Invalid passcode. Please check the passcode and try again.';
       } else if (errorMessage.includes('not found') || errorMessage.includes('404')) {
-        userFriendlyMessage = 'Smart Health Link not found or has expired.';
+        userFriendlyMessage =
+          'This Smart Health Link has not been found. It may have been invalidated or expired. Please contact the person who shared this link to get a new one.';
+        isLinkInvalidated = true;
       } else if (errorMessage.includes('network') || errorMessage.includes('fetch')) {
         userFriendlyMessage = 'Network error. Please check your connection and try again.';
       }
 
       setError(userFriendlyMessage);
-      notifications.show({
-        title: 'Error',
-        message: userFriendlyMessage,
-        color: 'red',
-      });
+      setIsInvalidated(isLinkInvalidated);
     } finally {
       setIsLoading(false);
     }
@@ -198,6 +185,7 @@ export default function ViewerPage() {
     setResolvedContent(null);
     setQrCodesByCard([]);
     setError(null);
+    setIsInvalidated(false);
     setIsLoading(false);
     setStep('uri');
     form.reset();
@@ -243,8 +231,9 @@ export default function ViewerPage() {
                     value={shlUri}
                     onChange={(e) => {
                       setShlUri(e.currentTarget.value);
-                      // Clear error when user starts typing
+                      // Clear error and invalidated state when user starts typing
                       if (error) setError(null);
+                      if (isInvalidated) setIsInvalidated(false);
                     }}
                     error={error}
                     required
@@ -298,8 +287,18 @@ export default function ViewerPage() {
               </Alert>
 
               {error && (
-                <Alert icon={<IconAlertCircle size="1rem" />} color="red" mb="md">
+                <Alert
+                  icon={<IconAlertCircle size="1rem" />}
+                  color={isInvalidated ? 'orange' : 'red'}
+                  mb="md"
+                  title={isInvalidated ? 'Smart Health Link Not Found' : 'Error'}
+                >
                   {error}
+                  {isInvalidated && (
+                    <Text size="sm" mt="xs" c="dimmed">
+                      You will need to request a new Smart Health Link from the original sender.
+                    </Text>
+                  )}
                 </Alert>
               )}
 
@@ -310,17 +309,21 @@ export default function ViewerPage() {
                     description="Enter your name as the recipient of this health information"
                     placeholder="e.g. John Doe"
                     required
-                    disabled={isLoading}
+                    disabled={isLoading || isInvalidated}
                     {...form.getInputProps('recipient')}
                   />
 
                   {shlViewer.shl.requiresPasscode && (
                     <PasswordInput
                       label="Passcode"
-                      description="Enter the passcode provided with this Smart Health Link"
+                      description={
+                        isInvalidated
+                          ? 'This Smart Health Link has been disabled'
+                          : 'Enter the passcode provided with this Smart Health Link'
+                      }
                       placeholder="Enter passcode"
                       required
-                      disabled={isLoading}
+                      disabled={isLoading || isInvalidated}
                       {...form.getInputProps('passcode')}
                     />
                   )}
@@ -329,7 +332,7 @@ export default function ViewerPage() {
                     <Button variant="outline" onClick={handleReset} disabled={isLoading}>
                       Back
                     </Button>
-                    <Button type="submit" loading={isLoading} disabled={isLoading}>
+                    <Button type="submit" loading={isLoading} disabled={isLoading || isInvalidated}>
                       Access Health Information
                     </Button>
                   </Group>

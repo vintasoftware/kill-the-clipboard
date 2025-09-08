@@ -23,6 +23,8 @@ model Passcode {
   id             Int      @id @default(autoincrement())
   entropy        String   @unique
   hashedPasscode String
+  failedAttempts Int      @default(0)
+  isInvalidated  Boolean  @default(false)
   createdAt      DateTime @default(now())
 
   @@map("passcodes")

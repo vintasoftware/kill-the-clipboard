@@ -85,11 +85,6 @@ export function CreateSHLForm({ onSHLCreated, onCancel }: CreateSHLFormProps) {
       }
 
       const { shlUri } = await response.json();
-      notifications.show({
-        title: 'Success!',
-        message: 'Smart Health Link created successfully',
-        color: 'green',
-      });
       form.reset();
       onSHLCreated(shlUri);
     } catch (error) {
