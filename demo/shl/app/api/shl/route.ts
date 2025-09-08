@@ -112,10 +112,7 @@ export async function POST(request: NextRequest) {
     fhirBundle.entry!.push(...observations.entry!);
 
     // Add the FHIR bundle to the manifest
-    await manifestBuilder.addFHIRResource({
-      content: fhirBundle,
-      enableCompression: true
-    });
+    await manifestBuilder.addFHIRResource({ content: fhirBundle });
 
     // Add the FHIR bundle as a Smart Health Card to the manifest
     const shcIssuer = new SmartHealthCardIssuer({
@@ -132,10 +129,10 @@ export async function POST(request: NextRequest) {
     const manifestID = urlParts[urlParts.length - 2]; // Get the manifestID part before manifest.json
 
     // Store the manifest builder state in database
-    await storeManifestBuilder(manifestID, manifestBuilder.serialize(), profile.id);
+    await storeManifestBuilder(manifestID, manifestBuilder.serialize());
 
     // Hash and store the passcode
-    const { hash } = hashPasscode(passcode);
+    const { hash } = await hashPasscode(passcode);
     await storePasscode(manifestID, hash);
 
     // Return the SHL URI

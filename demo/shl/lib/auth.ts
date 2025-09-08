@@ -1,41 +1,26 @@
-import { createHash, timingSafeEqual, randomBytes } from 'crypto';
+import argon2 from 'argon2';
 
-// Simple password hashing using SHA-256 with salt
-// In production, consider use Argon2 for better security
+export async function hashPasscode(passcode: string): Promise<{ hash: string }> {
+  try {
+    // Use Argon2id variant with OWASP recommended parameters
+    const hash = await argon2.hash(passcode, {
+      type: argon2.argon2id,
+      memoryCost: 19456, // 19 MiB in KiB
+      timeCost: 2,       // 2 iterations
+      parallelism: 1,    // Single thread
+    });
 
-const SALT_LENGTH = 32;
-
-export function hashPasscode(passcode: string, salt?: Buffer): { hash: string; salt: string } {
-  const saltBuffer = salt || randomBytes(SALT_LENGTH);
-
-  // Simple hash implementation for demo
-  // In production, use Argon2
-  const combined = Buffer.concat([Buffer.from(passcode, 'utf8'), saltBuffer]);
-  const hash = createHash('sha256').update(combined).digest('hex');
-  const saltHex = saltBuffer.toString('hex');
-
-  return {
-    hash: `${hash}:${saltHex}`,
-    salt: saltHex
-  };
+    return { hash };
+  } catch (error) {
+    console.error('Error hashing passcode:', error);
+    throw new Error('Failed to hash passcode');
+  }
 }
 
-export function verifyPasscode(passcode: string, storedHash: string): boolean {
+export async function verifyPasscode(passcode: string, storedHash: string): Promise<boolean> {
   try {
-    const [hash, salt] = storedHash.split(':');
-    if (!hash || !salt) return false;
-
-    const saltBuffer = Buffer.from(salt, 'hex');
-    const { hash: computedHash } = hashPasscode(passcode, saltBuffer);
-    const [computedHashOnly] = computedHash.split(':');
-
-    // Use timing-safe comparison
-    const hashBuffer1 = Buffer.from(hash, 'hex');
-    const hashBuffer2 = Buffer.from(computedHashOnly, 'hex');
-
-    if (hashBuffer1.length !== hashBuffer2.length) return false;
-
-    return timingSafeEqual(hashBuffer1, hashBuffer2);
+    // Use Argon2's built-in verification with timing-safe comparison
+    return await argon2.verify(storedHash, passcode);
   } catch (error) {
     console.error('Error verifying passcode:', error);
     return false;

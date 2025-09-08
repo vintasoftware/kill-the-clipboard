@@ -7,8 +7,8 @@ This is a Next.js demo application that demonstrates Smart Health Links (SHL) fu
 ## What this demo implements
 
 - **Smart Health Link Generator**: Creates Smart Health Links that point to a manifest; `U` flag unsupported
-    - **Passcode protection (`P` flag)**: Server-enforced passcode prompted on the viewer; passcodes are stored as salted SHA-256 hashes (demo only, not suited for production). For production, use Argon2 or similar and a proper database
-    - **Persistent Manifest storage**: Serialized `SHLManifestBuilder` state and passcode hashes stored on local filesystem under `.shl-storage/*.json` (demo only, not suited for production). For production, use a proper database
+    - **Passcode protection (`P` flag)**: Server-enforced passcode prompted on the viewer; passcodes are stored as Argon2id hashes in SQLite database using OWASP recommended security parameters
+    - **Persistent Manifest storage**: Serialized `SHLManifestBuilder` state and passcode hashes stored in SQLite database using Prisma ORM.
     - **File storage**: Encrypted JWE files persisted to Medplum as `Binary` resources; file URLs are FHIR URLs for `Binary` resources
     - **QR code rendering**: Rendering of SHL QR codes using `qr` library
 - **Smart Health Link Viewer**: Resolves `shlink:/...`, prompts for passcode if needed, fetches manifest, decrypts files, and displays FHIR resources
@@ -35,6 +35,7 @@ This is a Next.js demo application that demonstrates Smart Health Links (SHL) fu
 - Node.js 20.19.0 or higher
 - pnpm package manager
 - Medplum account and credentials
+- SQLite (for database storage)
 
 ### Installation
 
@@ -50,6 +51,7 @@ This is a Next.js demo application that demonstrates Smart Health Links (SHL) fu
 
    Configure the following variables:
    ```env
+   DATABASE_URL="file:./shl.db"
    NEXT_PUBLIC_MEDPLUM_BASE_URL=https://api.medplum.com
    NEXT_PUBLIC_MEDPLUM_CLIENT_ID=your_client_id
    MEDPLUM_CLIENT_SECRET=your_client_secret
@@ -57,12 +59,17 @@ This is a Next.js demo application that demonstrates Smart Health Links (SHL) fu
 
    The other variables can be left as is.
 
-3. Run the development server:
+3. Set up the database:
+   ```bash
+   npx prisma migrate dev
+   ```
+
+4. Run the development server:
    ```bash
    pnpm dev
    ```
 
-4. Open [http://localhost:3000](http://localhost:3000) in your browser.
+5. Open [http://localhost:3000](http://localhost:3000) in your browser.
 
 ## Usage
 
@@ -74,7 +81,7 @@ This is a Next.js demo application that demonstrates Smart Health Links (SHL) fu
 4. Submit the form; the server will:
    - Build a FHIR Bundle and a Smart Health Card from your Medplum data
    - Encrypt and upload the bundle as JWE files using Medplum `Binary` FHIR resources
-   - Persist builder state and passcode hash locally (demo only, not suited for production)
+   - Persist builder state and passcode hash in SQLite database using Prisma
 5. You’ll get a `shlink:/...` URI and a button to open the viewer
 
 ### Viewing a Smart Health Link
@@ -111,10 +118,11 @@ demo/shl/
 │   ├── auth.ts                         # Passcode hashing and verification
 │   ├── medplum-fetch.ts                # Medplum-authenticated fetch wrapper
 │   ├── medplum-file-handlers.ts        # JWE file upload/URL generation for SHL files
-│   └── storage.ts                      # Local filesystem storage functions (demo only)
-├── .shl-storage/                       # Local storage directory (created at runtime)
-│   ├── manifests.json
-│   └── passcodes.json
+│   └── storage.ts                      # Prisma database storage CRUD functions
+├── prisma/
+│   ├── migrations/                     # Database migration files
+│   └── schema.prisma                   # Prisma schema definition
+├── shl.db                              # SQLite database file (created at runtime)
 ├── package.json
 └── README.md
 ```
@@ -123,3 +131,14 @@ demo/shl/
 
 - **`POST /api/shl`**: Create a new Smart Health Link (requires Medplum bearer token)
 - **`POST /api/shl/manifests/[entropy]/manifest.json`**: Serve SHL manifests (requires Medplum bearer token; passcode enforced)
+
+### Database Management
+
+For development purposes, you can inspect and manage the database using Prisma Studio:
+
+```bash
+# from demo/shl directory
+npx prisma studio
+```
+
+This will open a web interface at [http://localhost:5555](http://localhost:5555) where you can view and edit the stored manifests and passcodes.

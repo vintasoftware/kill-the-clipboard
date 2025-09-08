@@ -69,7 +69,7 @@ export async function POST(
       );
     }
 
-    if (!verifyPasscode(passcode, storedPasscodeHash)) {
+    if (!(await verifyPasscode(passcode, storedPasscodeHash))) {
       return NextResponse.json(
         { error: 'Invalid passcode' },
         { status: 401 }

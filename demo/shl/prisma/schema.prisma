@@ -1,0 +1,29 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model Manifest {
+  id           Int      @id @default(autoincrement())
+  entropy      String   @unique
+  builderState String   // JSON serialized SHLManifestBuilder
+  createdAt    DateTime @default(now())
+
+  @@map("manifests")
+}
+
+model Passcode {
+  id             Int      @id @default(autoincrement())
+  entropy        String   @unique
+  hashedPasscode String
+  createdAt      DateTime @default(now())
+
+  @@map("passcodes")
+}
