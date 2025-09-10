@@ -60,4 +60,33 @@ describe('SHL Crypto', () => {
       'Missing content type (cty) in JWE protected header'
     )
   })
+
+  it('generates unique IVs for each encryption operation (SHL spec compliance)', async () => {
+    const key = generateB64uKey()
+    const content = JSON.stringify({ message: 'Same content every time' })
+    const contentType = 'application/fhir+json' as const
+
+    // Encrypt the same content multiple times with the same key
+    const jweResults = []
+    for (let i = 0; i < 10; i++) {
+      const jwe = await encryptSHLFile({ content, key, contentType })
+      jweResults.push(jwe)
+    }
+
+    // All JWE strings should be different due to unique IVs
+    const uniqueJWEs = new Set(jweResults)
+    expect(uniqueJWEs.size).toBe(jweResults.length)
+
+    // Extract and verify IVs are unique (3rd component of JWE Compact format)
+    const ivs = jweResults.map(jwe => jwe.split('.')[2])
+    const uniqueIVs = new Set(ivs)
+    expect(uniqueIVs.size).toBe(ivs.length)
+
+    // Verify all results can be decrypted to the same content
+    for (const jwe of jweResults) {
+      const { content: decrypted, contentType: cty } = await decryptSHLFile({ jwe, key })
+      expect(decrypted).toBe(content)
+      expect(cty).toBe(contentType)
+    }
+  })
 })
