@@ -178,6 +178,13 @@ import {
 
 // Mock storage for this example
 const uploadedFiles = new Map<string, string>();
+const uploadFile = async (content: string) => {
+  const path = `file-${uploadedFiles.size + 1}`;
+  uploadedFiles.set(path, content);
+  return path;
+};
+const getFileURL = async (path: string) => `https://files.example.org/${path}`;
+const loadFile = async (path: string) => uploadedFiles.get(path);
 
 // 1. [Server side] Generate an SHL
 const shl = SHL.generate({
@@ -189,13 +196,9 @@ const shl = SHL.generate({
 // 2. [Server side] Create manifest builder with mocked file handling
 const builder = new SHLManifestBuilder({
   shl,
-  uploadFile: async (content: string) => {
-    const fileId = `file-${uploadedFiles.size + 1}`;
-    uploadedFiles.set(fileId, content);
-    return fileId;
-  },
-  getFileURL: async (path: string) => `https://files.example.org/${path}`,
-  loadFile: async (path: string) => uploadedFiles.get(path)
+  uploadFile: uploadFile,
+  getFileURL: getFileURL,
+  loadFile: loadFile,
 });
 
 // 3. [Server side] Add a FHIR bundle as content
@@ -229,13 +232,9 @@ const fetchImpl = async (url: string, init?: RequestInit) => {
   if (init?.method === 'POST' && url === shl.url) {
     const builder = SHLManifestBuilder.deserialize({
       data: serializedBuilder,
-      uploadFile: async (content: string) => {
-        const fileId = `file-${uploadedFiles.size + 1}`;
-        uploadedFiles.set(fileId, content);
-        return fileId;
-      },
-      getFileURL: async (path: string) => `https://files.example.org/${path}`,
-      loadFile: async (path: string) => uploadedFiles.get(path)
+      uploadFile: uploadFile,
+      getFileURL: getFileURL,
+      loadFile: loadFile,
     });
 
     const body = JSON.parse(init.body);
