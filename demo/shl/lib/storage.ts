@@ -1,5 +1,6 @@
 import { SerializedSHLManifestBuilder } from 'kill-the-clipboard';
 import { PrismaClient } from '@prisma/client';
+import { JsonObject } from '@prisma/client/runtime/library';
 
 // Prisma-based storage for demo purposes
 
@@ -12,11 +13,11 @@ export async function storeManifestBuilder(
   await prisma.manifest.upsert({
     where: { entropy },
     update: {
-      builderState: JSON.stringify(builderState),
+      builderState: builderState as unknown as JsonObject,
     },
     create: {
       entropy,
-      builderState: JSON.stringify(builderState),
+      builderState: builderState as unknown as JsonObject,
     },
   });
 }
@@ -30,7 +31,7 @@ export async function getManifestBuilder(entropy: string): Promise<SerializedSHL
     return null;
   }
 
-  return JSON.parse(manifest.builderState);
+  return manifest.builderState as unknown as SerializedSHLManifestBuilder;
 }
 
 export async function storePasscode(entropy: string, hashedPasscode: string): Promise<void> {
