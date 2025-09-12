@@ -19,10 +19,8 @@ import {
 import { useForm } from '@mantine/form';
 import { notifications } from '@mantine/notifications';
 import { SHLViewer, SHLResolvedContent } from 'kill-the-clipboard';
-import { buildMedplumFetch } from '@/lib/medplum-fetch';
 import { useState, useEffect, useCallback } from 'react';
 import { IconAlertCircle, IconCheck, IconX } from '@tabler/icons-react';
-import { useMedplum } from '@medplum/react';
 import { PatientDataBundleDisplay } from '@/components/PatientDataBundleDisplay';
 import { Bundle } from '@medplum/fhirtypes';
 
@@ -32,7 +30,6 @@ interface ViewerFormValues {
 }
 
 export default function ViewerPage() {
-  const medplum = useMedplum();
   const [shlUri, setShlUri] = useState<string>('');
   const [shlViewer, setShlViewer] = useState<SHLViewer | null>(null);
   const [resolvedContent, setResolvedContent] = useState<SHLResolvedContent | null>(null);
@@ -71,32 +68,21 @@ export default function ViewerPage() {
     },
   });
 
-  const handleParseUri = useCallback(
-    (uri: string) => {
-      setError(null);
-      setIsInvalidated(false);
-      try {
-        // Get the access token from Medplum client
-        const accessToken = medplum.getAccessToken();
-        if (!accessToken) {
-          throw new Error('No access token available. Please sign in again.');
-        }
-
-        const shlURI = uri.trim();
-        const viewer = new SHLViewer({
-          shlinkURI: shlURI,
-          // Provide Medplum-authenticated fetch
-          fetch: buildMedplumFetch(medplum),
-        });
-        setShlViewer(viewer);
-        setStep('credentials');
-      } catch (error) {
-        const errorMessage = error instanceof Error ? error.message : 'Failed to parse Smart Health Link';
-        setError(errorMessage);
-      }
-    },
-    [medplum]
-  );
+  const handleParseUri = useCallback((uri: string) => {
+    setError(null);
+    setIsInvalidated(false);
+    try {
+      const shlURI = uri.trim();
+      const viewer = new SHLViewer({
+        shlinkURI: shlURI,
+      });
+      setShlViewer(viewer);
+      setStep('credentials');
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Failed to parse Smart Health Link';
+      setError(errorMessage);
+    }
+  }, []);
 
   // Parse SHL URI from URL hash on component mount
   useEffect(() => {

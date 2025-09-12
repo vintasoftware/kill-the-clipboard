@@ -1,0 +1,2381 @@
+{
+  "resourceType" : "Bundle",
+  "id" : "bundle-ips-all-sections",
+  "meta" : {
+    "profile" : ["http://hl7.org/fhir/uv/ips/StructureDefinition/Bundle-uv-ips"],
+    "security" : [{
+      "system" : "http://terminology.hl7.org/CodeSystem/v3-Confidentiality",
+      "code" : "N",
+      "display" : "normal"
+    }]
+  },
+  "language" : "en-NZ",
+  "identifier" : {
+    "system" : "urn:oid:2.16.724.4.8.10.200.10",
+    "value" : "ac7a747c-a2c9-493c-ba39-4ac6997eed1e"
+  },
+  "type" : "document",
+  "timestamp" : "2024-09-21T18:53:00.8116604+00:00",
+  "entry" : [{
+    "fullUrl" : "https://fhir.example.com/Composition/9c98f78e-f324-4ad5-97a1-8eb9ef9a1172",
+    "resource" : {
+      "resourceType" : "Composition",
+      "id" : "9c98f78e-f324-4ad5-97a1-8eb9ef9a1172",
+      "meta" : {
+        "versionId" : "1",
+        "profile" : ["http://hl7.org/fhir/uv/ips/StructureDefinition/Composition-uv-ips"]
+      },
+      "language" : "en-NZ",
+      "text" : {
+        "status" : "generated",
+        "div" : "<div xmlns=\"http://www.w3.org/1999/xhtml\" xml:lang=\"en-NZ\" lang=\"en-NZ\"><a name=\"Composition_9c98f78e-f324-4ad5-97a1-8eb9ef9a1172\"> </a><p class=\"res-header-id\"><b>Generated Narrative: Composition 9c98f78e-f324-4ad5-97a1-8eb9ef9a1172</b></p><a name=\"9c98f78e-f324-4ad5-97a1-8eb9ef9a1172\"> </a><a name=\"hc9c98f78e-f324-4ad5-97a1-8eb9ef9a1172\"> </a><div style=\"display: inline-block; background-color: #d9e0e7; padding: 6px; margin: 4px; border: 1px solid #8da1b4; border-radius: 5px; line-height: 60%\"><p style=\"margin-bottom: 0px\">version: 1; Language: en-NZ</p><p style=\"margin-bottom: 0px\">Profile: <a href=\"StructureDefinition-Composition-uv-ips.html\">Composition (IPS)</a></p></div><p><b>identifier</b>: <code>urn:oid:2.16.840.1.113883.2.18.7.2</code>/ac7a747c-a2c9-493c-ba39-4ac6997eed1e</p><p><b>status</b>: Final</p><p><b>type</b>: <span title=\"Codes:{http://loinc.org 60591-5}\">Patient summary Document</span></p><p><b>date</b>: 2024-09-13</p><p><b>author</b>: <a href=\"Bundle-bundle-ips-all-sections.html#Organization_7a17027f-acc0-4d77-bf84-c0dad8f7c881\">Bundle: identifier = urn:oid:2.16.724.4.8.10.200.10#ac7a747c-a2c9-493c-ba39-4ac6997eed1e; type = document; timestamp = 2024-09-21 18:53:00+0000</a></p><p><b>title</b>: International Patient Summary</p><p><b>confidentiality</b>: normal</p><h3>Attesters</h3><table class=\"grid\"><tr><td style=\"display: none\">-</td><td><b>Mode</b></td><td><b>Time</b></td><td><b>Party</b></td></tr><tr><td style=\"display: none\">*</td><td>Professional</td><td>2024-09-13</td><td><a href=\"Bundle-bundle-ips-all-sections.html#PractitionerRole_94d12c8d-a3df-47a7-a0bb-0f29d64bafe2\">Bundle: identifier = urn:oid:2.16.724.4.8.10.200.10#ac7a747c-a2c9-493c-ba39-4ac6997eed1e; type = document; timestamp = 2024-09-21 18:53:00+0000</a></td></tr></table><p><b>custodian</b>: <a href=\"Bundle-bundle-ips-all-sections.html#Organization_7a17027f-acc0-4d77-bf84-c0dad8f7c881\">Bundle: identifier = urn:oid:2.16.724.4.8.10.200.10#ac7a747c-a2c9-493c-ba39-4ac6997eed1e; type = document; timestamp = 2024-09-21 18:53:00+0000</a></p><h3>RelatesTos</h3><table class=\"grid\"><tr><td style=\"display: none\">-</td><td><b>Code</b></td><td><b>Target[x]</b></td></tr><tr><td style=\"display: none\">*</td><td>Transforms</td><td><code>urn:oid:2.16.840.1.113883.2.18.7.2</code>/ac7a747c-a2c9-493c-ba39-4ac6997eed1e</td></tr></table><h3>Events</h3><table class=\"grid\"><tr><td style=\"display: none\">-</td><td><b>Code</b></td><td><b>Period</b></td></tr><tr><td style=\"display: none\">*</td><td><span title=\"Codes:{http://terminology.hl7.org/CodeSystem/v3-ActClass PCPR}\">care provision</span></td><td>?? --&gt; 2024-09-13</td></tr></table></div>"
+      },
+      "identifier" : {
+        "system" : "urn:oid:2.16.840.1.113883.2.18.7.2",
+        "value" : "ac7a747c-a2c9-493c-ba39-4ac6997eed1e"
+      },
+      "status" : "final",
+      "type" : {
+        "coding" : [{
+          "system" : "http://loinc.org",
+          "code" : "60591-5",
+          "display" : "Patient summary Document"
+        }]
+      },
+      "subject" : {
+        "reference" : "Patient/d174bd1a-b368-41e6-83a2-af77f2b3c60f"
+      },
+      "date" : "2024-09-13",
+      "author" : [{
+        "reference" : "Organization/7a17027f-acc0-4d77-bf84-c0dad8f7c881"
+      }],
+      "title" : "International Patient Summary",
+      "confidentiality" : "N",
+      "attester" : [{
+        "mode" : "professional",
+        "time" : "2024-09-13",
+        "party" : {
+          "reference" : "PractitionerRole/94d12c8d-a3df-47a7-a0bb-0f29d64bafe2"
+        }
+      }],
+      "custodian" : {
+        "reference" : "Organization/7a17027f-acc0-4d77-bf84-c0dad8f7c881"
+      },
+      "relatesTo" : [{
+        "code" : "transforms",
+        "targetIdentifier" : {
+          "system" : "urn:oid:2.16.840.1.113883.2.18.7.2",
+          "value" : "ac7a747c-a2c9-493c-ba39-4ac6997eed1e"
+        }
+      }],
+      "event" : [{
+        "code" : [{
+          "coding" : [{
+            "system" : "http://terminology.hl7.org/CodeSystem/v3-ActClass",
+            "code" : "PCPR"
+          }]
+        }],
+        "period" : {
+          "end" : "2024-09-13"
+        }
+      }],
+      "section" : [{
+        "title" : "Problem List",
+        "code" : {
+          "coding" : [{
+            "system" : "http://loinc.org",
+            "code" : "11450-4",
+            "display" : "Problem list - Reported"
+          }]
+        },
+        "text" : {
+          "extension" : [{
+            "extension" : [{
+              "url" : "htmlid",
+              "valueString" : "8039e4a7-d459-454c-92a5-6c17ca2a824b"
+            },
+            {
+              "url" : "data",
+              "valueUri" : "https://fhir.example.com/Condition/8039e4a7-d459-454c-92a5-6c17ca2a824b"
+            }],
+            "url" : "http://hl7.org/fhir/StructureDefinition/textLink"
+          },
+          {
+            "extension" : [{
+              "url" : "htmlid",
+              "valueString" : "f8ab8ac1-56d1-4239-8303-dc70c1a3d0e1"
+            },
+            {
+              "url" : "data",
+              "valueUri" : "https://fhir.example.com/Condition/f8ab8ac1-56d1-4239-8303-dc70c1a3d0e1"
+            }],
+            "url" : "http://hl7.org/fhir/StructureDefinition/textLink"
+          }],
+          "status" : "generated",
+          "div" : "<div xmlns=\"http://www.w3.org/1999/xhtml\"><table border=\"1\"><tr><th>Problem</th><th>Onset</th><th>Clinical Status</th><th>Verification Status</th><th>Severity</th></tr><tr id=\"8039e4a7-d459-454c-92a5-6c17ca2a824b\"><td>Essential hypertension</td><td>May 24 2016 20:00</td><td/><td/><td/></tr><tr id=\"f8ab8ac1-56d1-4239-8303-dc70c1a3d0e1\"><td>Gout</td><td>May 24 2016 20:00</td><td/><td/><td/></tr></table></div>"
+        },
+        "entry" : [{
+          "reference" : "Condition/8039e4a7-d459-454c-92a5-6c17ca2a824b"
+        },
+        {
+          "reference" : "Condition/f8ab8ac1-56d1-4239-8303-dc70c1a3d0e1"
+        }]
+      },
+      {
+        "title" : "Allergies and Intolerances",
+        "code" : {
+          "coding" : [{
+            "system" : "http://loinc.org",
+            "code" : "48765-2",
+            "display" : "Allergies and adverse reactions Document"
+          }]
+        },
+        "text" : {
+          "extension" : [{
+            "extension" : [{
+              "url" : "htmlid",
+              "valueString" : "9838cf73-c30d-4aa5-8ed8-36a079060b81"
+            },
+            {
+              "url" : "data",
+              "valueUri" : "https://fhir.example.com/AllergyIntolerance/9838cf73-c30d-4aa5-8ed8-36a079060b81"
+            }],
+            "url" : "http://hl7.org/fhir/StructureDefinition/textLink"
+          }],
+          "status" : "generated",
+          "div" : "<div xmlns=\"http://www.w3.org/1999/xhtml\"><table border=\"1\"><tr><th>Allergy Type</th><th>Substance</th><th>Onset</th><th>Clinical Status</th><th>Verification Status</th><th>Reaction</th></tr><tr id=\"9838cf73-c30d-4aa5-8ed8-36a079060b81\"><td/><td>Penicillin</td><td/><td/><td/><td/></tr></table></div>"
+        },
+        "entry" : [{
+          "reference" : "AllergyIntolerance/9838cf73-c30d-4aa5-8ed8-36a079060b81"
+        }]
+      },
+      {
+        "title" : "Medication Summary",
+        "code" : {
+          "coding" : [{
+            "system" : "http://loinc.org",
+            "code" : "10160-0",
+            "display" : "History of Medication use Narrative"
+          }]
+        },
+        "text" : {
+          "extension" : [{
+            "extension" : [{
+              "url" : "htmlid",
+              "valueString" : "c3d31980-2a88-45b6-a7af-3fe8d32cc6fa"
+            },
+            {
+              "url" : "data",
+              "valueUri" : "https://fhir.example.com/MedicationStatement/c3d31980-2a88-45b6-a7af-3fe8d32cc6fa"
+            }],
+            "url" : "http://hl7.org/fhir/StructureDefinition/textLink"
+          },
+          {
+            "extension" : [{
+              "url" : "htmlid",
+              "valueString" : "b8dac343-16d7-49bf-ac36-b15e6726c343"
+            },
+            {
+              "url" : "data",
+              "valueUri" : "https://fhir.example.com/MedicationStatement/b8dac343-16d7-49bf-ac36-b15e6726c343"
+            }],
+            "url" : "http://hl7.org/fhir/StructureDefinition/textLink"
+          },
+          {
+            "extension" : [{
+              "url" : "htmlid",
+              "valueString" : "b8e4d4a8-2c18-4f03-88dc-06f5f44f8058"
+            },
+            {
+              "url" : "data",
+              "valueUri" : "https://fhir.example.com/MedicationStatement/b8e4d4a8-2c18-4f03-88dc-06f5f44f8058"
+            }],
+            "url" : "http://hl7.org/fhir/StructureDefinition/textLink"
+          }],
+          "status" : "generated",
+          "div" : "<div xmlns=\"http://www.w3.org/1999/xhtml\"><table border=\"1\"><tr><th>Medication</th><th>Dates</th><th>Dosage-Timing</th><th>Status</th><th>Route</th></tr><tr id=\"c3d31980-2a88-45b6-a7af-3fe8d32cc6fa\"><td>cilazapril 500 microgram tablet, 90</td><td/><td/><td>stopped</td><td/></tr><tr id=\"b8dac343-16d7-49bf-ac36-b15e6726c343\"><td>lisinopril 5 mg tablet</td><td/><td/><td>active</td><td/></tr><tr id=\"b8e4d4a8-2c18-4f03-88dc-06f5f44f8058\"><td>Ultraproct - cinchocaine 0.5% (5 mg/g) + fluocortolone hexanoate 0.095% (945 microgram/g) + fluocortolone pivalate 0.092% (918 microgram/g) ointment</td><td/><td/><td>active</td><td/></tr></table></div>"
+        },
+        "entry" : [{
+          "reference" : "MedicationStatement/c3d31980-2a88-45b6-a7af-3fe8d32cc6fa"
+        },
+        {
+          "reference" : "MedicationStatement/b8dac343-16d7-49bf-ac36-b15e6726c343"
+        },
+        {
+          "reference" : "MedicationStatement/b8e4d4a8-2c18-4f03-88dc-06f5f44f8058"
+        }]
+      },
+      {
+        "title" : "Immunizations",
+        "code" : {
+          "coding" : [{
+            "system" : "http://loinc.org",
+            "code" : "11369-6",
+            "display" : "History of Immunization note"
+          }]
+        },
+        "text" : {
+          "extension" : [{
+            "extension" : [{
+              "url" : "htmlid",
+              "valueString" : "17b5a6d7-307b-4726-8c8c-0031e61582ce"
+            },
+            {
+              "url" : "data",
+              "valueUri" : "https://fhir.example.com/Immunization/17b5a6d7-307b-4726-8c8c-0031e61582ce"
+            }],
+            "url" : "http://hl7.org/fhir/StructureDefinition/textLink"
+          },
+          {
+            "extension" : [{
+              "url" : "htmlid",
+              "valueString" : "14e8b0d8-b4e4-4f8e-b263-ef385787453b"
+            },
+            {
+              "url" : "data",
+              "valueUri" : "https://fhir.example.com/Immunization/14e8b0d8-b4e4-4f8e-b263-ef385787453b"
+            }],
+            "url" : "http://hl7.org/fhir/StructureDefinition/textLink"
+          },
+          {
+            "extension" : [{
+              "url" : "htmlid",
+              "valueString" : "47befa30-026c-421a-ad32-c0b134597a30"
+            },
+            {
+              "url" : "data",
+              "valueUri" : "https://fhir.example.com/Immunization/47befa30-026c-421a-ad32-c0b134597a30"
+            }],
+            "url" : "http://hl7.org/fhir/StructureDefinition/textLink"
+          },
+          {
+            "extension" : [{
+              "url" : "htmlid",
+              "valueString" : "2f05b590-ce75-4ac6-be97-c2a275e21cbc"
+            },
+            {
+              "url" : "data",
+              "valueUri" : "https://fhir.example.com/Immunization/2f05b590-ce75-4ac6-be97-c2a275e21cbc"
+            }],
+            "url" : "http://hl7.org/fhir/StructureDefinition/textLink"
+          },
+          {
+            "extension" : [{
+              "url" : "htmlid",
+              "valueString" : "c1d3ccb9-8b7d-4732-8e03-abe63be1984c"
+            },
+            {
+              "url" : "data",
+              "valueUri" : "https://fhir.example.com/Immunization/c1d3ccb9-8b7d-4732-8e03-abe63be1984c"
+            }],
+            "url" : "http://hl7.org/fhir/StructureDefinition/textLink"
+          },
+          {
+            "extension" : [{
+              "url" : "htmlid",
+              "valueString" : "79b66c21-fbd3-4c7f-ae82-ac958ae62e0a"
+            },
+            {
+              "url" : "data",
+              "valueUri" : "https://fhir.example.com/Immunization/79b66c21-fbd3-4c7f-ae82-ac958ae62e0a"
+            }],
+            "url" : "http://hl7.org/fhir/StructureDefinition/textLink"
+          },
+          {
+            "extension" : [{
+              "url" : "htmlid",
+              "valueString" : "9910b96a-793b-4e96-91a9-291c27357f83"
+            },
+            {
+              "url" : "data",
+              "valueUri" : "https://fhir.example.com/Immunization/9910b96a-793b-4e96-91a9-291c27357f83"
+            }],
+            "url" : "http://hl7.org/fhir/StructureDefinition/textLink"
+          },
+          {
+            "extension" : [{
+              "url" : "htmlid",
+              "valueString" : "5b028fb0-bd04-4e75-b2bc-6952771173ea"
+            },
+            {
+              "url" : "data",
+              "valueUri" : "https://fhir.example.com/Immunization/5b028fb0-bd04-4e75-b2bc-6952771173ea"
+            }],
+            "url" : "http://hl7.org/fhir/StructureDefinition/textLink"
+          }],
+          "status" : "generated",
+          "div" : "<div xmlns=\"http://www.w3.org/1999/xhtml\"><table border=\"1\"><tr><th>Vaccine</th><th>Date</th><th>Status</th><th>Lot Number</th></tr><tr id=\"17b5a6d7-307b-4726-8c8c-0031e61582ce\"><td>Influenza, split virus, trivalent, preservative</td><td>Apr 9 2024 20:00</td><td>Completed</td><td>H06</td></tr><tr id=\"14e8b0d8-b4e4-4f8e-b263-ef385787453b\"><td>COVID-19, mRNA, LNP-S, bivalent, PF, 30 mcg/0.3 mL dose</td><td>Feb 17 2024 19:00</td><td>Completed</td><td>GK3908-068</td></tr><tr id=\"47befa30-026c-421a-ad32-c0b134597a30\"><td>Influenza, split virus, trivalent, preservative</td><td>Apr 11 2023 20:00</td><td>Completed</td><td>358899</td></tr><tr id=\"2f05b590-ce75-4ac6-be97-c2a275e21cbc\"><td>COVID-19, mRNA, LNP-S, PF, 30 mcg/0.3 mL dose</td><td>Jul 31 2022 20:00</td><td>Completed</td><td>PCB0008-07</td></tr><tr id=\"c1d3ccb9-8b7d-4732-8e03-abe63be1984c\"><td>zoster live</td><td>Jul 12 2022 20:00</td><td>Completed</td><td>U021248</td></tr><tr id=\"79b66c21-fbd3-4c7f-ae82-ac958ae62e0a\"><td>COVID-19, mRNA, LNP-S, PF, 30 mcg/0.3 mL dose</td><td>Jan 12 2022 19:00</td><td>Completed</td><td>FL1072-025</td></tr><tr id=\"9910b96a-793b-4e96-91a9-291c27357f83\"><td>COVID-19, mRNA, LNP-S, PF, 30 mcg/0.3 mL dose</td><td>Aug 26 2021 20:00</td><td>Completed</td><td>FE8163-007</td></tr><tr id=\"5b028fb0-bd04-4e75-b2bc-6952771173ea\"><td>COVID-19, mRNA, LNP-S, PF, 30 mcg/0.3 mL dose</td><td>Aug 4 2021 20:00</td><td>Completed</td><td>FF8871-001</td></tr></table></div>"
+        },
+        "entry" : [{
+          "reference" : "Immunization/17b5a6d7-307b-4726-8c8c-0031e61582ce"
+        },
+        {
+          "reference" : "Immunization/14e8b0d8-b4e4-4f8e-b263-ef385787453b"
+        },
+        {
+          "reference" : "Immunization/47befa30-026c-421a-ad32-c0b134597a30"
+        },
+        {
+          "reference" : "Immunization/2f05b590-ce75-4ac6-be97-c2a275e21cbc"
+        },
+        {
+          "reference" : "Immunization/c1d3ccb9-8b7d-4732-8e03-abe63be1984c"
+        },
+        {
+          "reference" : "Immunization/79b66c21-fbd3-4c7f-ae82-ac958ae62e0a"
+        },
+        {
+          "reference" : "Immunization/9910b96a-793b-4e96-91a9-291c27357f83"
+        },
+        {
+          "reference" : "Immunization/5b028fb0-bd04-4e75-b2bc-6952771173ea"
+        }]
+      },
+      {
+        "title" : "Results",
+        "code" : {
+          "coding" : [{
+            "system" : "http://loinc.org",
+            "code" : "30954-2",
+            "display" : "Relevant diagnostic tests/laboratory data note"
+          }]
+        },
+        "text" : {
+          "extension" : [{
+            "extension" : [{
+              "url" : "htmlid",
+              "valueString" : "b0187efd-5f9b-474d-87bc-efebf877449a"
+            },
+            {
+              "url" : "data",
+              "valueUri" : "https://fhir.example.com/Observation/b0187efd-5f9b-474d-87bc-efebf877449a"
+            }],
+            "url" : "http://hl7.org/fhir/StructureDefinition/textLink"
+          },
+          {
+            "extension" : [{
+              "url" : "htmlid",
+              "valueString" : "f40b9e26-93b4-462b-8811-bdd6943873aa"
+            },
+            {
+              "url" : "data",
+              "valueUri" : "https://fhir.example.com/Observation/f40b9e26-93b4-462b-8811-bdd6943873aa"
+            }],
+            "url" : "http://hl7.org/fhir/StructureDefinition/textLink"
+          },
+          {
+            "extension" : [{
+              "url" : "htmlid",
+              "valueString" : "612b7e6a-c902-45cb-b45c-d1894458a26b"
+            },
+            {
+              "url" : "data",
+              "valueUri" : "https://fhir.example.com/Observation/612b7e6a-c902-45cb-b45c-d1894458a26b"
+            }],
+            "url" : "http://hl7.org/fhir/StructureDefinition/textLink"
+          },
+          {
+            "extension" : [{
+              "url" : "htmlid",
+              "valueString" : "15bd8c0c-fa53-4f5b-994b-487c7db3dc78"
+            },
+            {
+              "url" : "data",
+              "valueUri" : "https://fhir.example.com/Observation/15bd8c0c-fa53-4f5b-994b-487c7db3dc78"
+            }],
+            "url" : "http://hl7.org/fhir/StructureDefinition/textLink"
+          },
+          {
+            "extension" : [{
+              "url" : "htmlid",
+              "valueString" : "5019909f-097d-4a43-84d9-cc50143b8c82"
+            },
+            {
+              "url" : "data",
+              "valueUri" : "https://fhir.example.com/Observation/5019909f-097d-4a43-84d9-cc50143b8c82"
+            }],
+            "url" : "http://hl7.org/fhir/StructureDefinition/textLink"
+          },
+          {
+            "extension" : [{
+              "url" : "htmlid",
+              "valueString" : "5d269392-79c1-4129-a142-0cdee6b49ea4"
+            },
+            {
+              "url" : "data",
+              "valueUri" : "https://fhir.example.com/Observation/5d269392-79c1-4129-a142-0cdee6b49ea4"
+            }],
+            "url" : "http://hl7.org/fhir/StructureDefinition/textLink"
+          }],
+          "status" : "generated",
+          "div" : "<div xmlns=\"http://www.w3.org/1999/xhtml\"><table border=\"1\"><tr><th>Result</th><th>Value</th><th>Date</th><th>Status</th></tr><tr id=\"b0187efd-5f9b-474d-87bc-efebf877449a\"><td>Cholesterol.total/Cholesterol in HDL [Molar ratio] in Serum or Plasma</td><td>4.1 mmol/L</td><td>Oct 31 2023 11:06</td><td>final</td></tr><tr id=\"f40b9e26-93b4-462b-8811-bdd6943873aa\"><td>Lipid risk factors [Finding]</td><td>A combined CVD risk of which lipids is one component should be estimated to guide CVD risk management decisions. If lipid modifying medication is considered suggest checking first for treatable secondary causes of dyslipidaemia.</td><td>Oct 31 2023 11:06</td><td>final</td></tr><tr id=\"612b7e6a-c902-45cb-b45c-d1894458a26b\"><td>Cholesterol in LDL [Moles/volume] in Serum or Plasma by calculation</td><td>3.6 mmol/L</td><td>Oct 31 2023 11:06</td><td>final</td></tr><tr id=\"15bd8c0c-fa53-4f5b-994b-487c7db3dc78\"><td>Triglyceride [Moles/volume] in Serum or Plasma</td><td>1.7 mmol/L</td><td>Oct 31 2023 11:06</td><td>final</td></tr><tr id=\"5019909f-097d-4a43-84d9-cc50143b8c82\"><td>Cholesterol [Moles/volume] in Serum or Plasma</td><td>5.7 mmol/L</td><td>Oct 31 2023 11:06</td><td>final</td></tr><tr id=\"5d269392-79c1-4129-a142-0cdee6b49ea4\"><td>Cholesterol in HDL [Moles/volume] in Serum or Plasma</td><td>1.39 mmol/L</td><td>Oct 31 2023 11:06</td><td>final</td></tr></table></div>"
+        },
+        "entry" : [{
+          "reference" : "Observation/b0187efd-5f9b-474d-87bc-efebf877449a"
+        },
+        {
+          "reference" : "Observation/f40b9e26-93b4-462b-8811-bdd6943873aa"
+        },
+        {
+          "reference" : "Observation/612b7e6a-c902-45cb-b45c-d1894458a26b"
+        },
+        {
+          "reference" : "Observation/15bd8c0c-fa53-4f5b-994b-487c7db3dc78"
+        },
+        {
+          "reference" : "Observation/5019909f-097d-4a43-84d9-cc50143b8c82"
+        },
+        {
+          "reference" : "Observation/5d269392-79c1-4129-a142-0cdee6b49ea4"
+        }]
+      },
+      {
+        "title" : "History of Procedures",
+        "code" : {
+          "coding" : [{
+            "system" : "http://loinc.org",
+            "code" : "47519-4",
+            "display" : "History of Procedures Document"
+          }]
+        },
+        "text" : {
+          "extension" : [{
+            "extension" : [{
+              "url" : "htmlid",
+              "valueString" : "55f43bcb-9032-46c0-b44b-18330024f9aa"
+            },
+            {
+              "url" : "data",
+              "valueUri" : "https://fhir.example.com/Procedure/39252"
+            }],
+            "url" : "http://hl7.org/fhir/StructureDefinition/textLink"
+          }],
+          "status" : "generated",
+          "div" : "<div xmlns=\"http://www.w3.org/1999/xhtml\"><table border=\"1\"><tr><th>Procedure</th><th>Date</th><th>Status</th></tr><tr id=\"55f43bcb-9032-46c0-b44b-18330024f9aa\"><td>Total hip replacement</td><td>Apr 27 2000 20:00</td><td>Completed</td></tr></table></div>"
+        },
+        "entry" : [{
+          "reference" : "Procedure/39252"
+        }]
+      },
+      {
+        "title" : "Device Use",
+        "code" : {
+          "coding" : [{
+            "system" : "http://loinc.org",
+            "code" : "46264-8",
+            "display" : "History of medical device use"
+          }]
+        },
+        "text" : {
+          "extension" : [{
+            "extension" : [{
+              "url" : "htmlid",
+              "valueString" : "e6ff83e1-4c35-43c6-a40b-d21642262844"
+            },
+            {
+              "url" : "data",
+              "valueUri" : "https://fhir.example.com/DeviceUseStatement/eumfh-70-275-1"
+            }],
+            "url" : "http://hl7.org/fhir/StructureDefinition/textLink"
+          }],
+          "status" : "generated",
+          "div" : "<div xmlns=\"http://www.w3.org/1999/xhtml\"><table border=\"1\"><tr><th>Device</th><th>Status</th><th>Body Site</th><th>Start</th><th>End</th></tr><tr id=\"e6ff83e1-4c35-43c6-a40b-d21642262844\"><td>Hip prosthesis</td><td>active</td><td/><td/><td/></tr></table></div>"
+        },
+        "entry" : [{
+          "reference" : "DeviceUseStatement/eumfh-70-275-1"
+        }]
+      },
+      {
+        "title" : "Vital Signs",
+        "code" : {
+          "coding" : [{
+            "system" : "http://loinc.org",
+            "code" : "8716-3",
+            "display" : "Vital signs note"
+          }]
+        },
+        "text" : {
+          "extension" : [{
+            "extension" : [{
+              "url" : "htmlid",
+              "valueString" : "36ff59b8-d5a7-438e-b8c6-cd54af10a4af"
+            },
+            {
+              "url" : "data",
+              "valueUri" : "https://fhir.example.com/Observation/36ff59b8-d5a7-438e-b8c6-cd54af10a4af"
+            }],
+            "url" : "http://hl7.org/fhir/StructureDefinition/textLink"
+          },
+          {
+            "extension" : [{
+              "url" : "htmlid",
+              "valueString" : "96e33a60-dbd8-47ce-b613-be954243939e"
+            },
+            {
+              "url" : "data",
+              "valueUri" : "https://fhir.example.com/Observation/96e33a60-dbd8-47ce-b613-be954243939e"
+            }],
+            "url" : "http://hl7.org/fhir/StructureDefinition/textLink"
+          },
+          {
+            "extension" : [{
+              "url" : "htmlid",
+              "valueString" : "4ea539e1-fff9-4f56-964f-650d9e69ce58"
+            },
+            {
+              "url" : "data",
+              "valueUri" : "https://fhir.example.com/Observation/4ea539e1-fff9-4f56-964f-650d9e69ce58"
+            }],
+            "url" : "http://hl7.org/fhir/StructureDefinition/textLink"
+          }],
+          "status" : "generated",
+          "div" : "<div xmlns=\"http://www.w3.org/1999/xhtml\"><table border=\"1\"><tr><th>Vital Sign</th><th>Value</th><th>Date</th><th>Status</th></tr><tr id=\"36ff59b8-d5a7-438e-b8c6-cd54af10a4af\"><td>Body weight</td><td>91.5 kg</td><td>Apr 10 2024 05:58</td><td>final</td></tr><tr id=\"96e33a60-dbd8-47ce-b613-be954243939e\"><td>Body mass index (BMI) [Ratio]</td><td>24.56 kg/m2</td><td>Apr 10 2024 05:58</td><td>final</td></tr><tr id=\"4ea539e1-fff9-4f56-964f-650d9e69ce58\"><td>Blood pressure panel with all children optional</td><td>140/80 mmHg</td><td>Aug 30 2024 04:32</td><td>final</td></tr></table></div>"
+        },
+        "entry" : [{
+          "reference" : "Observation/36ff59b8-d5a7-438e-b8c6-cd54af10a4af"
+        },
+        {
+          "reference" : "Observation/96e33a60-dbd8-47ce-b613-be954243939e"
+        },
+        {
+          "reference" : "Observation/4ea539e1-fff9-4f56-964f-650d9e69ce58"
+        }]
+      },
+      {
+        "title" : "Social History",
+        "code" : {
+          "coding" : [{
+            "system" : "http://loinc.org",
+            "code" : "29762-2",
+            "display" : "Social history note"
+          }]
+        },
+        "text" : {
+          "extension" : [{
+            "extension" : [{
+              "url" : "htmlid",
+              "valueString" : "9f906425-8c18-4580-ab30-61a56d7f4c05"
+            },
+            {
+              "url" : "data",
+              "valueUri" : "https://fhir.example.com/Observation/9f906425-8c18-4580-ab30-61a56d7f4c05"
+            }],
+            "url" : "http://hl7.org/fhir/StructureDefinition/textLink"
+          },
+          {
+            "extension" : [{
+              "url" : "htmlid",
+              "valueString" : "e2e3f8aa-df2a-4357-b01f-a9fba6bb9b41"
+            },
+            {
+              "url" : "data",
+              "valueUri" : "https://fhir.example.com/Observation/e2e3f8aa-df2a-4357-b01f-a9fba6bb9b41"
+            }],
+            "url" : "http://hl7.org/fhir/StructureDefinition/textLink"
+          }],
+          "status" : "generated",
+          "div" : "<div xmlns=\"http://www.w3.org/1999/xhtml\"><table border=\"1\"><tr><th>Social History Observation</th><th>Value</th><th>Date</th><th>Status</th></tr><tr id=\"9f906425-8c18-4580-ab30-61a56d7f4c05\"><td>Tobacco smoking status</td><td>Never smoker</td><td>Oct 19 2022 20:00</td><td>final</td></tr><tr id=\"e2e3f8aa-df2a-4357-b01f-a9fba6bb9b41\"><td>Alcoholic drinks per day</td><td>1 d</td><td>Jun 21 2016 20:00</td><td>final</td></tr></table></div>"
+        },
+        "entry" : [{
+          "reference" : "Observation/9f906425-8c18-4580-ab30-61a56d7f4c05"
+        },
+        {
+          "reference" : "Observation/e2e3f8aa-df2a-4357-b01f-a9fba6bb9b41"
+        }]
+      },
+      {
+        "title" : "Alerts",
+        "code" : {
+          "coding" : [{
+            "system" : "http://loinc.org",
+            "code" : "104605-1",
+            "display" : "Alert"
+          }]
+        },
+        "text" : {
+          "extension" : [{
+            "extension" : [{
+              "url" : "htmlid",
+              "valueString" : "e8ae9c4e-8f5a-4270-bfac-02368c567fcf"
+            },
+            {
+              "url" : "data",
+              "valueUri" : "https://fhir.example.com/Flag/e8ae9c4e-8f5a-4270-bfac-02368c567fcf"
+            }],
+            "url" : "http://hl7.org/fhir/StructureDefinition/textLink"
+          }],
+          "status" : "generated",
+          "div" : "<div xmlns=\"http://www.w3.org/1999/xhtml\"><table border=\"1\"><tr><th>Alert</th><th>Status</th><th>Category</th><th>Priority</th><th>Start</th><th>End</th></tr><tr id=\"e8ae9c4e-8f5a-4270-bfac-02368c567fcf\"><td>Shellfish free diet</td><td>Active</td><td>Diet</td><td/><td/><td/></tr></table></div>"
+        },
+        "entry" : [{
+          "reference" : "Flag/e8ae9c4e-8f5a-4270-bfac-02368c567fcf"
+        }]
+      },
+      {
+        "title" : "Patient Story",
+        "code" : {
+          "coding" : [{
+            "system" : "http://loinc.org",
+            "code" : "81338-6",
+            "display" : "Patient Goals, preferences, and priorities for care experience"
+          }]
+        },
+        "text" : {
+          "status" : "generated",
+          "div" : "<div xml:lang=\"en-NZ\" xmlns=\"http://www.w3.org/1999/xhtml\" lang=\"en-NZ\">Patient undergoing lifestyle changes to lower blood pressure.</div>"
+        },
+        "entry" : [{
+          "reference" : "Consent/080d85fa-c807-42d1-a3af-b3ee70858a54"
+        }]
+      },
+      {
+        "title" : "Advance Directives",
+        "code" : {
+          "coding" : [{
+            "system" : "http://loinc.org",
+            "code" : "42348-3",
+            "display" : "Advance healthcare directives"
+          }]
+        },
+        "text" : {
+          "extension" : [{
+            "extension" : [{
+              "url" : "htmlid",
+              "valueString" : "080d85fa-c807-42d1-a3af-b3ee70858a54"
+            },
+            {
+              "url" : "data",
+              "valueUri" : "https://fhir.example.com/Consent/080d85fa-c807-42d1-a3af-b3ee70858a54"
+            }],
+            "url" : "http://hl7.org/fhir/StructureDefinition/textLink"
+          }],
+          "status" : "generated",
+          "div" : "<div xmlns=\"http://www.w3.org/1999/xhtml\"><table border=\"1\"><tr><th>Scope</th><th>Status</th><th>Category</th><th>Date</th><th>Performer</th></tr><tr id=\"080d85fa-c807-42d1-a3af-b3ee70858a54\"><td>Treatment</td><td>active</td><td>Do Not Resuscitate</td><td>Aug 31 2021 20:00</td><td/></tr></table></div>"
+        },
+        "entry" : [{
+          "reference" : "Consent/080d85fa-c807-42d1-a3af-b3ee70858a54"
+        }]
+      },
+      {
+        "title" : "Functional Status",
+        "code" : {
+          "coding" : [{
+            "system" : "http://loinc.org",
+            "code" : "47420-5",
+            "display" : "Functional status assessment note"
+          }]
+        },
+        "text" : {
+          "extension" : [{
+            "extension" : [{
+              "url" : "htmlid",
+              "valueString" : "4f3d8f79-2f96-48c5-b346-d47f0c66c981"
+            },
+            {
+              "url" : "data",
+              "valueUri" : "https://fhir.example.com/Condition/4f3d8f79-2f96-48c5-b346-d47f0c66c981"
+            }],
+            "url" : "http://hl7.org/fhir/StructureDefinition/textLink"
+          }],
+          "status" : "generated",
+          "div" : "<div xmlns=\"http://www.w3.org/1999/xhtml\"><table border=\"1\"><tr><th>Code</th><th>Onset</th><th>Clinical Status</th><th>Verification Status</th><th>Severity</th></tr><tr id=\"4f3d8f79-2f96-48c5-b346-d47f0c66c981\"><td>Impaired Mobility</td><td>May 24 2016 20:00</td><td/><td/><td/></tr></table></div>"
+        },
+        "entry" : [{
+          "reference" : "Condition/4f3d8f79-2f96-48c5-b346-d47f0c66c981"
+        }]
+      },
+      {
+        "title" : "History of Past Problems",
+        "code" : {
+          "coding" : [{
+            "system" : "http://loinc.org",
+            "code" : "11348-0",
+            "display" : "History of Past illness note"
+          }]
+        },
+        "text" : {
+          "extension" : [{
+            "extension" : [{
+              "url" : "htmlid",
+              "valueString" : "77efacd9-b5a6-4b35-9764-269017ea7567"
+            },
+            {
+              "url" : "data",
+              "valueUri" : "https://fhir.example.com/Condition/77efacd9-b5a6-4b35-9764-269017ea7567"
+            }],
+            "url" : "http://hl7.org/fhir/StructureDefinition/textLink"
+          }],
+          "status" : "generated",
+          "div" : "<div xmlns=\"http://www.w3.org/1999/xhtml\"><table border=\"1\"><tr><th>Past Problem</th><th>Onset</th><th>Clinical Status</th><th>Verification Status</th><th>Severity</th></tr><tr id=\"77efacd9-b5a6-4b35-9764-269017ea7567\"><td>Fever</td><td>May 24 2013 20:00</td><td/><td/><td/></tr></table></div>"
+        },
+        "entry" : [{
+          "reference" : "Condition/77efacd9-b5a6-4b35-9764-269017ea7567"
+        }]
+      },
+      {
+        "title" : "History of Pregnancy",
+        "code" : {
+          "coding" : [{
+            "system" : "http://loinc.org",
+            "code" : "10162-6",
+            "display" : "History of pregnancies Narrative"
+          }]
+        },
+        "text" : {
+          "extension" : [{
+            "extension" : [{
+              "url" : "htmlid",
+              "valueString" : "f241ac65-5eab-49a0-8b92-7fb263274110"
+            },
+            {
+              "url" : "data",
+              "valueUri" : "https://fhir.example.com/Observation/f241ac65-5eab-49a0-8b92-7fb263274110"
+            }],
+            "url" : "http://hl7.org/fhir/StructureDefinition/textLink"
+          }],
+          "status" : "generated",
+          "div" : "<div xmlns=\"http://www.w3.org/1999/xhtml\"><table border=\"1\"><tr><th>Pregnancy Observation</th><th>Value</th><th>Date</th><th>Status</th></tr><tr id=\"f241ac65-5eab-49a0-8b92-7fb263274110\"><td>Pregnancy status</td><td>Not Pregnant</td><td>Jan 9 2020 19:00</td><td>final</td></tr></table></div>"
+        },
+        "entry" : [{
+          "reference" : "Observation/f241ac65-5eab-49a0-8b92-7fb263274110"
+        }]
+      },
+      {
+        "title" : "Plan of Care",
+        "code" : {
+          "coding" : [{
+            "system" : "http://loinc.org",
+            "code" : "18776-5",
+            "display" : "Plan of care note"
+          }]
+        },
+        "text" : {
+          "extension" : [{
+            "extension" : [{
+              "url" : "htmlid",
+              "valueString" : "85d57ac7-ea2d-47cf-b019-b867f876ee7c"
+            },
+            {
+              "url" : "data",
+              "valueUri" : "https://fhir.example.com/CarePlan/85d57ac7-ea2d-47cf-b019-b867f876ee7c"
+            }],
+            "url" : "http://hl7.org/fhir/StructureDefinition/textLink"
+          }],
+          "status" : "generated",
+          "div" : "<div xmlns=\"http://www.w3.org/1999/xhtml\"><table border=\"1\"><tr><th>Title</th><th>Description</th><th>Status</th><th>Intent</th><th>Category</th><th>Period Start</th><th>Period End</th></tr><tr id=\"85d57ac7-ea2d-47cf-b019-b867f876ee7c\"><td>Weight Measured</td><td>Manage obesity and weight loss</td><td>Active</td><td>Plan</td><td>Weight management plan</td><td/><td>May 31 2017 20:00</td></tr></table></div>"
+        },
+        "entry" : [{
+          "reference" : "CarePlan/85d57ac7-ea2d-47cf-b019-b867f876ee7c"
+        }]
+      }]
+    }
+  },
+  {
+    "fullUrl" : "https://fhir.example.com/Patient/d174bd1a-b368-41e6-83a2-af77f2b3c60f",
+    "resource" : {
+      "resourceType" : "Patient",
+      "id" : "d174bd1a-b368-41e6-83a2-af77f2b3c60f",
+      "meta" : {
+        "profile" : ["http://hl7.org/fhir/uv/ips/StructureDefinition/Patient-uv-ips"]
+      },
+      "text" : {
+        "status" : "generated",
+        "div" : "<div xml:lang=\"en-NZ\" xmlns=\"http://www.w3.org/1999/xhtml\"><a name=\"Patient_d174bd1a-b368-41e6-83a2-af77f2b3c60f\"> </a>Name: Patricia JORDANA</div>"
+      },
+      "identifier" : [{
+        "system" : "https://standards.digital.health.nz/ns/nhi-id",
+        "value" : "ABC1234"
+      }],
+      "name" : [{
+        "use" : "usual",
+        "family" : "JORDANA",
+        "given" : ["Patricia"]
+      }],
+      "telecom" : [{
+        "system" : "other",
+        "value" : "+1234567890",
+        "use" : "mobile"
+      }],
+      "gender" : "female",
+      "birthDate" : "1956-09-30",
+      "address" : [{
+        "use" : "home",
+        "type" : "physical",
+        "line" : ["3",
+        "Worcester Drive",
+        "Rototuna North"],
+        "city" : "Hamilton",
+        "postalCode" : "3210"
+      }],
+      "maritalStatus" : {
+        "coding" : [{
+          "system" : "http://terminology.hl7.org/CodeSystem/v3-MaritalStatus",
+          "code" : "M",
+          "display" : "Married"
+        }]
+      },
+      "contact" : [{
+        "relationship" : [{
+          "coding" : [{
+            "system" : "http://terminology.hl7.org/CodeSystem/v2-0131",
+            "code" : "C",
+            "display" : "Emergency Contact"
+          }]
+        }],
+        "name" : {
+          "use" : "usual",
+          "family" : "JORDANA",
+          "given" : ["Vincent",
+          "JORDANA"]
+        },
+        "telecom" : [{
+          "system" : "phone",
+          "value" : "21884820",
+          "use" : "mobile"
+        },
+        {
+          "system" : "phone",
+          "value" : "853 3279",
+          "use" : "work"
+        }],
+        "address" : {
+          "use" : "home",
+          "type" : "physical",
+          "line" : ["3 Worcester Drive",
+          "Rototuna North"],
+          "city" : "Hamilton"
+        }
+      }]
+    }
+  },
+  {
+    "fullUrl" : "https://fhir.example.com/Organization/7a17027f-acc0-4d77-bf84-c0dad8f7c881",
+    "resource" : {
+      "resourceType" : "Organization",
+      "id" : "7a17027f-acc0-4d77-bf84-c0dad8f7c881",
+      "text" : {
+        "status" : "generated",
+        "div" : "<div xmlns=\"http://www.w3.org/1999/xhtml\"><a name=\"Organization_7a17027f-acc0-4d77-bf84-c0dad8f7c881\"> </a><p class=\"res-header-id\"><b>Generated Narrative: Organization 7a17027f-acc0-4d77-bf84-c0dad8f7c881</b></p><a name=\"7a17027f-acc0-4d77-bf84-c0dad8f7c881\"> </a><a name=\"hc7a17027f-acc0-4d77-bf84-c0dad8f7c881\"> </a><p><b>identifier</b>: <code>https://standards.digital.health.nz/ns/hpi-facility-id</code>/F2N000</p><p><b>name</b>: NorthCare Pukete Road-Thomas Road</p><p><b>partOf</b>: <a href=\"Bundle-bundle-ips-all-sections.html#Organization_8f8635dc-694e-408f-8ffe-1610d50f9823\">Bundle: identifier = urn:oid:2.16.724.4.8.10.200.10#ac7a747c-a2c9-493c-ba39-4ac6997eed1e; type = document; timestamp = 2024-09-21 18:53:00+0000</a></p></div>"
+      },
+      "identifier" : [{
+        "system" : "https://standards.digital.health.nz/ns/hpi-facility-id",
+        "value" : "F2N000"
+      }],
+      "name" : "NorthCare Pukete Road-Thomas Road",
+      "partOf" : {
+        "reference" : "Organization/8f8635dc-694e-408f-8ffe-1610d50f9823"
+      }
+    }
+  },
+  {
+    "fullUrl" : "https://fhir.example.com/Organization/8f8635dc-694e-408f-8ffe-1610d50f9823",
+    "resource" : {
+      "resourceType" : "Organization",
+      "id" : "8f8635dc-694e-408f-8ffe-1610d50f9823",
+      "text" : {
+        "status" : "generated",
+        "div" : "<div xmlns=\"http://www.w3.org/1999/xhtml\"><a name=\"Organization_8f8635dc-694e-408f-8ffe-1610d50f9823\"> </a><p class=\"res-header-id\"><b>Generated Narrative: Organization 8f8635dc-694e-408f-8ffe-1610d50f9823</b></p><a name=\"8f8635dc-694e-408f-8ffe-1610d50f9823\"> </a><a name=\"hc8f8635dc-694e-408f-8ffe-1610d50f9823\"> </a><p><b>identifier</b>: <code>https://standards.digital.health.nz/ns/hpi-facility-id</code>/F2N001</p><p><b>name</b>: NorthCare Health System</p></div>"
+      },
+      "identifier" : [{
+        "system" : "https://standards.digital.health.nz/ns/hpi-facility-id",
+        "value" : "F2N001"
+      }],
+      "name" : "NorthCare Health System"
+    }
+  },
+  {
+    "fullUrl" : "https://fhir.example.com/PractitionerRole/94d12c8d-a3df-47a7-a0bb-0f29d64bafe2",
+    "resource" : {
+      "resourceType" : "PractitionerRole",
+      "id" : "94d12c8d-a3df-47a7-a0bb-0f29d64bafe2",
+      "text" : {
+        "status" : "generated",
+        "div" : "<div xmlns=\"http://www.w3.org/1999/xhtml\"><a name=\"PractitionerRole_94d12c8d-a3df-47a7-a0bb-0f29d64bafe2\"> </a><p class=\"res-header-id\"><b>Generated Narrative: PractitionerRole 94d12c8d-a3df-47a7-a0bb-0f29d64bafe2</b></p><a name=\"94d12c8d-a3df-47a7-a0bb-0f29d64bafe2\"> </a><a name=\"hc94d12c8d-a3df-47a7-a0bb-0f29d64bafe2\"> </a><p><b>practitioner</b>: <a href=\"Bundle-bundle-ips-all-sections.html#Practitioner_816cf057-b736-4e08-baed-cc21e081b784\">Bundle: identifier = urn:oid:2.16.724.4.8.10.200.10#ac7a747c-a2c9-493c-ba39-4ac6997eed1e; type = document; timestamp = 2024-09-21 18:53:00+0000</a></p><p><b>code</b>: <span title=\"Codes:{http://snomed.info/sct 158965000}\">Doctor</span></p></div>"
+      },
+      "practitioner" : {
+        "reference" : "Practitioner/816cf057-b736-4e08-baed-cc21e081b784"
+      },
+      "code" : [{
+        "coding" : [{
+          "system" : "http://snomed.info/sct",
+          "code" : "158965000",
+          "display" : "Doctor"
+        }]
+      }]
+    }
+  },
+  {
+    "fullUrl" : "https://fhir.example.com/Practitioner/816cf057-b736-4e08-baed-cc21e081b784",
+    "resource" : {
+      "resourceType" : "Practitioner",
+      "id" : "816cf057-b736-4e08-baed-cc21e081b784",
+      "text" : {
+        "status" : "generated",
+        "div" : "<div xmlns=\"http://www.w3.org/1999/xhtml\"><a name=\"Practitioner_816cf057-b736-4e08-baed-cc21e081b784\"> </a><p class=\"res-header-id\"><b>Generated Narrative: Practitioner 816cf057-b736-4e08-baed-cc21e081b784</b></p><a name=\"816cf057-b736-4e08-baed-cc21e081b784\"> </a><a name=\"hc816cf057-b736-4e08-baed-cc21e081b784\"> </a><p><b>name</b>: HASHIRA COORAY COORAY </p><p><b>telecom</b>: ph: 07 850 9900(Work)</p></div>"
+      },
+      "name" : [{
+        "use" : "usual",
+        "family" : "COORAY",
+        "given" : ["HASHIRA",
+        "COORAY"]
+      }],
+      "telecom" : [{
+        "system" : "phone",
+        "value" : "07 850 9900",
+        "use" : "work"
+      }]
+    }
+  },
+  {
+    "fullUrl" : "https://fhir.example.com/AllergyIntolerance/9838cf73-c30d-4aa5-8ed8-36a079060b81",
+    "resource" : {
+      "resourceType" : "AllergyIntolerance",
+      "id" : "9838cf73-c30d-4aa5-8ed8-36a079060b81",
+      "text" : {
+        "status" : "generated",
+        "div" : "<div xmlns=\"http://www.w3.org/1999/xhtml\"><a name=\"AllergyIntolerance_9838cf73-c30d-4aa5-8ed8-36a079060b81\"> </a><p class=\"res-header-id\"><b>Generated Narrative: AllergyIntolerance 9838cf73-c30d-4aa5-8ed8-36a079060b81</b></p><a name=\"9838cf73-c30d-4aa5-8ed8-36a079060b81\"> </a><a name=\"hc9838cf73-c30d-4aa5-8ed8-36a079060b81\"> </a><p><b>clinicalStatus</b>: <span title=\"Codes:{http://terminology.hl7.org/CodeSystem/allergyintolerance-clinical active}\">Active</span></p><p><b>verificationStatus</b>: <span title=\"Codes:{http://terminology.hl7.org/CodeSystem/allergyintolerance-verification confirmed}\">Confirmed</span></p><p><b>code</b>: <span title=\"Codes:{http://snomed.info/sct 764146007}, {http://www.whocc.no/atc J01CA}\">Penicillin</span></p><p><b>patient</b>: <a href=\"Bundle-bundle-ips-all-sections.html#Patient_d174bd1a-b368-41e6-83a2-af77f2b3c60f\">Bundle: identifier = urn:oid:2.16.724.4.8.10.200.10#ac7a747c-a2c9-493c-ba39-4ac6997eed1e; type = document; timestamp = 2024-09-21 18:53:00+0000</a></p></div>"
+      },
+      "clinicalStatus" : {
+        "coding" : [{
+          "system" : "http://terminology.hl7.org/CodeSystem/allergyintolerance-clinical",
+          "code" : "active"
+        }]
+      },
+      "verificationStatus" : {
+        "coding" : [{
+          "system" : "http://terminology.hl7.org/CodeSystem/allergyintolerance-verification",
+          "code" : "confirmed"
+        }]
+      },
+      "code" : {
+        "coding" : [{
+          "system" : "http://snomed.info/sct",
+          "code" : "764146007",
+          "display" : "Penicillin"
+        },
+        {
+          "system" : "http://www.whocc.no/atc",
+          "code" : "J01CA",
+          "display" : "Penicillins with extended spectrum"
+        }]
+      },
+      "patient" : {
+        "reference" : "Patient/d174bd1a-b368-41e6-83a2-af77f2b3c60f"
+      }
+    }
+  },
+  {
+    "fullUrl" : "https://fhir.example.com/Condition/8039e4a7-d459-454c-92a5-6c17ca2a824b",
+    "resource" : {
+      "resourceType" : "Condition",
+      "id" : "8039e4a7-d459-454c-92a5-6c17ca2a824b",
+      "text" : {
+        "status" : "generated",
+        "div" : "<div xmlns=\"http://www.w3.org/1999/xhtml\"><a name=\"Condition_8039e4a7-d459-454c-92a5-6c17ca2a824b\"> </a><p class=\"res-header-id\"><b>Generated Narrative: Condition 8039e4a7-d459-454c-92a5-6c17ca2a824b</b></p><a name=\"8039e4a7-d459-454c-92a5-6c17ca2a824b\"> </a><a name=\"hc8039e4a7-d459-454c-92a5-6c17ca2a824b\"> </a><p><b>clinicalStatus</b>: <span title=\"Codes:{http://terminology.hl7.org/CodeSystem/condition-clinical active}\">Active</span></p><p><b>verificationStatus</b>: <span title=\"Codes:{http://terminology.hl7.org/CodeSystem/condition-ver-status confirmed}\">Confirmed</span></p><p><b>code</b>: <span title=\"Codes:{http://snomed.info/sct 59621000}\">Essential hypertension</span></p><p><b>subject</b>: <a href=\"Bundle-bundle-ips-all-sections.html#Patient_d174bd1a-b368-41e6-83a2-af77f2b3c60f\">Bundle: identifier = urn:oid:2.16.724.4.8.10.200.10#ac7a747c-a2c9-493c-ba39-4ac6997eed1e; type = document; timestamp = 2024-09-21 18:53:00+0000</a></p><p><b>onset</b>: 2016-05-25</p><p><b>recordedDate</b>: 2016-05-25</p><p><b>asserter</b>: <a href=\"Bundle-bundle-ips-all-sections.html#Practitioner_816cf057-b736-4e08-baed-cc21e081b784\">Bundle: identifier = urn:oid:2.16.724.4.8.10.200.10#ac7a747c-a2c9-493c-ba39-4ac6997eed1e; type = document; timestamp = 2024-09-21 18:53:00+0000</a></p></div>"
+      },
+      "clinicalStatus" : {
+        "coding" : [{
+          "system" : "http://terminology.hl7.org/CodeSystem/condition-clinical",
+          "code" : "active"
+        }]
+      },
+      "verificationStatus" : {
+        "coding" : [{
+          "system" : "http://terminology.hl7.org/CodeSystem/condition-ver-status",
+          "code" : "confirmed"
+        }]
+      },
+      "code" : {
+        "coding" : [{
+          "system" : "http://snomed.info/sct",
+          "code" : "59621000",
+          "display" : "Essential hypertension"
+        }]
+      },
+      "subject" : {
+        "reference" : "Patient/d174bd1a-b368-41e6-83a2-af77f2b3c60f"
+      },
+      "onsetDateTime" : "2016-05-25",
+      "recordedDate" : "2016-05-25",
+      "asserter" : {
+        "reference" : "Practitioner/816cf057-b736-4e08-baed-cc21e081b784"
+      }
+    }
+  },
+  {
+    "fullUrl" : "https://fhir.example.com/Condition/f8ab8ac1-56d1-4239-8303-dc70c1a3d0e1",
+    "resource" : {
+      "resourceType" : "Condition",
+      "id" : "f8ab8ac1-56d1-4239-8303-dc70c1a3d0e1",
+      "text" : {
+        "status" : "generated",
+        "div" : "<div xmlns=\"http://www.w3.org/1999/xhtml\"><a name=\"Condition_f8ab8ac1-56d1-4239-8303-dc70c1a3d0e1\"> </a><p class=\"res-header-id\"><b>Generated Narrative: Condition f8ab8ac1-56d1-4239-8303-dc70c1a3d0e1</b></p><a name=\"f8ab8ac1-56d1-4239-8303-dc70c1a3d0e1\"> </a><a name=\"hcf8ab8ac1-56d1-4239-8303-dc70c1a3d0e1\"> </a><p><b>clinicalStatus</b>: <span title=\"Codes:{http://terminology.hl7.org/CodeSystem/condition-clinical active}\">Active</span></p><p><b>verificationStatus</b>: <span title=\"Codes:{http://terminology.hl7.org/CodeSystem/condition-ver-status confirmed}\">Confirmed</span></p><p><b>code</b>: <span title=\"Codes:{http://snomed.info/sct 90560007}\">Gout</span></p><p><b>subject</b>: <a href=\"Bundle-bundle-ips-all-sections.html#Patient_d174bd1a-b368-41e6-83a2-af77f2b3c60f\">Bundle: identifier = urn:oid:2.16.724.4.8.10.200.10#ac7a747c-a2c9-493c-ba39-4ac6997eed1e; type = document; timestamp = 2024-09-21 18:53:00+0000</a></p><p><b>onset</b>: 2016-05-25</p><p><b>recordedDate</b>: 2020-10-01</p></div>"
+      },
+      "clinicalStatus" : {
+        "coding" : [{
+          "system" : "http://terminology.hl7.org/CodeSystem/condition-clinical",
+          "code" : "active"
+        }]
+      },
+      "verificationStatus" : {
+        "coding" : [{
+          "system" : "http://terminology.hl7.org/CodeSystem/condition-ver-status",
+          "code" : "confirmed"
+        }]
+      },
+      "code" : {
+        "coding" : [{
+          "system" : "http://snomed.info/sct",
+          "code" : "90560007",
+          "display" : "Gout"
+        }]
+      },
+      "subject" : {
+        "reference" : "Patient/d174bd1a-b368-41e6-83a2-af77f2b3c60f"
+      },
+      "onsetDateTime" : "2016-05-25",
+      "recordedDate" : "2020-10-01"
+    }
+  },
+  {
+    "fullUrl" : "https://fhir.example.com/MedicationStatement/c3d31980-2a88-45b6-a7af-3fe8d32cc6fa",
+    "resource" : {
+      "resourceType" : "MedicationStatement",
+      "id" : "c3d31980-2a88-45b6-a7af-3fe8d32cc6fa",
+      "text" : {
+        "status" : "generated",
+        "div" : "<div xmlns=\"http://www.w3.org/1999/xhtml\"><a name=\"MedicationStatement_c3d31980-2a88-45b6-a7af-3fe8d32cc6fa\"> </a><p class=\"res-header-id\"><b>Generated Narrative: MedicationStatement c3d31980-2a88-45b6-a7af-3fe8d32cc6fa</b></p><a name=\"c3d31980-2a88-45b6-a7af-3fe8d32cc6fa\"> </a><a name=\"hcc3d31980-2a88-45b6-a7af-3fe8d32cc6fa\"> </a><p><b>status</b>: Stopped</p><p><b>medication</b>: <span title=\"Codes:{http://snomed.info/sct 318913001}\">cilazapril 500 microgram tablet, 90</span></p><p><b>subject</b>: <a href=\"Bundle-bundle-ips-all-sections.html#Patient_d174bd1a-b368-41e6-83a2-af77f2b3c60f\">Bundle: identifier = urn:oid:2.16.724.4.8.10.200.10#ac7a747c-a2c9-493c-ba39-4ac6997eed1e; type = document; timestamp = 2024-09-21 18:53:00+0000</a></p><p><b>effective</b>: 2023-12-01</p><p><b>informationSource</b>: <a href=\"Bundle-bundle-ips-all-sections.html#Organization_7a17027f-acc0-4d77-bf84-c0dad8f7c881\">Bundle: identifier = urn:oid:2.16.724.4.8.10.200.10#ac7a747c-a2c9-493c-ba39-4ac6997eed1e; type = document; timestamp = 2024-09-21 18:53:00+0000</a></p><blockquote><p><b>dosage</b></p><p><b>text</b>: Take 1 daily</p><h3>DoseAndRates</h3><table class=\"grid\"><tr><td style=\"display: none\">-</td><td><b>Dose[x]</b></td></tr><tr><td style=\"display: none\">*</td><td>1 tablet<span style=\"background: LightGoldenRodYellow\"> (Details: SNOMED CT  code428673006 = 'Tablet - unit of product usage (qualifier value)')</span></td></tr></table></blockquote></div>"
+      },
+      "status" : "stopped",
+      "medicationCodeableConcept" : {
+        "coding" : [{
+          "system" : "http://snomed.info/sct",
+          "code" : "318913001",
+          "display" : "Product containing cilazapril (medicinal product)"
+        }],
+        "text" : "cilazapril 500 microgram tablet, 90"
+      },
+      "subject" : {
+        "reference" : "Patient/d174bd1a-b368-41e6-83a2-af77f2b3c60f"
+      },
+      "effectiveDateTime" : "2023-12-01",
+      "informationSource" : {
+        "reference" : "Organization/7a17027f-acc0-4d77-bf84-c0dad8f7c881"
+      },
+      "dosage" : [{
+        "text" : "Take 1 daily",
+        "doseAndRate" : [{
+          "doseQuantity" : {
+            "value" : 1,
+            "unit" : "tablet",
+            "system" : "http://snomed.info/sct",
+            "code" : "428673006"
+          }
+        }]
+      }]
+    }
+  },
+  {
+    "fullUrl" : "https://fhir.example.com/MedicationStatement/b8dac343-16d7-49bf-ac36-b15e6726c343",
+    "resource" : {
+      "resourceType" : "MedicationStatement",
+      "id" : "b8dac343-16d7-49bf-ac36-b15e6726c343",
+      "text" : {
+        "status" : "generated",
+        "div" : "<div xmlns=\"http://www.w3.org/1999/xhtml\"><a name=\"MedicationStatement_b8dac343-16d7-49bf-ac36-b15e6726c343\"> </a><p class=\"res-header-id\"><b>Generated Narrative: MedicationStatement b8dac343-16d7-49bf-ac36-b15e6726c343</b></p><a name=\"b8dac343-16d7-49bf-ac36-b15e6726c343\"> </a><a name=\"hcb8dac343-16d7-49bf-ac36-b15e6726c343\"> </a><p><b>status</b>: Active</p><p><b>medication</b>: <span title=\"Codes:{http://snomed.info/sct 108575001}\">lisinopril 5 mg tablet</span></p><p><b>subject</b>: <a href=\"Bundle-bundle-ips-all-sections.html#Patient_d174bd1a-b368-41e6-83a2-af77f2b3c60f\">Bundle: identifier = urn:oid:2.16.724.4.8.10.200.10#ac7a747c-a2c9-493c-ba39-4ac6997eed1e; type = document; timestamp = 2024-09-21 18:53:00+0000</a></p><p><b>effective</b>: 2024-08-13</p><p><b>informationSource</b>: <a href=\"Bundle-bundle-ips-all-sections.html#Organization_7a17027f-acc0-4d77-bf84-c0dad8f7c881\">Bundle: identifier = urn:oid:2.16.724.4.8.10.200.10#ac7a747c-a2c9-493c-ba39-4ac6997eed1e; type = document; timestamp = 2024-09-21 18:53:00+0000</a></p><blockquote><p><b>dosage</b></p><p><b>text</b>: Take One tablet once daily</p><p><b>timing</b>: Once per 1 day</p><p><b>route</b>: <span title=\"Codes:{http://terminology.hl7.org/CodeSystem/v3-RouteOfAdministration PO}\">Swallow, oral</span></p><h3>DoseAndRates</h3><table class=\"grid\"><tr><td style=\"display: none\">-</td><td><b>Dose[x]</b></td></tr><tr><td style=\"display: none\">*</td><td>1 tablet<span style=\"background: LightGoldenRodYellow\"> (Details: SNOMED CT  code428673006 = 'Tablet - unit of product usage (qualifier value)')</span></td></tr></table></blockquote></div>"
+      },
+      "status" : "active",
+      "medicationCodeableConcept" : {
+        "coding" : [{
+          "system" : "http://snomed.info/sct",
+          "code" : "108575001",
+          "display" : "Product containing lisinopril (medicinal product)"
+        }],
+        "text" : "lisinopril 5 mg tablet"
+      },
+      "subject" : {
+        "reference" : "Patient/d174bd1a-b368-41e6-83a2-af77f2b3c60f"
+      },
+      "effectiveDateTime" : "2024-08-13",
+      "informationSource" : {
+        "reference" : "Organization/7a17027f-acc0-4d77-bf84-c0dad8f7c881"
+      },
+      "dosage" : [{
+        "text" : "Take One tablet once daily",
+        "timing" : {
+          "repeat" : {
+            "frequency" : 1,
+            "period" : 1,
+            "periodUnit" : "d"
+          }
+        },
+        "route" : {
+          "coding" : [{
+            "system" : "http://terminology.hl7.org/CodeSystem/v3-RouteOfAdministration",
+            "code" : "PO",
+            "display" : "Swallow, oral"
+          }]
+        },
+        "doseAndRate" : [{
+          "doseQuantity" : {
+            "value" : 1,
+            "unit" : "tablet",
+            "system" : "http://snomed.info/sct",
+            "code" : "428673006"
+          }
+        }]
+      }]
+    }
+  },
+  {
+    "fullUrl" : "https://fhir.example.com/MedicationStatement/b8e4d4a8-2c18-4f03-88dc-06f5f44f8058",
+    "resource" : {
+      "resourceType" : "MedicationStatement",
+      "id" : "b8e4d4a8-2c18-4f03-88dc-06f5f44f8058",
+      "text" : {
+        "status" : "generated",
+        "div" : "<div xmlns=\"http://www.w3.org/1999/xhtml\"><a name=\"MedicationStatement_b8e4d4a8-2c18-4f03-88dc-06f5f44f8058\"> </a><p class=\"res-header-id\"><b>Generated Narrative: MedicationStatement b8e4d4a8-2c18-4f03-88dc-06f5f44f8058</b></p><a name=\"b8e4d4a8-2c18-4f03-88dc-06f5f44f8058\"> </a><a name=\"hcb8e4d4a8-2c18-4f03-88dc-06f5f44f8058\"> </a><p><b>status</b>: Active</p><p><b>medication</b>: <span title=\"Codes:{http://www.whocc.no/atc C05AA08}\">Ultraproct - cinchocaine 0.5% (5 mg/g) + fluocortolone hexanoate 0.095% (945 microgram/g) + fluocortolone pivalate 0.092% (918 microgram/g) ointment</span></p><p><b>subject</b>: <a href=\"Bundle-bundle-ips-all-sections.html#Patient_d174bd1a-b368-41e6-83a2-af77f2b3c60f\">Bundle: identifier = urn:oid:2.16.724.4.8.10.200.10#ac7a747c-a2c9-493c-ba39-4ac6997eed1e; type = document; timestamp = 2024-09-21 18:53:00+0000</a></p><p><b>effective</b>: 2024-08-30</p><p><b>informationSource</b>: <a href=\"Bundle-bundle-ips-all-sections.html#Organization_7a17027f-acc0-4d77-bf84-c0dad8f7c881\">Bundle: identifier = urn:oid:2.16.724.4.8.10.200.10#ac7a747c-a2c9-493c-ba39-4ac6997eed1e; type = document; timestamp = 2024-09-21 18:53:00+0000</a></p><blockquote><p><b>dosage</b></p><p><b>text</b>: apply a small amount to the affected area up to 4 times daily on the first day, then twice daily for at least 1 week; continue for up to a maximum of 4 weeks</p><h3>DoseAndRates</h3><table class=\"grid\"><tr><td style=\"display: none\">-</td><td><b>Dose[x]</b></td></tr><tr><td style=\"display: none\">*</td><td>1 ointment<span style=\"background: LightGoldenRodYellow\"> (Details: SNOMED CT  code385101003 = 'Ointment')</span></td></tr></table></blockquote></div>"
+      },
+      "status" : "active",
+      "medicationCodeableConcept" : {
+        "coding" : [{
+          "system" : "http://www.whocc.no/atc",
+          "code" : "C05AA08",
+          "display" : "Fluocortolone"
+        }],
+        "text" : "Ultraproct - cinchocaine 0.5% (5 mg/g) + fluocortolone hexanoate 0.095% (945 microgram/g) + fluocortolone pivalate 0.092% (918 microgram/g) ointment"
+      },
+      "subject" : {
+        "reference" : "Patient/d174bd1a-b368-41e6-83a2-af77f2b3c60f"
+      },
+      "effectiveDateTime" : "2024-08-30",
+      "informationSource" : {
+        "reference" : "Organization/7a17027f-acc0-4d77-bf84-c0dad8f7c881"
+      },
+      "dosage" : [{
+        "text" : "apply a small amount to the affected area up to 4 times daily on the first day, then twice daily for at least 1 week; continue for up to a maximum of 4 weeks",
+        "doseAndRate" : [{
+          "doseQuantity" : {
+            "value" : 1,
+            "unit" : "ointment",
+            "system" : "http://snomed.info/sct",
+            "code" : "385101003"
+          }
+        }]
+      }]
+    }
+  },
+  {
+    "fullUrl" : "https://fhir.example.com/Immunization/17b5a6d7-307b-4726-8c8c-0031e61582ce",
+    "resource" : {
+      "resourceType" : "Immunization",
+      "id" : "17b5a6d7-307b-4726-8c8c-0031e61582ce",
+      "text" : {
+        "status" : "generated",
+        "div" : "<div xmlns=\"http://www.w3.org/1999/xhtml\"><a name=\"Immunization_17b5a6d7-307b-4726-8c8c-0031e61582ce\"> </a><p class=\"res-header-id\"><b>Generated Narrative: Immunization 17b5a6d7-307b-4726-8c8c-0031e61582ce</b></p><a name=\"17b5a6d7-307b-4726-8c8c-0031e61582ce\"> </a><a name=\"hc17b5a6d7-307b-4726-8c8c-0031e61582ce\"> </a><p><b>status</b>: Completed</p><p><b>vaccineCode</b>: <span title=\"Codes:{http://hl7.org/fhir/sid/cvx 141}\">Influenza, split virus, trivalent, preservative</span></p><p><b>patient</b>: <a href=\"Bundle-bundle-ips-all-sections.html#Patient_d174bd1a-b368-41e6-83a2-af77f2b3c60f\">Bundle: identifier = urn:oid:2.16.724.4.8.10.200.10#ac7a747c-a2c9-493c-ba39-4ac6997eed1e; type = document; timestamp = 2024-09-21 18:53:00+0000</a></p><p><b>occurrence</b>: 2024-04-10</p><p><b>lotNumber</b>: H06</p><p><b>site</b>: <span title=\"Codes:{http://snomed.info/sct 16217701000119102}\">Structure of left deltoid muscle</span></p><p><b>route</b>: <span title=\"Codes:{http://terminology.hl7.org/CodeSystem/v3-RouteOfAdministration IM}\">Injection, intramuscular</span></p><h3>Performers</h3><table class=\"grid\"><tr><td style=\"display: none\">-</td><td><b>Actor</b></td></tr><tr><td style=\"display: none\">*</td><td><a href=\"Bundle-bundle-ips-all-sections.html#Organization_7a17027f-acc0-4d77-bf84-c0dad8f7c881\">Bundle: identifier = urn:oid:2.16.724.4.8.10.200.10#ac7a747c-a2c9-493c-ba39-4ac6997eed1e; type = document; timestamp = 2024-09-21 18:53:00+0000</a></td></tr></table><h3>ProtocolApplieds</h3><table class=\"grid\"><tr><td style=\"display: none\">-</td><td><b>Series</b></td><td><b>DoseNumber[x]</b></td></tr><tr><td style=\"display: none\">*</td><td>1 (Over 65 years (Influenza))</td><td>1</td></tr></table></div>"
+      },
+      "status" : "completed",
+      "vaccineCode" : {
+        "coding" : [{
+          "system" : "http://hl7.org/fhir/sid/cvx",
+          "code" : "141",
+          "display" : "Influenza, split virus, trivalent, preservative"
+        }]
+      },
+      "patient" : {
+        "reference" : "Patient/d174bd1a-b368-41e6-83a2-af77f2b3c60f"
+      },
+      "occurrenceDateTime" : "2024-04-10",
+      "lotNumber" : "H06",
+      "site" : {
+        "coding" : [{
+          "system" : "http://snomed.info/sct",
+          "code" : "16217701000119102",
+          "display" : "Structure of left deltoid muscle"
+        }]
+      },
+      "route" : {
+        "coding" : [{
+          "system" : "http://terminology.hl7.org/CodeSystem/v3-RouteOfAdministration",
+          "code" : "IM",
+          "display" : "Injection, intramuscular"
+        }]
+      },
+      "performer" : [{
+        "actor" : {
+          "reference" : "Organization/7a17027f-acc0-4d77-bf84-c0dad8f7c881"
+        }
+      }],
+      "protocolApplied" : [{
+        "series" : "1 (Over 65 years (Influenza))",
+        "doseNumberPositiveInt" : 1
+      }]
+    }
+  },
+  {
+    "fullUrl" : "https://fhir.example.com/Immunization/14e8b0d8-b4e4-4f8e-b263-ef385787453b",
+    "resource" : {
+      "resourceType" : "Immunization",
+      "id" : "14e8b0d8-b4e4-4f8e-b263-ef385787453b",
+      "text" : {
+        "status" : "generated",
+        "div" : "<div xmlns=\"http://www.w3.org/1999/xhtml\"><a name=\"Immunization_14e8b0d8-b4e4-4f8e-b263-ef385787453b\"> </a><p class=\"res-header-id\"><b>Generated Narrative: Immunization 14e8b0d8-b4e4-4f8e-b263-ef385787453b</b></p><a name=\"14e8b0d8-b4e4-4f8e-b263-ef385787453b\"> </a><a name=\"hc14e8b0d8-b4e4-4f8e-b263-ef385787453b\"> </a><p><b>status</b>: Completed</p><p><b>vaccineCode</b>: <span title=\"Codes:{http://hl7.org/fhir/sid/cvx 300}\">COVID-19, mRNA, LNP-S, bivalent, PF, 30 mcg/0.3 mL dose</span></p><p><b>patient</b>: <a href=\"Bundle-bundle-ips-all-sections.html#Patient_d174bd1a-b368-41e6-83a2-af77f2b3c60f\">Bundle: identifier = urn:oid:2.16.724.4.8.10.200.10#ac7a747c-a2c9-493c-ba39-4ac6997eed1e; type = document; timestamp = 2024-09-21 18:53:00+0000</a></p><p><b>occurrence</b>: 2024-02-18</p><p><b>lotNumber</b>: GK3908-068</p><p><b>route</b>: <span title=\"Codes:{http://terminology.hl7.org/CodeSystem/v3-RouteOfAdministration IM}\">Injection, intramuscular</span></p><h3>Performers</h3><table class=\"grid\"><tr><td style=\"display: none\">-</td><td><b>Actor</b></td></tr><tr><td style=\"display: none\">*</td><td><a href=\"Bundle-bundle-ips-all-sections.html#Organization_7a17027f-acc0-4d77-bf84-c0dad8f7c881\">Bundle: identifier = urn:oid:2.16.724.4.8.10.200.10#ac7a747c-a2c9-493c-ba39-4ac6997eed1e; type = document; timestamp = 2024-09-21 18:53:00+0000</a></td></tr></table><h3>ProtocolApplieds</h3><table class=\"grid\"><tr><td style=\"display: none\">-</td><td><b>Series</b></td><td><b>DoseNumber[x]</b></td></tr><tr><td style=\"display: none\">*</td><td>6 (Booster or Extra dose)</td><td>5</td></tr></table></div>"
+      },
+      "status" : "completed",
+      "vaccineCode" : {
+        "coding" : [{
+          "system" : "http://hl7.org/fhir/sid/cvx",
+          "code" : "300",
+          "display" : "COVID-19, mRNA, LNP-S, bivalent, PF, 30 mcg/0.3 mL dose"
+        }]
+      },
+      "patient" : {
+        "reference" : "Patient/d174bd1a-b368-41e6-83a2-af77f2b3c60f"
+      },
+      "occurrenceDateTime" : "2024-02-18",
+      "lotNumber" : "GK3908-068",
+      "route" : {
+        "coding" : [{
+          "system" : "http://terminology.hl7.org/CodeSystem/v3-RouteOfAdministration",
+          "code" : "IM",
+          "display" : "Injection, intramuscular"
+        }]
+      },
+      "performer" : [{
+        "actor" : {
+          "reference" : "Organization/7a17027f-acc0-4d77-bf84-c0dad8f7c881"
+        }
+      }],
+      "protocolApplied" : [{
+        "series" : "6 (Booster or Extra dose)",
+        "doseNumberPositiveInt" : 5
+      }]
+    }
+  },
+  {
+    "fullUrl" : "https://fhir.example.com/Immunization/47befa30-026c-421a-ad32-c0b134597a30",
+    "resource" : {
+      "resourceType" : "Immunization",
+      "id" : "47befa30-026c-421a-ad32-c0b134597a30",
+      "text" : {
+        "status" : "generated",
+        "div" : "<div xmlns=\"http://www.w3.org/1999/xhtml\"><a name=\"Immunization_47befa30-026c-421a-ad32-c0b134597a30\"> </a><p class=\"res-header-id\"><b>Generated Narrative: Immunization 47befa30-026c-421a-ad32-c0b134597a30</b></p><a name=\"47befa30-026c-421a-ad32-c0b134597a30\"> </a><a name=\"hc47befa30-026c-421a-ad32-c0b134597a30\"> </a><p><b>status</b>: Completed</p><p><b>vaccineCode</b>: <span title=\"Codes:{http://hl7.org/fhir/sid/cvx 141}\">Influenza, split virus, trivalent, preservative</span></p><p><b>patient</b>: <a href=\"Bundle-bundle-ips-all-sections.html#Patient_d174bd1a-b368-41e6-83a2-af77f2b3c60f\">Bundle: identifier = urn:oid:2.16.724.4.8.10.200.10#ac7a747c-a2c9-493c-ba39-4ac6997eed1e; type = document; timestamp = 2024-09-21 18:53:00+0000</a></p><p><b>occurrence</b>: 2023-04-12</p><p><b>lotNumber</b>: 358899</p><p><b>site</b>: <span title=\"Codes:{http://snomed.info/sct 16217661000119109}\">Structure of right deltoid muscle</span></p><p><b>route</b>: <span title=\"Codes:{http://terminology.hl7.org/CodeSystem/v3-RouteOfAdministration IM}\">Injection, intramuscular</span></p><h3>Performers</h3><table class=\"grid\"><tr><td style=\"display: none\">-</td><td><b>Actor</b></td></tr><tr><td style=\"display: none\">*</td><td><a href=\"Bundle-bundle-ips-all-sections.html#Organization_7a17027f-acc0-4d77-bf84-c0dad8f7c881\">Bundle: identifier = urn:oid:2.16.724.4.8.10.200.10#ac7a747c-a2c9-493c-ba39-4ac6997eed1e; type = document; timestamp = 2024-09-21 18:53:00+0000</a></td></tr></table><h3>ProtocolApplieds</h3><table class=\"grid\"><tr><td style=\"display: none\">-</td><td><b>Series</b></td><td><b>DoseNumber[x]</b></td></tr><tr><td style=\"display: none\">*</td><td>1 (Over 65 years (Influenza))</td><td>1</td></tr></table></div>"
+      },
+      "status" : "completed",
+      "vaccineCode" : {
+        "coding" : [{
+          "system" : "http://hl7.org/fhir/sid/cvx",
+          "code" : "141",
+          "display" : "Influenza, split virus, trivalent, preservative"
+        }]
+      },
+      "patient" : {
+        "reference" : "Patient/d174bd1a-b368-41e6-83a2-af77f2b3c60f"
+      },
+      "occurrenceDateTime" : "2023-04-12",
+      "lotNumber" : "358899",
+      "site" : {
+        "coding" : [{
+          "system" : "http://snomed.info/sct",
+          "code" : "16217661000119109",
+          "display" : "Structure of right deltoid muscle"
+        }]
+      },
+      "route" : {
+        "coding" : [{
+          "system" : "http://terminology.hl7.org/CodeSystem/v3-RouteOfAdministration",
+          "code" : "IM",
+          "display" : "Injection, intramuscular"
+        }]
+      },
+      "performer" : [{
+        "actor" : {
+          "reference" : "Organization/7a17027f-acc0-4d77-bf84-c0dad8f7c881"
+        }
+      }],
+      "protocolApplied" : [{
+        "series" : "1 (Over 65 years (Influenza))",
+        "doseNumberPositiveInt" : 1
+      }]
+    }
+  },
+  {
+    "fullUrl" : "https://fhir.example.com/Immunization/2f05b590-ce75-4ac6-be97-c2a275e21cbc",
+    "resource" : {
+      "resourceType" : "Immunization",
+      "id" : "2f05b590-ce75-4ac6-be97-c2a275e21cbc",
+      "text" : {
+        "status" : "generated",
+        "div" : "<div xmlns=\"http://www.w3.org/1999/xhtml\"><a name=\"Immunization_2f05b590-ce75-4ac6-be97-c2a275e21cbc\"> </a><p class=\"res-header-id\"><b>Generated Narrative: Immunization 2f05b590-ce75-4ac6-be97-c2a275e21cbc</b></p><a name=\"2f05b590-ce75-4ac6-be97-c2a275e21cbc\"> </a><a name=\"hc2f05b590-ce75-4ac6-be97-c2a275e21cbc\"> </a><p><b>status</b>: Completed</p><p><b>vaccineCode</b>: <span title=\"Codes:{http://hl7.org/fhir/sid/cvx 208}\">COVID-19, mRNA, LNP-S, PF, 30 mcg/0.3 mL dose</span></p><p><b>patient</b>: <a href=\"Bundle-bundle-ips-all-sections.html#Patient_d174bd1a-b368-41e6-83a2-af77f2b3c60f\">Bundle: identifier = urn:oid:2.16.724.4.8.10.200.10#ac7a747c-a2c9-493c-ba39-4ac6997eed1e; type = document; timestamp = 2024-09-21 18:53:00+0000</a></p><p><b>occurrence</b>: 2022-08-01</p><p><b>lotNumber</b>: PCB0008-07</p><p><b>site</b>: <span title=\"Codes:{http://snomed.info/sct 16217701000119102}\">Structure of left deltoid muscle</span></p><p><b>route</b>: <span title=\"Codes:{http://terminology.hl7.org/CodeSystem/v3-RouteOfAdministration IM}\">Injection, intramuscular</span></p><h3>Performers</h3><table class=\"grid\"><tr><td style=\"display: none\">-</td><td><b>Actor</b></td></tr><tr><td style=\"display: none\">*</td><td><a href=\"Bundle-bundle-ips-all-sections.html#Organization_7a17027f-acc0-4d77-bf84-c0dad8f7c881\">Bundle: identifier = urn:oid:2.16.724.4.8.10.200.10#ac7a747c-a2c9-493c-ba39-4ac6997eed1e; type = document; timestamp = 2024-09-21 18:53:00+0000</a></td></tr></table><h3>ProtocolApplieds</h3><table class=\"grid\"><tr><td style=\"display: none\">-</td><td><b>Series</b></td><td><b>DoseNumber[x]</b></td></tr><tr><td style=\"display: none\">*</td><td>12 (At risk, no previous history)</td><td>4</td></tr></table></div>"
+      },
+      "status" : "completed",
+      "vaccineCode" : {
+        "coding" : [{
+          "system" : "http://hl7.org/fhir/sid/cvx",
+          "code" : "208",
+          "display" : "COVID-19, mRNA, LNP-S, PF, 30 mcg/0.3 mL dose"
+        }]
+      },
+      "patient" : {
+        "reference" : "Patient/d174bd1a-b368-41e6-83a2-af77f2b3c60f"
+      },
+      "occurrenceDateTime" : "2022-08-01",
+      "lotNumber" : "PCB0008-07",
+      "site" : {
+        "coding" : [{
+          "system" : "http://snomed.info/sct",
+          "code" : "16217701000119102",
+          "display" : "Structure of left deltoid muscle"
+        }]
+      },
+      "route" : {
+        "coding" : [{
+          "system" : "http://terminology.hl7.org/CodeSystem/v3-RouteOfAdministration",
+          "code" : "IM",
+          "display" : "Injection, intramuscular"
+        }]
+      },
+      "performer" : [{
+        "actor" : {
+          "reference" : "Organization/7a17027f-acc0-4d77-bf84-c0dad8f7c881"
+        }
+      }],
+      "protocolApplied" : [{
+        "series" : "12 (At risk, no previous history)",
+        "doseNumberPositiveInt" : 4
+      }]
+    }
+  },
+  {
+    "fullUrl" : "https://fhir.example.com/Immunization/c1d3ccb9-8b7d-4732-8e03-abe63be1984c",
+    "resource" : {
+      "resourceType" : "Immunization",
+      "id" : "c1d3ccb9-8b7d-4732-8e03-abe63be1984c",
+      "text" : {
+        "status" : "generated",
+        "div" : "<div xmlns=\"http://www.w3.org/1999/xhtml\"><a name=\"Immunization_c1d3ccb9-8b7d-4732-8e03-abe63be1984c\"> </a><p class=\"res-header-id\"><b>Generated Narrative: Immunization c1d3ccb9-8b7d-4732-8e03-abe63be1984c</b></p><a name=\"c1d3ccb9-8b7d-4732-8e03-abe63be1984c\"> </a><a name=\"hcc1d3ccb9-8b7d-4732-8e03-abe63be1984c\"> </a><p><b>status</b>: Completed</p><p><b>vaccineCode</b>: <span title=\"Codes:{http://hl7.org/fhir/sid/cvx 121}\">zoster live</span></p><p><b>patient</b>: <a href=\"Bundle-bundle-ips-all-sections.html#Patient_d174bd1a-b368-41e6-83a2-af77f2b3c60f\">Bundle: identifier = urn:oid:2.16.724.4.8.10.200.10#ac7a747c-a2c9-493c-ba39-4ac6997eed1e; type = document; timestamp = 2024-09-21 18:53:00+0000</a></p><p><b>occurrence</b>: 2022-07-13</p><p><b>lotNumber</b>: U021248</p><p><b>site</b>: <span title=\"Codes:{http://snomed.info/sct 72098002}\">Entire left upper arm</span></p><p><b>route</b>: <span title=\"Codes:{http://terminology.hl7.org/CodeSystem/v3-RouteOfAdministration IM}\">Injection, intramuscular</span></p><h3>Performers</h3><table class=\"grid\"><tr><td style=\"display: none\">-</td><td><b>Actor</b></td></tr><tr><td style=\"display: none\">*</td><td><a href=\"Bundle-bundle-ips-all-sections.html#Organization_7a17027f-acc0-4d77-bf84-c0dad8f7c881\">Bundle: identifier = urn:oid:2.16.724.4.8.10.200.10#ac7a747c-a2c9-493c-ba39-4ac6997eed1e; type = document; timestamp = 2024-09-21 18:53:00+0000</a></td></tr></table><h3>ProtocolApplieds</h3><table class=\"grid\"><tr><td style=\"display: none\">-</td><td><b>Series</b></td><td><b>DoseNumber[x]</b></td></tr><tr><td style=\"display: none\">*</td><td>65Y (65 years)</td><td>1</td></tr></table></div>"
+      },
+      "status" : "completed",
+      "vaccineCode" : {
+        "coding" : [{
+          "system" : "http://hl7.org/fhir/sid/cvx",
+          "code" : "121",
+          "display" : "zoster live"
+        }]
+      },
+      "patient" : {
+        "reference" : "Patient/d174bd1a-b368-41e6-83a2-af77f2b3c60f"
+      },
+      "occurrenceDateTime" : "2022-07-13",
+      "lotNumber" : "U021248",
+      "site" : {
+        "coding" : [{
+          "system" : "http://snomed.info/sct",
+          "code" : "72098002",
+          "display" : "Entire left upper arm"
+        }]
+      },
+      "route" : {
+        "coding" : [{
+          "system" : "http://terminology.hl7.org/CodeSystem/v3-RouteOfAdministration",
+          "code" : "IM",
+          "display" : "Injection, intramuscular"
+        }]
+      },
+      "performer" : [{
+        "actor" : {
+          "reference" : "Organization/7a17027f-acc0-4d77-bf84-c0dad8f7c881"
+        }
+      }],
+      "protocolApplied" : [{
+        "series" : "65Y (65 years)",
+        "doseNumberPositiveInt" : 1
+      }]
+    }
+  },
+  {
+    "fullUrl" : "https://fhir.example.com/Immunization/79b66c21-fbd3-4c7f-ae82-ac958ae62e0a",
+    "resource" : {
+      "resourceType" : "Immunization",
+      "id" : "79b66c21-fbd3-4c7f-ae82-ac958ae62e0a",
+      "text" : {
+        "status" : "generated",
+        "div" : "<div xmlns=\"http://www.w3.org/1999/xhtml\"><a name=\"Immunization_79b66c21-fbd3-4c7f-ae82-ac958ae62e0a\"> </a><p class=\"res-header-id\"><b>Generated Narrative: Immunization 79b66c21-fbd3-4c7f-ae82-ac958ae62e0a</b></p><a name=\"79b66c21-fbd3-4c7f-ae82-ac958ae62e0a\"> </a><a name=\"hc79b66c21-fbd3-4c7f-ae82-ac958ae62e0a\"> </a><p><b>status</b>: Completed</p><p><b>vaccineCode</b>: <span title=\"Codes:{http://hl7.org/fhir/sid/cvx 208}\">COVID-19, mRNA, LNP-S, PF, 30 mcg/0.3 mL dose</span></p><p><b>patient</b>: <a href=\"Bundle-bundle-ips-all-sections.html#Patient_d174bd1a-b368-41e6-83a2-af77f2b3c60f\">Bundle: identifier = urn:oid:2.16.724.4.8.10.200.10#ac7a747c-a2c9-493c-ba39-4ac6997eed1e; type = document; timestamp = 2024-09-21 18:53:00+0000</a></p><p><b>occurrence</b>: 2022-01-13</p><p><b>lotNumber</b>: FL1072-025</p><p><b>route</b>: <span title=\"Codes:{http://terminology.hl7.org/CodeSystem/v3-RouteOfAdministration IM}\">Injection, intramuscular</span></p><h3>Performers</h3><table class=\"grid\"><tr><td style=\"display: none\">-</td><td><b>Actor</b></td></tr><tr><td style=\"display: none\">*</td><td><a href=\"Bundle-bundle-ips-all-sections.html#Organization_7a17027f-acc0-4d77-bf84-c0dad8f7c881\">Bundle: identifier = urn:oid:2.16.724.4.8.10.200.10#ac7a747c-a2c9-493c-ba39-4ac6997eed1e; type = document; timestamp = 2024-09-21 18:53:00+0000</a></td></tr></table><h3>ProtocolApplieds</h3><table class=\"grid\"><tr><td style=\"display: none\">-</td><td><b>Series</b></td><td><b>DoseNumber[x]</b></td></tr><tr><td style=\"display: none\">*</td><td>12 (At risk, no previous history)</td><td>3</td></tr></table></div>"
+      },
+      "status" : "completed",
+      "vaccineCode" : {
+        "coding" : [{
+          "system" : "http://hl7.org/fhir/sid/cvx",
+          "code" : "208",
+          "display" : "COVID-19, mRNA, LNP-S, PF, 30 mcg/0.3 mL dose"
+        }]
+      },
+      "patient" : {
+        "reference" : "Patient/d174bd1a-b368-41e6-83a2-af77f2b3c60f"
+      },
+      "occurrenceDateTime" : "2022-01-13",
+      "lotNumber" : "FL1072-025",
+      "route" : {
+        "coding" : [{
+          "system" : "http://terminology.hl7.org/CodeSystem/v3-RouteOfAdministration",
+          "code" : "IM",
+          "display" : "Injection, intramuscular"
+        }]
+      },
+      "performer" : [{
+        "actor" : {
+          "reference" : "Organization/7a17027f-acc0-4d77-bf84-c0dad8f7c881"
+        }
+      }],
+      "protocolApplied" : [{
+        "series" : "12 (At risk, no previous history)",
+        "doseNumberPositiveInt" : 3
+      }]
+    }
+  },
+  {
+    "fullUrl" : "https://fhir.example.com/Immunization/9910b96a-793b-4e96-91a9-291c27357f83",
+    "resource" : {
+      "resourceType" : "Immunization",
+      "id" : "9910b96a-793b-4e96-91a9-291c27357f83",
+      "text" : {
+        "status" : "generated",
+        "div" : "<div xmlns=\"http://www.w3.org/1999/xhtml\"><a name=\"Immunization_9910b96a-793b-4e96-91a9-291c27357f83\"> </a><p class=\"res-header-id\"><b>Generated Narrative: Immunization 9910b96a-793b-4e96-91a9-291c27357f83</b></p><a name=\"9910b96a-793b-4e96-91a9-291c27357f83\"> </a><a name=\"hc9910b96a-793b-4e96-91a9-291c27357f83\"> </a><p><b>status</b>: Completed</p><p><b>vaccineCode</b>: <span title=\"Codes:{http://hl7.org/fhir/sid/cvx 208}\">COVID-19, mRNA, LNP-S, PF, 30 mcg/0.3 mL dose</span></p><p><b>patient</b>: <a href=\"Bundle-bundle-ips-all-sections.html#Patient_d174bd1a-b368-41e6-83a2-af77f2b3c60f\">Bundle: identifier = urn:oid:2.16.724.4.8.10.200.10#ac7a747c-a2c9-493c-ba39-4ac6997eed1e; type = document; timestamp = 2024-09-21 18:53:00+0000</a></p><p><b>occurrence</b>: 2021-08-27</p><p><b>lotNumber</b>: FE8163-007</p><p><b>site</b>: <span title=\"Codes:{http://snomed.info/sct 16217701000119102}\">Structure of left deltoid muscle</span></p><p><b>route</b>: <span title=\"Codes:{http://terminology.hl7.org/CodeSystem/v3-RouteOfAdministration IM}\">Injection, intramuscular</span></p><h3>Performers</h3><table class=\"grid\"><tr><td style=\"display: none\">-</td><td><b>Actor</b></td></tr><tr><td style=\"display: none\">*</td><td><a href=\"Bundle-bundle-ips-all-sections.html#Organization_7a17027f-acc0-4d77-bf84-c0dad8f7c881\">Bundle: identifier = urn:oid:2.16.724.4.8.10.200.10#ac7a747c-a2c9-493c-ba39-4ac6997eed1e; type = document; timestamp = 2024-09-21 18:53:00+0000</a></td></tr></table><h3>ProtocolApplieds</h3><table class=\"grid\"><tr><td style=\"display: none\">-</td><td><b>Series</b></td><td><b>DoseNumber[x]</b></td></tr><tr><td style=\"display: none\">*</td><td>12 (At risk, no previous history)</td><td>2</td></tr></table></div>"
+      },
+      "status" : "completed",
+      "vaccineCode" : {
+        "coding" : [{
+          "system" : "http://hl7.org/fhir/sid/cvx",
+          "code" : "208",
+          "display" : "COVID-19, mRNA, LNP-S, PF, 30 mcg/0.3 mL dose"
+        }]
+      },
+      "patient" : {
+        "reference" : "Patient/d174bd1a-b368-41e6-83a2-af77f2b3c60f"
+      },
+      "occurrenceDateTime" : "2021-08-27",
+      "lotNumber" : "FE8163-007",
+      "site" : {
+        "coding" : [{
+          "system" : "http://snomed.info/sct",
+          "code" : "16217701000119102",
+          "display" : "Structure of left deltoid muscle"
+        }]
+      },
+      "route" : {
+        "coding" : [{
+          "system" : "http://terminology.hl7.org/CodeSystem/v3-RouteOfAdministration",
+          "code" : "IM",
+          "display" : "Injection, intramuscular"
+        }]
+      },
+      "performer" : [{
+        "actor" : {
+          "reference" : "Organization/7a17027f-acc0-4d77-bf84-c0dad8f7c881"
+        }
+      }],
+      "protocolApplied" : [{
+        "series" : "12 (At risk, no previous history)",
+        "doseNumberPositiveInt" : 2
+      }]
+    }
+  },
+  {
+    "fullUrl" : "https://fhir.example.com/Immunization/5b028fb0-bd04-4e75-b2bc-6952771173ea",
+    "resource" : {
+      "resourceType" : "Immunization",
+      "id" : "5b028fb0-bd04-4e75-b2bc-6952771173ea",
+      "text" : {
+        "status" : "generated",
+        "div" : "<div xmlns=\"http://www.w3.org/1999/xhtml\"><a name=\"Immunization_5b028fb0-bd04-4e75-b2bc-6952771173ea\"> </a><p class=\"res-header-id\"><b>Generated Narrative: Immunization 5b028fb0-bd04-4e75-b2bc-6952771173ea</b></p><a name=\"5b028fb0-bd04-4e75-b2bc-6952771173ea\"> </a><a name=\"hc5b028fb0-bd04-4e75-b2bc-6952771173ea\"> </a><p><b>status</b>: Completed</p><p><b>vaccineCode</b>: <span title=\"Codes:{http://hl7.org/fhir/sid/cvx 208}\">COVID-19, mRNA, LNP-S, PF, 30 mcg/0.3 mL dose</span></p><p><b>patient</b>: <a href=\"Bundle-bundle-ips-all-sections.html#Patient_d174bd1a-b368-41e6-83a2-af77f2b3c60f\">Bundle: identifier = urn:oid:2.16.724.4.8.10.200.10#ac7a747c-a2c9-493c-ba39-4ac6997eed1e; type = document; timestamp = 2024-09-21 18:53:00+0000</a></p><p><b>occurrence</b>: 2021-08-05</p><p><b>lotNumber</b>: FF8871-001</p><p><b>site</b>: <span title=\"Codes:{http://snomed.info/sct 16217701000119102}\">Structure of left deltoid muscle</span></p><p><b>route</b>: <span title=\"Codes:{http://terminology.hl7.org/CodeSystem/v3-RouteOfAdministration IM}\">Injection, intramuscular</span></p><h3>Performers</h3><table class=\"grid\"><tr><td style=\"display: none\">-</td><td><b>Actor</b></td></tr><tr><td style=\"display: none\">*</td><td><a href=\"Bundle-bundle-ips-all-sections.html#Organization_7a17027f-acc0-4d77-bf84-c0dad8f7c881\">Bundle: identifier = urn:oid:2.16.724.4.8.10.200.10#ac7a747c-a2c9-493c-ba39-4ac6997eed1e; type = document; timestamp = 2024-09-21 18:53:00+0000</a></td></tr></table><h3>ProtocolApplieds</h3><table class=\"grid\"><tr><td style=\"display: none\">-</td><td><b>Series</b></td><td><b>DoseNumber[x]</b></td></tr><tr><td style=\"display: none\">*</td><td>12 (At risk, no previous history)</td><td>1</td></tr></table></div>"
+      },
+      "status" : "completed",
+      "vaccineCode" : {
+        "coding" : [{
+          "system" : "http://hl7.org/fhir/sid/cvx",
+          "code" : "208",
+          "display" : "COVID-19, mRNA, LNP-S, PF, 30 mcg/0.3 mL dose"
+        }]
+      },
+      "patient" : {
+        "reference" : "Patient/d174bd1a-b368-41e6-83a2-af77f2b3c60f"
+      },
+      "occurrenceDateTime" : "2021-08-05",
+      "lotNumber" : "FF8871-001",
+      "site" : {
+        "coding" : [{
+          "system" : "http://snomed.info/sct",
+          "code" : "16217701000119102",
+          "display" : "Structure of left deltoid muscle"
+        }]
+      },
+      "route" : {
+        "coding" : [{
+          "system" : "http://terminology.hl7.org/CodeSystem/v3-RouteOfAdministration",
+          "code" : "IM",
+          "display" : "Injection, intramuscular"
+        }]
+      },
+      "performer" : [{
+        "actor" : {
+          "reference" : "Organization/7a17027f-acc0-4d77-bf84-c0dad8f7c881"
+        }
+      }],
+      "protocolApplied" : [{
+        "series" : "12 (At risk, no previous history)",
+        "doseNumberPositiveInt" : 1
+      }]
+    }
+  },
+  {
+    "fullUrl" : "https://fhir.example.com/Observation/b0187efd-5f9b-474d-87bc-efebf877449a",
+    "resource" : {
+      "resourceType" : "Observation",
+      "id" : "b0187efd-5f9b-474d-87bc-efebf877449a",
+      "text" : {
+        "status" : "generated",
+        "div" : "<div xmlns=\"http://www.w3.org/1999/xhtml\"><a name=\"Observation_b0187efd-5f9b-474d-87bc-efebf877449a\"> </a><p class=\"res-header-id\"><b>Generated Narrative: Observation b0187efd-5f9b-474d-87bc-efebf877449a</b></p><a name=\"b0187efd-5f9b-474d-87bc-efebf877449a\"> </a><a name=\"hcb0187efd-5f9b-474d-87bc-efebf877449a\"> </a><p><b>status</b>: Final</p><p><b>category</b>: <span title=\"Codes:{http://terminology.hl7.org/CodeSystem/observation-category laboratory}\">Laboratory</span></p><p><b>code</b>: <span title=\"Codes:{http://loinc.org 32309-7}\">Cholesterol.total/Cholesterol in HDL [Molar ratio] in Serum or Plasma</span></p><p><b>subject</b>: <a href=\"Bundle-bundle-ips-all-sections.html#Patient_d174bd1a-b368-41e6-83a2-af77f2b3c60f\">Bundle: identifier = urn:oid:2.16.724.4.8.10.200.10#ac7a747c-a2c9-493c-ba39-4ac6997eed1e; type = document; timestamp = 2024-09-21 18:53:00+0000</a></p><p><b>effective</b>: 2023-10-31 15:06:00+0000</p><p><b>performer</b>: <a href=\"Bundle-bundle-ips-all-sections.html#PractitionerRole_75ed6f24-9a7e-4568-9c05-91b6d4786743\">Bundle: identifier = urn:oid:2.16.724.4.8.10.200.10#ac7a747c-a2c9-493c-ba39-4ac6997eed1e; type = document; timestamp = 2024-09-21 18:53:00+0000</a></p><p><b>value</b>: 4.1 mmol/L<span style=\"background: LightGoldenRodYellow\"> (Details: UCUM  codemmol/L = 'mmol/L')</span></p><p><b>note</b>: </p><blockquote><div><p>Incr chol 5.7, LDL 3.6, HDL 1.39</p>\n</div></blockquote><h3>ReferenceRanges</h3><table class=\"grid\"><tr><td style=\"display: none\">-</td><td><b>Text</b></td></tr><tr><td style=\"display: none\">*</td><td>NA</td></tr></table></div>"
+      },
+      "status" : "final",
+      "category" : [{
+        "coding" : [{
+          "system" : "http://terminology.hl7.org/CodeSystem/observation-category",
+          "code" : "laboratory"
+        }]
+      }],
+      "code" : {
+        "coding" : [{
+          "system" : "http://loinc.org",
+          "code" : "32309-7",
+          "display" : "Cholesterol.total/Cholesterol in HDL [Molar ratio] in Serum or Plasma"
+        }]
+      },
+      "subject" : {
+        "reference" : "Patient/d174bd1a-b368-41e6-83a2-af77f2b3c60f"
+      },
+      "effectiveDateTime" : "2023-10-31T15:06:00+00:00",
+      "performer" : [{
+        "reference" : "PractitionerRole/75ed6f24-9a7e-4568-9c05-91b6d4786743"
+      }],
+      "valueQuantity" : {
+        "value" : 4.1,
+        "unit" : "mmol/L",
+        "system" : "http://unitsofmeasure.org",
+        "code" : "mmol/L"
+      },
+      "note" : [{
+        "text" : "Incr chol 5.7, LDL 3.6, HDL 1.39"
+      }],
+      "referenceRange" : [{
+        "text" : "NA"
+      }]
+    }
+  },
+  {
+    "fullUrl" : "https://fhir.example.com/Observation/f40b9e26-93b4-462b-8811-bdd6943873aa",
+    "resource" : {
+      "resourceType" : "Observation",
+      "id" : "f40b9e26-93b4-462b-8811-bdd6943873aa",
+      "text" : {
+        "status" : "generated",
+        "div" : "<div xmlns=\"http://www.w3.org/1999/xhtml\"><a name=\"Observation_f40b9e26-93b4-462b-8811-bdd6943873aa\"> </a><p class=\"res-header-id\"><b>Generated Narrative: Observation f40b9e26-93b4-462b-8811-bdd6943873aa</b></p><a name=\"f40b9e26-93b4-462b-8811-bdd6943873aa\"> </a><a name=\"hcf40b9e26-93b4-462b-8811-bdd6943873aa\"> </a><p><b>status</b>: Final</p><p><b>category</b>: <span title=\"Codes:{http://terminology.hl7.org/CodeSystem/observation-category laboratory}\">Laboratory</span></p><p><b>code</b>: <span title=\"Codes:{http://loinc.org 49062-3}\">Lipid risk factors [Finding]</span></p><p><b>subject</b>: <a href=\"Bundle-bundle-ips-all-sections.html#Patient_d174bd1a-b368-41e6-83a2-af77f2b3c60f\">Bundle: identifier = urn:oid:2.16.724.4.8.10.200.10#ac7a747c-a2c9-493c-ba39-4ac6997eed1e; type = document; timestamp = 2024-09-21 18:53:00+0000</a></p><p><b>effective</b>: 2023-10-31 15:06:00+0000</p><p><b>performer</b>: <a href=\"Bundle-bundle-ips-all-sections.html#PractitionerRole_75ed6f24-9a7e-4568-9c05-91b6d4786743\">Bundle: identifier = urn:oid:2.16.724.4.8.10.200.10#ac7a747c-a2c9-493c-ba39-4ac6997eed1e; type = document; timestamp = 2024-09-21 18:53:00+0000</a></p><p><b>value</b>: A combined CVD risk of which lipids is one component should be estimated to guide CVD risk management decisions. If lipid modifying medication is considered suggest checking first for treatable secondary causes of dyslipidaemia.</p><p><b>note</b>: </p><blockquote><div><p>Incr chol 5.7, LDL 3.6, HDL 1.39</p>\n</div></blockquote><h3>ReferenceRanges</h3><table class=\"grid\"><tr><td style=\"display: none\">-</td><td><b>Text</b></td></tr><tr><td style=\"display: none\">*</td><td>NA</td></tr></table></div>"
+      },
+      "status" : "final",
+      "category" : [{
+        "coding" : [{
+          "system" : "http://terminology.hl7.org/CodeSystem/observation-category",
+          "code" : "laboratory"
+        }]
+      }],
+      "code" : {
+        "coding" : [{
+          "system" : "http://loinc.org",
+          "code" : "49062-3",
+          "display" : "Lipid risk factors [Finding]"
+        }]
+      },
+      "subject" : {
+        "reference" : "Patient/d174bd1a-b368-41e6-83a2-af77f2b3c60f"
+      },
+      "effectiveDateTime" : "2023-10-31T15:06:00+00:00",
+      "performer" : [{
+        "reference" : "PractitionerRole/75ed6f24-9a7e-4568-9c05-91b6d4786743"
+      }],
+      "valueString" : "A combined CVD risk of which lipids is one component should be estimated to guide CVD risk management decisions. If lipid modifying medication is considered suggest checking first for treatable secondary causes of dyslipidaemia.",
+      "note" : [{
+        "text" : "Incr chol 5.7, LDL 3.6, HDL 1.39"
+      }],
+      "referenceRange" : [{
+        "text" : "NA"
+      }]
+    }
+  },
+  {
+    "fullUrl" : "https://fhir.example.com/Observation/612b7e6a-c902-45cb-b45c-d1894458a26b",
+    "resource" : {
+      "resourceType" : "Observation",
+      "id" : "612b7e6a-c902-45cb-b45c-d1894458a26b",
+      "text" : {
+        "status" : "generated",
+        "div" : "<div xmlns=\"http://www.w3.org/1999/xhtml\"><a name=\"Observation_612b7e6a-c902-45cb-b45c-d1894458a26b\"> </a><p class=\"res-header-id\"><b>Generated Narrative: Observation 612b7e6a-c902-45cb-b45c-d1894458a26b</b></p><a name=\"612b7e6a-c902-45cb-b45c-d1894458a26b\"> </a><a name=\"hc612b7e6a-c902-45cb-b45c-d1894458a26b\"> </a><p><b>status</b>: Final</p><p><b>category</b>: <span title=\"Codes:{http://terminology.hl7.org/CodeSystem/observation-category laboratory}\">Laboratory</span></p><p><b>code</b>: <span title=\"Codes:{http://loinc.org 39469-2}\">Cholesterol in LDL [Moles/volume] in Serum or Plasma by calculation</span></p><p><b>subject</b>: <a href=\"Bundle-bundle-ips-all-sections.html#Patient_d174bd1a-b368-41e6-83a2-af77f2b3c60f\">Bundle: identifier = urn:oid:2.16.724.4.8.10.200.10#ac7a747c-a2c9-493c-ba39-4ac6997eed1e; type = document; timestamp = 2024-09-21 18:53:00+0000</a></p><p><b>effective</b>: 2023-10-31 15:06:00+0000</p><p><b>performer</b>: <a href=\"Bundle-bundle-ips-all-sections.html#PractitionerRole_75ed6f24-9a7e-4568-9c05-91b6d4786743\">Bundle: identifier = urn:oid:2.16.724.4.8.10.200.10#ac7a747c-a2c9-493c-ba39-4ac6997eed1e; type = document; timestamp = 2024-09-21 18:53:00+0000</a></p><p><b>value</b>: 3.6 mmol/L<span style=\"background: LightGoldenRodYellow\"> (Details: UCUM  codemmol/L = 'mmol/L')</span></p><p><b>note</b>: </p><blockquote><div><p>Incr chol 5.7, LDL 3.6, HDL 1.39</p>\n</div></blockquote><h3>ReferenceRanges</h3><table class=\"grid\"><tr><td style=\"display: none\">-</td><td><b>Text</b></td></tr><tr><td style=\"display: none\">*</td><td>NA</td></tr></table></div>"
+      },
+      "status" : "final",
+      "category" : [{
+        "coding" : [{
+          "system" : "http://terminology.hl7.org/CodeSystem/observation-category",
+          "code" : "laboratory"
+        }]
+      }],
+      "code" : {
+        "coding" : [{
+          "system" : "http://loinc.org",
+          "code" : "39469-2",
+          "display" : "Cholesterol in LDL [Moles/volume] in Serum or Plasma by calculation"
+        }]
+      },
+      "subject" : {
+        "reference" : "Patient/d174bd1a-b368-41e6-83a2-af77f2b3c60f"
+      },
+      "effectiveDateTime" : "2023-10-31T15:06:00+00:00",
+      "performer" : [{
+        "reference" : "PractitionerRole/75ed6f24-9a7e-4568-9c05-91b6d4786743"
+      }],
+      "valueQuantity" : {
+        "value" : 3.6,
+        "unit" : "mmol/L",
+        "system" : "http://unitsofmeasure.org",
+        "code" : "mmol/L"
+      },
+      "note" : [{
+        "text" : "Incr chol 5.7, LDL 3.6, HDL 1.39"
+      }],
+      "referenceRange" : [{
+        "text" : "NA"
+      }]
+    }
+  },
+  {
+    "fullUrl" : "https://fhir.example.com/Observation/15bd8c0c-fa53-4f5b-994b-487c7db3dc78",
+    "resource" : {
+      "resourceType" : "Observation",
+      "id" : "15bd8c0c-fa53-4f5b-994b-487c7db3dc78",
+      "text" : {
+        "status" : "generated",
+        "div" : "<div xmlns=\"http://www.w3.org/1999/xhtml\"><a name=\"Observation_15bd8c0c-fa53-4f5b-994b-487c7db3dc78\"> </a><p class=\"res-header-id\"><b>Generated Narrative: Observation 15bd8c0c-fa53-4f5b-994b-487c7db3dc78</b></p><a name=\"15bd8c0c-fa53-4f5b-994b-487c7db3dc78\"> </a><a name=\"hc15bd8c0c-fa53-4f5b-994b-487c7db3dc78\"> </a><p><b>status</b>: Final</p><p><b>category</b>: <span title=\"Codes:{http://terminology.hl7.org/CodeSystem/observation-category laboratory}\">Laboratory</span></p><p><b>code</b>: <span title=\"Codes:{http://loinc.org 14927-8}\">Triglyceride [Moles/volume] in Serum or Plasma</span></p><p><b>subject</b>: <a href=\"Bundle-bundle-ips-all-sections.html#Patient_d174bd1a-b368-41e6-83a2-af77f2b3c60f\">Bundle: identifier = urn:oid:2.16.724.4.8.10.200.10#ac7a747c-a2c9-493c-ba39-4ac6997eed1e; type = document; timestamp = 2024-09-21 18:53:00+0000</a></p><p><b>effective</b>: 2023-10-31 15:06:00+0000</p><p><b>performer</b>: <a href=\"Bundle-bundle-ips-all-sections.html#PractitionerRole_75ed6f24-9a7e-4568-9c05-91b6d4786743\">Bundle: identifier = urn:oid:2.16.724.4.8.10.200.10#ac7a747c-a2c9-493c-ba39-4ac6997eed1e; type = document; timestamp = 2024-09-21 18:53:00+0000</a></p><p><b>value</b>: 1.7 mmol/L<span style=\"background: LightGoldenRodYellow\"> (Details: UCUM  codemmol/L = 'mmol/L')</span></p><p><b>note</b>: </p><blockquote><div><p>Incr chol 5.7, LDL 3.6, HDL 1.39</p>\n</div></blockquote><h3>ReferenceRanges</h3><table class=\"grid\"><tr><td style=\"display: none\">-</td><td><b>Text</b></td></tr><tr><td style=\"display: none\">*</td><td>NA</td></tr></table></div>"
+      },
+      "status" : "final",
+      "category" : [{
+        "coding" : [{
+          "system" : "http://terminology.hl7.org/CodeSystem/observation-category",
+          "code" : "laboratory"
+        }]
+      }],
+      "code" : {
+        "coding" : [{
+          "system" : "http://loinc.org",
+          "code" : "14927-8",
+          "display" : "Triglyceride [Moles/volume] in Serum or Plasma"
+        }]
+      },
+      "subject" : {
+        "reference" : "Patient/d174bd1a-b368-41e6-83a2-af77f2b3c60f"
+      },
+      "effectiveDateTime" : "2023-10-31T15:06:00+00:00",
+      "performer" : [{
+        "reference" : "PractitionerRole/75ed6f24-9a7e-4568-9c05-91b6d4786743"
+      }],
+      "valueQuantity" : {
+        "value" : 1.7,
+        "unit" : "mmol/L",
+        "system" : "http://unitsofmeasure.org",
+        "code" : "mmol/L"
+      },
+      "note" : [{
+        "text" : "Incr chol 5.7, LDL 3.6, HDL 1.39"
+      }],
+      "referenceRange" : [{
+        "text" : "NA"
+      }]
+    }
+  },
+  {
+    "fullUrl" : "https://fhir.example.com/Observation/5019909f-097d-4a43-84d9-cc50143b8c82",
+    "resource" : {
+      "resourceType" : "Observation",
+      "id" : "5019909f-097d-4a43-84d9-cc50143b8c82",
+      "text" : {
+        "status" : "generated",
+        "div" : "<div xmlns=\"http://www.w3.org/1999/xhtml\"><a name=\"Observation_5019909f-097d-4a43-84d9-cc50143b8c82\"> </a><p class=\"res-header-id\"><b>Generated Narrative: Observation 5019909f-097d-4a43-84d9-cc50143b8c82</b></p><a name=\"5019909f-097d-4a43-84d9-cc50143b8c82\"> </a><a name=\"hc5019909f-097d-4a43-84d9-cc50143b8c82\"> </a><p><b>status</b>: Final</p><p><b>category</b>: <span title=\"Codes:{http://terminology.hl7.org/CodeSystem/observation-category laboratory}\">Laboratory</span></p><p><b>code</b>: <span title=\"Codes:{http://loinc.org 14647-2}\">Cholesterol [Moles/volume] in Serum or Plasma</span></p><p><b>subject</b>: <a href=\"Bundle-bundle-ips-all-sections.html#Patient_d174bd1a-b368-41e6-83a2-af77f2b3c60f\">Bundle: identifier = urn:oid:2.16.724.4.8.10.200.10#ac7a747c-a2c9-493c-ba39-4ac6997eed1e; type = document; timestamp = 2024-09-21 18:53:00+0000</a></p><p><b>effective</b>: 2023-10-31 15:06:00+0000</p><p><b>performer</b>: <a href=\"Bundle-bundle-ips-all-sections.html#PractitionerRole_75ed6f24-9a7e-4568-9c05-91b6d4786743\">Bundle: identifier = urn:oid:2.16.724.4.8.10.200.10#ac7a747c-a2c9-493c-ba39-4ac6997eed1e; type = document; timestamp = 2024-09-21 18:53:00+0000</a></p><p><b>value</b>: 5.7 mmol/L<span style=\"background: LightGoldenRodYellow\"> (Details: UCUM  codemmol/L = 'mmol/L')</span></p><p><b>note</b>: </p><blockquote><div><p>Incr chol 5.7, LDL 3.6, HDL 1.39</p>\n</div></blockquote><h3>ReferenceRanges</h3><table class=\"grid\"><tr><td style=\"display: none\">-</td><td><b>Text</b></td></tr><tr><td style=\"display: none\">*</td><td>NA</td></tr></table></div>"
+      },
+      "status" : "final",
+      "category" : [{
+        "coding" : [{
+          "system" : "http://terminology.hl7.org/CodeSystem/observation-category",
+          "code" : "laboratory"
+        }]
+      }],
+      "code" : {
+        "coding" : [{
+          "system" : "http://loinc.org",
+          "code" : "14647-2",
+          "display" : "Cholesterol [Moles/volume] in Serum or Plasma"
+        }]
+      },
+      "subject" : {
+        "reference" : "Patient/d174bd1a-b368-41e6-83a2-af77f2b3c60f"
+      },
+      "effectiveDateTime" : "2023-10-31T15:06:00+00:00",
+      "performer" : [{
+        "reference" : "PractitionerRole/75ed6f24-9a7e-4568-9c05-91b6d4786743"
+      }],
+      "valueQuantity" : {
+        "value" : 5.7,
+        "unit" : "mmol/L",
+        "system" : "http://unitsofmeasure.org",
+        "code" : "mmol/L"
+      },
+      "note" : [{
+        "text" : "Incr chol 5.7, LDL 3.6, HDL 1.39"
+      }],
+      "referenceRange" : [{
+        "text" : "NA"
+      }]
+    }
+  },
+  {
+    "fullUrl" : "https://fhir.example.com/Observation/5d269392-79c1-4129-a142-0cdee6b49ea4",
+    "resource" : {
+      "resourceType" : "Observation",
+      "id" : "5d269392-79c1-4129-a142-0cdee6b49ea4",
+      "text" : {
+        "status" : "generated",
+        "div" : "<div xmlns=\"http://www.w3.org/1999/xhtml\"><a name=\"Observation_5d269392-79c1-4129-a142-0cdee6b49ea4\"> </a><p class=\"res-header-id\"><b>Generated Narrative: Observation 5d269392-79c1-4129-a142-0cdee6b49ea4</b></p><a name=\"5d269392-79c1-4129-a142-0cdee6b49ea4\"> </a><a name=\"hc5d269392-79c1-4129-a142-0cdee6b49ea4\"> </a><p><b>status</b>: Final</p><p><b>category</b>: <span title=\"Codes:{http://terminology.hl7.org/CodeSystem/observation-category laboratory}\">Laboratory</span></p><p><b>code</b>: <span title=\"Codes:{http://loinc.org 14646-4}\">Cholesterol in HDL [Moles/volume] in Serum or Plasma</span></p><p><b>subject</b>: <a href=\"Bundle-bundle-ips-all-sections.html#Patient_d174bd1a-b368-41e6-83a2-af77f2b3c60f\">Bundle: identifier = urn:oid:2.16.724.4.8.10.200.10#ac7a747c-a2c9-493c-ba39-4ac6997eed1e; type = document; timestamp = 2024-09-21 18:53:00+0000</a></p><p><b>effective</b>: 2023-10-31 15:06:00+0000</p><p><b>performer</b>: <a href=\"Bundle-bundle-ips-all-sections.html#PractitionerRole_75ed6f24-9a7e-4568-9c05-91b6d4786743\">Bundle: identifier = urn:oid:2.16.724.4.8.10.200.10#ac7a747c-a2c9-493c-ba39-4ac6997eed1e; type = document; timestamp = 2024-09-21 18:53:00+0000</a></p><p><b>value</b>: 1.39 mmol/L<span style=\"background: LightGoldenRodYellow\"> (Details: UCUM  codemmol/L = 'mmol/L')</span></p><p><b>note</b>: </p><blockquote><div><p>Incr chol 5.7, LDL 3.6, HDL 1.39</p>\n</div></blockquote><h3>ReferenceRanges</h3><table class=\"grid\"><tr><td style=\"display: none\">-</td><td><b>Text</b></td></tr><tr><td style=\"display: none\">*</td><td>NA</td></tr></table></div>"
+      },
+      "status" : "final",
+      "category" : [{
+        "coding" : [{
+          "system" : "http://terminology.hl7.org/CodeSystem/observation-category",
+          "code" : "laboratory"
+        }]
+      }],
+      "code" : {
+        "coding" : [{
+          "system" : "http://loinc.org",
+          "code" : "14646-4",
+          "display" : "Cholesterol in HDL [Moles/volume] in Serum or Plasma"
+        }]
+      },
+      "subject" : {
+        "reference" : "Patient/d174bd1a-b368-41e6-83a2-af77f2b3c60f"
+      },
+      "effectiveDateTime" : "2023-10-31T15:06:00+00:00",
+      "performer" : [{
+        "reference" : "PractitionerRole/75ed6f24-9a7e-4568-9c05-91b6d4786743"
+      }],
+      "valueQuantity" : {
+        "value" : 1.39,
+        "unit" : "mmol/L",
+        "system" : "http://unitsofmeasure.org",
+        "code" : "mmol/L"
+      },
+      "note" : [{
+        "text" : "Incr chol 5.7, LDL 3.6, HDL 1.39"
+      }],
+      "referenceRange" : [{
+        "text" : "NA"
+      }]
+    }
+  },
+  {
+    "fullUrl" : "https://fhir.example.com/Observation/36ff59b8-d5a7-438e-b8c6-cd54af10a4af",
+    "resource" : {
+      "resourceType" : "Observation",
+      "id" : "36ff59b8-d5a7-438e-b8c6-cd54af10a4af",
+      "text" : {
+        "status" : "generated",
+        "div" : "<div xmlns=\"http://www.w3.org/1999/xhtml\"><a name=\"Observation_36ff59b8-d5a7-438e-b8c6-cd54af10a4af\"> </a><p class=\"res-header-id\"><b>Generated Narrative: Observation 36ff59b8-d5a7-438e-b8c6-cd54af10a4af</b></p><a name=\"36ff59b8-d5a7-438e-b8c6-cd54af10a4af\"> </a><a name=\"hc36ff59b8-d5a7-438e-b8c6-cd54af10a4af\"> </a><p><b>status</b>: Final</p><p><b>category</b>: <span title=\"Codes:{http://terminology.hl7.org/CodeSystem/observation-category vital-signs}\">Vital Signs</span></p><p><b>code</b>: <span title=\"Codes:{http://loinc.org 29463-7}\">Body weight</span></p><p><b>subject</b>: <a href=\"Bundle-bundle-ips-all-sections.html#Patient_d174bd1a-b368-41e6-83a2-af77f2b3c60f\">Bundle: identifier = urn:oid:2.16.724.4.8.10.200.10#ac7a747c-a2c9-493c-ba39-4ac6997eed1e; type = document; timestamp = 2024-09-21 18:53:00+0000</a></p><p><b>effective</b>: 2024-04-10 09:58:00+0000</p><p><b>performer</b>: <a href=\"Bundle-bundle-ips-all-sections.html#PractitionerRole_94d12c8d-a3df-47a7-a0bb-0f29d64bafe2\">Bundle: identifier = urn:oid:2.16.724.4.8.10.200.10#ac7a747c-a2c9-493c-ba39-4ac6997eed1e; type = document; timestamp = 2024-09-21 18:53:00+0000</a></p><p><b>value</b>: 91.5 kg<span style=\"background: LightGoldenRodYellow\"> (Details: UCUM  codekg = 'kg')</span></p></div>"
+      },
+      "status" : "final",
+      "category" : [{
+        "coding" : [{
+          "system" : "http://terminology.hl7.org/CodeSystem/observation-category",
+          "code" : "vital-signs"
+        }]
+      }],
+      "code" : {
+        "coding" : [{
+          "system" : "http://loinc.org",
+          "code" : "29463-7",
+          "display" : "Body weight"
+        }]
+      },
+      "subject" : {
+        "reference" : "Patient/d174bd1a-b368-41e6-83a2-af77f2b3c60f"
+      },
+      "effectiveDateTime" : "2024-04-10T09:58:00+00:00",
+      "performer" : [{
+        "reference" : "PractitionerRole/94d12c8d-a3df-47a7-a0bb-0f29d64bafe2"
+      }],
+      "valueQuantity" : {
+        "value" : 91.5,
+        "unit" : "kg",
+        "system" : "http://unitsofmeasure.org",
+        "code" : "kg"
+      }
+    }
+  },
+  {
+    "fullUrl" : "https://fhir.example.com/Observation/96e33a60-dbd8-47ce-b613-be954243939e",
+    "resource" : {
+      "resourceType" : "Observation",
+      "id" : "96e33a60-dbd8-47ce-b613-be954243939e",
+      "text" : {
+        "status" : "generated",
+        "div" : "<div xmlns=\"http://www.w3.org/1999/xhtml\"><a name=\"Observation_96e33a60-dbd8-47ce-b613-be954243939e\"> </a><p class=\"res-header-id\"><b>Generated Narrative: Observation 96e33a60-dbd8-47ce-b613-be954243939e</b></p><a name=\"96e33a60-dbd8-47ce-b613-be954243939e\"> </a><a name=\"hc96e33a60-dbd8-47ce-b613-be954243939e\"> </a><p><b>status</b>: Final</p><p><b>category</b>: <span title=\"Codes:{http://terminology.hl7.org/CodeSystem/observation-category vital-signs}\">Vital Signs</span></p><p><b>code</b>: <span title=\"Codes:{http://loinc.org 39156-5}\">Body mass index (BMI) [Ratio]</span></p><p><b>subject</b>: <a href=\"Bundle-bundle-ips-all-sections.html#Patient_d174bd1a-b368-41e6-83a2-af77f2b3c60f\">Bundle: identifier = urn:oid:2.16.724.4.8.10.200.10#ac7a747c-a2c9-493c-ba39-4ac6997eed1e; type = document; timestamp = 2024-09-21 18:53:00+0000</a></p><p><b>effective</b>: 2024-04-10 09:58:00+0000</p><p><b>performer</b>: <a href=\"Bundle-bundle-ips-all-sections.html#PractitionerRole_94d12c8d-a3df-47a7-a0bb-0f29d64bafe2\">Bundle: identifier = urn:oid:2.16.724.4.8.10.200.10#ac7a747c-a2c9-493c-ba39-4ac6997eed1e; type = document; timestamp = 2024-09-21 18:53:00+0000</a></p><p><b>value</b>: 24.56 kg/m2<span style=\"background: LightGoldenRodYellow\"> (Details: UCUM  codekg/m2 = 'kg/m2')</span></p></div>"
+      },
+      "status" : "final",
+      "category" : [{
+        "coding" : [{
+          "system" : "http://terminology.hl7.org/CodeSystem/observation-category",
+          "code" : "vital-signs"
+        }]
+      }],
+      "code" : {
+        "coding" : [{
+          "system" : "http://loinc.org",
+          "code" : "39156-5",
+          "display" : "Body mass index (BMI) [Ratio]"
+        }]
+      },
+      "subject" : {
+        "reference" : "Patient/d174bd1a-b368-41e6-83a2-af77f2b3c60f"
+      },
+      "effectiveDateTime" : "2024-04-10T09:58:00+00:00",
+      "performer" : [{
+        "reference" : "PractitionerRole/94d12c8d-a3df-47a7-a0bb-0f29d64bafe2"
+      }],
+      "valueQuantity" : {
+        "value" : 24.56,
+        "unit" : "kg/m2",
+        "system" : "http://unitsofmeasure.org",
+        "code" : "kg/m2"
+      }
+    }
+  },
+  {
+    "fullUrl" : "https://fhir.example.com/Observation/4ea539e1-fff9-4f56-964f-650d9e69ce58",
+    "resource" : {
+      "resourceType" : "Observation",
+      "id" : "4ea539e1-fff9-4f56-964f-650d9e69ce58",
+      "text" : {
+        "status" : "generated",
+        "div" : "<div xmlns=\"http://www.w3.org/1999/xhtml\"><a name=\"Observation_4ea539e1-fff9-4f56-964f-650d9e69ce58\"> </a><p class=\"res-header-id\"><b>Generated Narrative: Observation 4ea539e1-fff9-4f56-964f-650d9e69ce58</b></p><a name=\"4ea539e1-fff9-4f56-964f-650d9e69ce58\"> </a><a name=\"hc4ea539e1-fff9-4f56-964f-650d9e69ce58\"> </a><p><b>status</b>: Final</p><p><b>category</b>: <span title=\"Codes:{http://terminology.hl7.org/CodeSystem/observation-category vital-signs}\">Vital Signs</span></p><p><b>code</b>: <span title=\"Codes:{http://loinc.org 85354-9}\">Blood pressure panel with all children optional</span></p><p><b>subject</b>: <a href=\"Bundle-bundle-ips-all-sections.html#Patient_d174bd1a-b368-41e6-83a2-af77f2b3c60f\">Bundle: identifier = urn:oid:2.16.724.4.8.10.200.10#ac7a747c-a2c9-493c-ba39-4ac6997eed1e; type = document; timestamp = 2024-09-21 18:53:00+0000</a></p><p><b>effective</b>: 2024-08-30 08:32:00+0000</p><p><b>performer</b>: <a href=\"Bundle-bundle-ips-all-sections.html#PractitionerRole_94d12c8d-a3df-47a7-a0bb-0f29d64bafe2\">Bundle: identifier = urn:oid:2.16.724.4.8.10.200.10#ac7a747c-a2c9-493c-ba39-4ac6997eed1e; type = document; timestamp = 2024-09-21 18:53:00+0000</a></p><blockquote><p><b>component</b></p><p><b>code</b>: <span title=\"Codes:{http://loinc.org 8480-6}\">Systolic blood pressure</span></p><p><b>value</b>: 140 mmHg<span style=\"background: LightGoldenRodYellow\"> (Details: UCUM  codemm[Hg] = 'mm[Hg]')</span></p></blockquote><blockquote><p><b>component</b></p><p><b>code</b>: <span title=\"Codes:{http://loinc.org 8462-4}\">Diastolic blood pressure</span></p><p><b>value</b>: 80 mmHg<span style=\"background: LightGoldenRodYellow\"> (Details: UCUM  codemm[Hg] = 'mm[Hg]')</span></p></blockquote></div>"
+      },
+      "status" : "final",
+      "category" : [{
+        "coding" : [{
+          "system" : "http://terminology.hl7.org/CodeSystem/observation-category",
+          "code" : "vital-signs"
+        }]
+      }],
+      "code" : {
+        "coding" : [{
+          "system" : "http://loinc.org",
+          "code" : "85354-9",
+          "display" : "Blood pressure panel with all children optional"
+        }]
+      },
+      "subject" : {
+        "reference" : "Patient/d174bd1a-b368-41e6-83a2-af77f2b3c60f"
+      },
+      "effectiveDateTime" : "2024-08-30T08:32:00+00:00",
+      "performer" : [{
+        "reference" : "PractitionerRole/94d12c8d-a3df-47a7-a0bb-0f29d64bafe2"
+      }],
+      "component" : [{
+        "code" : {
+          "coding" : [{
+            "system" : "http://loinc.org",
+            "code" : "8480-6",
+            "display" : "Systolic blood pressure"
+          }]
+        },
+        "valueQuantity" : {
+          "value" : 140,
+          "unit" : "mmHg",
+          "system" : "http://unitsofmeasure.org",
+          "code" : "mm[Hg]"
+        }
+      },
+      {
+        "code" : {
+          "coding" : [{
+            "system" : "http://loinc.org",
+            "code" : "8462-4",
+            "display" : "Diastolic blood pressure"
+          }]
+        },
+        "valueQuantity" : {
+          "value" : 80,
+          "unit" : "mmHg",
+          "system" : "http://unitsofmeasure.org",
+          "code" : "mm[Hg]"
+        }
+      }]
+    }
+  },
+  {
+    "fullUrl" : "https://fhir.example.com/Observation/9f906425-8c18-4580-ab30-61a56d7f4c05",
+    "resource" : {
+      "resourceType" : "Observation",
+      "id" : "9f906425-8c18-4580-ab30-61a56d7f4c05",
+      "text" : {
+        "status" : "generated",
+        "div" : "<div xmlns=\"http://www.w3.org/1999/xhtml\"><a name=\"Observation_9f906425-8c18-4580-ab30-61a56d7f4c05\"> </a><p class=\"res-header-id\"><b>Generated Narrative: Observation 9f906425-8c18-4580-ab30-61a56d7f4c05</b></p><a name=\"9f906425-8c18-4580-ab30-61a56d7f4c05\"> </a><a name=\"hc9f906425-8c18-4580-ab30-61a56d7f4c05\"> </a><p><b>status</b>: Final</p><p><b>category</b>: <span title=\"Codes:{http://terminology.hl7.org/CodeSystem/observation-category social-history}\">Social History</span></p><p><b>code</b>: <span title=\"Codes:{http://loinc.org 72166-2}\">Tobacco smoking status</span></p><p><b>subject</b>: <a href=\"Bundle-bundle-ips-all-sections.html#Patient_d174bd1a-b368-41e6-83a2-af77f2b3c60f\">Bundle: identifier = urn:oid:2.16.724.4.8.10.200.10#ac7a747c-a2c9-493c-ba39-4ac6997eed1e; type = document; timestamp = 2024-09-21 18:53:00+0000</a></p><p><b>effective</b>: 2022-10-20</p><p><b>performer</b>: <a href=\"Bundle-bundle-ips-all-sections.html#Patient_d174bd1a-b368-41e6-83a2-af77f2b3c60f\">Bundle: identifier = urn:oid:2.16.724.4.8.10.200.10#ac7a747c-a2c9-493c-ba39-4ac6997eed1e; type = document; timestamp = 2024-09-21 18:53:00+0000</a></p><p><b>value</b>: <span title=\"Codes:{http://loinc.org LA18978-9}\">Never smoker</span></p></div>"
+      },
+      "status" : "final",
+      "category" : [{
+        "coding" : [{
+          "system" : "http://terminology.hl7.org/CodeSystem/observation-category",
+          "code" : "social-history"
+        }]
+      }],
+      "code" : {
+        "coding" : [{
+          "system" : "http://loinc.org",
+          "code" : "72166-2",
+          "display" : "Tobacco smoking status"
+        }]
+      },
+      "subject" : {
+        "reference" : "Patient/d174bd1a-b368-41e6-83a2-af77f2b3c60f"
+      },
+      "effectiveDateTime" : "2022-10-20",
+      "performer" : [{
+        "reference" : "Patient/d174bd1a-b368-41e6-83a2-af77f2b3c60f"
+      }],
+      "valueCodeableConcept" : {
+        "coding" : [{
+          "system" : "http://loinc.org",
+          "code" : "LA18978-9",
+          "display" : "Never smoker"
+        }]
+      }
+    }
+  },
+  {
+    "fullUrl" : "https://fhir.example.com/Observation/e2e3f8aa-df2a-4357-b01f-a9fba6bb9b41",
+    "resource" : {
+      "resourceType" : "Observation",
+      "id" : "e2e3f8aa-df2a-4357-b01f-a9fba6bb9b41",
+      "text" : {
+        "status" : "generated",
+        "div" : "<div xmlns=\"http://www.w3.org/1999/xhtml\"><a name=\"Observation_e2e3f8aa-df2a-4357-b01f-a9fba6bb9b41\"> </a><p class=\"res-header-id\"><b>Generated Narrative: Observation e2e3f8aa-df2a-4357-b01f-a9fba6bb9b41</b></p><a name=\"e2e3f8aa-df2a-4357-b01f-a9fba6bb9b41\"> </a><a name=\"hce2e3f8aa-df2a-4357-b01f-a9fba6bb9b41\"> </a><p><b>status</b>: Final</p><p><b>category</b>: <span title=\"Codes:{http://terminology.hl7.org/CodeSystem/observation-category social-history}\">Social History</span></p><p><b>code</b>: <span title=\"Codes:{http://loinc.org 74013-4}\">Alcoholic drinks per day</span></p><p><b>subject</b>: <a href=\"Bundle-bundle-ips-all-sections.html#Patient_d174bd1a-b368-41e6-83a2-af77f2b3c60f\">Bundle: identifier = urn:oid:2.16.724.4.8.10.200.10#ac7a747c-a2c9-493c-ba39-4ac6997eed1e; type = document; timestamp = 2024-09-21 18:53:00+0000</a></p><p><b>effective</b>: 2016-06-22</p><p><b>performer</b>: <a href=\"Bundle-bundle-ips-all-sections.html#Patient_d174bd1a-b368-41e6-83a2-af77f2b3c60f\">Bundle: identifier = urn:oid:2.16.724.4.8.10.200.10#ac7a747c-a2c9-493c-ba39-4ac6997eed1e; type = document; timestamp = 2024-09-21 18:53:00+0000</a></p><p><b>value</b>: 1 d<span style=\"background: LightGoldenRodYellow\"> (Details: UCUM  coded = 'd')</span></p></div>"
+      },
+      "status" : "final",
+      "category" : [{
+        "coding" : [{
+          "system" : "http://terminology.hl7.org/CodeSystem/observation-category",
+          "code" : "social-history"
+        }]
+      }],
+      "code" : {
+        "coding" : [{
+          "system" : "http://loinc.org",
+          "code" : "74013-4",
+          "display" : "Alcoholic drinks per day"
+        }]
+      },
+      "subject" : {
+        "reference" : "Patient/d174bd1a-b368-41e6-83a2-af77f2b3c60f"
+      },
+      "effectiveDateTime" : "2016-06-22",
+      "performer" : [{
+        "reference" : "Patient/d174bd1a-b368-41e6-83a2-af77f2b3c60f"
+      }],
+      "valueQuantity" : {
+        "value" : 1,
+        "unit" : "d",
+        "system" : "http://unitsofmeasure.org",
+        "code" : "d"
+      }
+    }
+  },
+  {
+    "fullUrl" : "https://fhir.example.com/PractitionerRole/75ed6f24-9a7e-4568-9c05-91b6d4786743",
+    "resource" : {
+      "resourceType" : "PractitionerRole",
+      "id" : "75ed6f24-9a7e-4568-9c05-91b6d4786743",
+      "text" : {
+        "status" : "generated",
+        "div" : "<div xmlns=\"http://www.w3.org/1999/xhtml\"><a name=\"PractitionerRole_75ed6f24-9a7e-4568-9c05-91b6d4786743\"> </a><p class=\"res-header-id\"><b>Generated Narrative: PractitionerRole 75ed6f24-9a7e-4568-9c05-91b6d4786743</b></p><a name=\"75ed6f24-9a7e-4568-9c05-91b6d4786743\"> </a><a name=\"hc75ed6f24-9a7e-4568-9c05-91b6d4786743\"> </a><p><b>code</b>: <span title=\"Codes:{http://snomed.info/sct 81464008}\">Clinical pathologist</span></p></div>"
+      },
+      "code" : [{
+        "coding" : [{
+          "system" : "http://snomed.info/sct",
+          "code" : "81464008",
+          "display" : "Clinical pathologist"
+        }]
+      }]
+    }
+  },
+  {
+    "fullUrl" : "https://fhir.example.com/Flag/e8ae9c4e-8f5a-4270-bfac-02368c567fcf",
+    "resource" : {
+      "resourceType" : "Flag",
+      "id" : "e8ae9c4e-8f5a-4270-bfac-02368c567fcf",
+      "text" : {
+        "status" : "generated",
+        "div" : "<div xmlns=\"http://www.w3.org/1999/xhtml\"><a name=\"Flag_e8ae9c4e-8f5a-4270-bfac-02368c567fcf\"> </a><p class=\"res-header-id\"><b>Generated Narrative: Flag e8ae9c4e-8f5a-4270-bfac-02368c567fcf</b></p><a name=\"e8ae9c4e-8f5a-4270-bfac-02368c567fcf\"> </a><a name=\"hce8ae9c4e-8f5a-4270-bfac-02368c567fcf\"> </a><p><b>status</b>: Active</p><p><b>category</b>: <span title=\"Codes:{http://terminology.hl7.org/CodeSystem/flag-category diet}\">Diet</span></p><p><b>code</b>: <span title=\"Codes:{http://snomed.info/sct 1255002008}\">Shellfish free diet</span></p><p><b>subject</b>: <a href=\"Bundle-bundle-ips-all-sections.html#Patient_d174bd1a-b368-41e6-83a2-af77f2b3c60f\">Bundle: identifier = urn:oid:2.16.724.4.8.10.200.10#ac7a747c-a2c9-493c-ba39-4ac6997eed1e; type = document; timestamp = 2024-09-21 18:53:00+0000</a></p></div>"
+      },
+      "status" : "active",
+      "category" : [{
+        "coding" : [{
+          "system" : "http://terminology.hl7.org/CodeSystem/flag-category",
+          "code" : "diet",
+          "display" : "Diet"
+        }]
+      }],
+      "code" : {
+        "coding" : [{
+          "system" : "http://snomed.info/sct",
+          "code" : "1255002008",
+          "display" : "Shellfish free diet"
+        }]
+      },
+      "subject" : {
+        "reference" : "Patient/d174bd1a-b368-41e6-83a2-af77f2b3c60f"
+      }
+    }
+  },
+  {
+    "fullUrl" : "https://fhir.example.com/Procedure/39252",
+    "resource" : {
+      "resourceType" : "Procedure",
+      "id" : "39252",
+      "text" : {
+        "status" : "generated",
+        "div" : "<div xmlns=\"http://www.w3.org/1999/xhtml\"><a name=\"Procedure_39252\"> </a><p class=\"res-header-id\"><b>Generated Narrative: Procedure 39252</b></p><a name=\"39252\"> </a><a name=\"hc39252\"> </a><p><b>status</b>: Completed</p><p><b>code</b>: <span title=\"Codes:{http://snomed.info/sct 52734007}\">Total hip replacement</span></p><p><b>subject</b>: <a href=\"Bundle-bundle-ips-all-sections.html#Patient_d174bd1a-b368-41e6-83a2-af77f2b3c60f\">Bundle: identifier = urn:oid:2.16.724.4.8.10.200.10#ac7a747c-a2c9-493c-ba39-4ac6997eed1e; type = document; timestamp = 2024-09-21 18:53:00+0000</a></p><p><b>performed</b>: 2000-04-28</p></div>"
+      },
+      "status" : "completed",
+      "code" : {
+        "coding" : [{
+          "system" : "http://snomed.info/sct",
+          "code" : "52734007",
+          "display" : "Total hip replacement"
+        }],
+        "text" : "Total hip replacement"
+      },
+      "subject" : {
+        "reference" : "Patient/d174bd1a-b368-41e6-83a2-af77f2b3c60f"
+      },
+      "performedDateTime" : "2000-04-28"
+    }
+  },
+  {
+    "fullUrl" : "https://fhir.example.com/DeviceUseStatement/eumfh-70-275-1",
+    "resource" : {
+      "resourceType" : "DeviceUseStatement",
+      "id" : "eumfh-70-275-1",
+      "text" : {
+        "status" : "extensions",
+        "div" : "<div xmlns=\"http://www.w3.org/1999/xhtml\"><a name=\"DeviceUseStatement_eumfh-70-275-1\"> </a><p class=\"res-header-id\"><b>Generated Narrative: DeviceUseStatement eumfh-70-275-1</b></p><a name=\"eumfh-70-275-1\"> </a><a name=\"hceumfh-70-275-1\"> </a><p><b>status</b>: Active</p><p><b>subject</b>: <a href=\"Bundle-bundle-ips-all-sections.html#Patient_d174bd1a-b368-41e6-83a2-af77f2b3c60f\">Bundle: identifier = urn:oid:2.16.724.4.8.10.200.10#ac7a747c-a2c9-493c-ba39-4ac6997eed1e; type = document; timestamp = 2024-09-21 18:53:00+0000</a></p><p><b>timing</b>: Absent because : unknown</p><p><b>device</b>: <a href=\"Bundle-bundle-ips-all-sections.html#Device_eumfh-70-275-2\">Hip prosthesis</a></p></div>"
+      },
+      "status" : "active",
+      "subject" : {
+        "reference" : "Patient/d174bd1a-b368-41e6-83a2-af77f2b3c60f"
+      },
+      "_timingDateTime" : {
+        "extension" : [{
+          "url" : "http://hl7.org/fhir/StructureDefinition/data-absent-reason",
+          "valueCode" : "unknown"
+        }]
+      },
+      "device" : {
+        "reference" : "Device/eumfh-70-275-2",
+        "display" : "Hip prosthesis"
+      }
+    }
+  },
+  {
+    "fullUrl" : "https://fhir.example.com/Device/eumfh-70-275-2",
+    "resource" : {
+      "resourceType" : "Device",
+      "id" : "eumfh-70-275-2",
+      "text" : {
+        "status" : "generated",
+        "div" : "<div xmlns=\"http://www.w3.org/1999/xhtml\"><a name=\"Device_eumfh-70-275-2\"> </a><p class=\"res-header-id\"><b>Generated Narrative: Device eumfh-70-275-2</b></p><a name=\"eumfh-70-275-2\"> </a><a name=\"hceumfh-70-275-2\"> </a><p><b>type</b>: <span title=\"Codes:{http://snomed.info/sct 67270000}\">Hip prosthesis, device (physical object)</span></p></div>"
+      },
+      "type" : {
+        "coding" : [{
+          "system" : "http://snomed.info/sct",
+          "code" : "67270000",
+          "display" : "Hip prosthesis, device (physical object)"
+        }]
+      }
+    }
+  },
+  {
+    "fullUrl" : "https://fhir.example.com/Consent/080d85fa-c807-42d1-a3af-b3ee70858a54",
+    "resource" : {
+      "resourceType" : "Consent",
+      "id" : "080d85fa-c807-42d1-a3af-b3ee70858a54",
+      "text" : {
+        "status" : "generated",
+        "div" : "<div xmlns=\"http://www.w3.org/1999/xhtml\"><a name=\"Consent_080d85fa-c807-42d1-a3af-b3ee70858a54\"> </a><p class=\"res-header-id\"><b>Generated Narrative: Consent 080d85fa-c807-42d1-a3af-b3ee70858a54</b></p><a name=\"080d85fa-c807-42d1-a3af-b3ee70858a54\"> </a><a name=\"hc080d85fa-c807-42d1-a3af-b3ee70858a54\"> </a><p><b>status</b>: Active</p><p><b>scope</b>: <span title=\"Codes:{http://terminology.hl7.org/CodeSystem/consentscope treatment}\">Treatment</span></p><p><b>category</b>: <span title=\"Codes:{http://terminology.hl7.org/CodeSystem/consentcategorycodes dnr}\">Do Not Resuscitate</span></p><p><b>patient</b>: <a href=\"Bundle-bundle-ips-all-sections.html#Patient_d174bd1a-b368-41e6-83a2-af77f2b3c60f\">Bundle: identifier = urn:oid:2.16.724.4.8.10.200.10#ac7a747c-a2c9-493c-ba39-4ac6997eed1e; type = document; timestamp = 2024-09-21 18:53:00+0000</a></p><p><b>dateTime</b>: 2021-09-01</p><p><b>source</b>: <a href=\"Bundle-bundle-ips-all-sections.html#DocumentReference_advance-directive-123\">Bundle: identifier = urn:oid:2.16.724.4.8.10.200.10#ac7a747c-a2c9-493c-ba39-4ac6997eed1e; type = document; timestamp = 2024-09-21 18:53:00+0000</a></p><p><b>policyRule</b>: <span title=\"Codes:{http://terminology.hl7.org/CodeSystem/consentpolicycodes cric}\">Common Rule Informed Consent</span></p><h3>Provisions</h3><table class=\"grid\"><tr><td style=\"display: none\">-</td><td><b>Code</b></td></tr><tr><td style=\"display: none\">*</td><td><span title=\"Codes:{http://snomed.info/sct 304253006}\">Not for resuscitation</span></td></tr></table></div>"
+      },
+      "status" : "active",
+      "scope" : {
+        "coding" : [{
+          "system" : "http://terminology.hl7.org/CodeSystem/consentscope",
+          "code" : "treatment",
+          "display" : "Treatment"
+        }]
+      },
+      "category" : [{
+        "coding" : [{
+          "system" : "http://terminology.hl7.org/CodeSystem/consentcategorycodes",
+          "code" : "dnr",
+          "display" : "Do Not Resuscitate"
+        }]
+      }],
+      "patient" : {
+        "reference" : "Patient/d174bd1a-b368-41e6-83a2-af77f2b3c60f"
+      },
+      "dateTime" : "2021-09-01",
+      "sourceReference" : {
+        "reference" : "DocumentReference/advance-directive-123"
+      },
+      "policyRule" : {
+        "coding" : [{
+          "system" : "http://terminology.hl7.org/CodeSystem/consentpolicycodes",
+          "code" : "cric"
+        }]
+      },
+      "provision" : {
+        "code" : [{
+          "coding" : [{
+            "system" : "http://snomed.info/sct",
+            "code" : "304253006",
+            "display" : "Not for resuscitation"
+          }]
+        }]
+      }
+    }
+  },
+  {
+    "fullUrl" : "https://fhir.example.com/DocumentReference/advance-directive-123",
+    "resource" : {
+      "resourceType" : "DocumentReference",
+      "id" : "advance-directive-123",
+      "text" : {
+        "status" : "generated",
+        "div" : "<div xmlns=\"http://www.w3.org/1999/xhtml\"><a name=\"DocumentReference_advance-directive-123\"> </a><p class=\"res-header-id\"><b>Generated Narrative: DocumentReference advance-directive-123</b></p><a name=\"advance-directive-123\"> </a><a name=\"hcadvance-directive-123\"> </a><p><b>status</b>: Current</p><p><b>type</b>: <span title=\"Codes:{http://loinc.org 75310-3}, {http://loinc.org 55188-7}\">Health concerns Document</span></p><p><b>subject</b>: <a href=\"Bundle-bundle-ips-all-sections.html#Patient_d174bd1a-b368-41e6-83a2-af77f2b3c60f\">Bundle: identifier = urn:oid:2.16.724.4.8.10.200.10#ac7a747c-a2c9-493c-ba39-4ac6997eed1e; type = document; timestamp = 2024-09-21 18:53:00+0000</a></p><p><b>date</b>: 2025-08-01 10:00:00+0000</p><blockquote><p><b>content</b></p><h3>Attachments</h3><table class=\"grid\"><tr><td style=\"display: none\">-</td><td><b>ContentType</b></td><td><b>Url</b></td><td><b>Title</b></td></tr><tr><td style=\"display: none\">*</td><td>application/pdf</td><td><a href=\"https://fhir.example.com/DocumentReference/advance-directive-123/content\">https://fhir.example.com/DocumentReference/advance-directive-123/content</a></td><td>Advance Directive Document</td></tr></table></blockquote></div>"
+      },
+      "status" : "current",
+      "type" : {
+        "coding" : [{
+          "system" : "http://loinc.org",
+          "code" : "75310-3",
+          "display" : "Health concerns Document"
+        },
+        {
+          "system" : "http://loinc.org",
+          "code" : "55188-7",
+          "display" : "Patient data Document"
+        }]
+      },
+      "subject" : {
+        "reference" : "Patient/d174bd1a-b368-41e6-83a2-af77f2b3c60f"
+      },
+      "date" : "2025-08-01T10:00:00Z",
+      "content" : [{
+        "attachment" : {
+          "contentType" : "application/pdf",
+          "url" : "https://fhir.example.com/DocumentReference/advance-directive-123/content",
+          "title" : "Advance Directive Document"
+        }
+      }]
+    }
+  },
+  {
+    "fullUrl" : "https://fhir.example.com/Condition/4f3d8f79-2f96-48c5-b346-d47f0c66c981",
+    "resource" : {
+      "resourceType" : "Condition",
+      "id" : "4f3d8f79-2f96-48c5-b346-d47f0c66c981",
+      "text" : {
+        "status" : "generated",
+        "div" : "<div xmlns=\"http://www.w3.org/1999/xhtml\"><a name=\"Condition_4f3d8f79-2f96-48c5-b346-d47f0c66c981\"> </a><p class=\"res-header-id\"><b>Generated Narrative: Condition 4f3d8f79-2f96-48c5-b346-d47f0c66c981</b></p><a name=\"4f3d8f79-2f96-48c5-b346-d47f0c66c981\"> </a><a name=\"hc4f3d8f79-2f96-48c5-b346-d47f0c66c981\"> </a><p><b>clinicalStatus</b>: <span title=\"Codes:{http://terminology.hl7.org/CodeSystem/condition-clinical active}\">Active</span></p><p><b>verificationStatus</b>: <span title=\"Codes:{http://terminology.hl7.org/CodeSystem/condition-ver-status confirmed}\">Confirmed</span></p><p><b>code</b>: <span title=\"Codes:{http://snomed.info/sct 82971005}\">Impaired Mobility</span></p><p><b>subject</b>: <a href=\"Bundle-bundle-ips-all-sections.html#Patient_d174bd1a-b368-41e6-83a2-af77f2b3c60f\">Bundle: identifier = urn:oid:2.16.724.4.8.10.200.10#ac7a747c-a2c9-493c-ba39-4ac6997eed1e; type = document; timestamp = 2024-09-21 18:53:00+0000</a></p><p><b>onset</b>: 2016-05-25</p><p><b>recordedDate</b>: 2016-05-25</p><p><b>asserter</b>: <a href=\"Bundle-bundle-ips-all-sections.html#Practitioner_816cf057-b736-4e08-baed-cc21e081b784\">Bundle: identifier = urn:oid:2.16.724.4.8.10.200.10#ac7a747c-a2c9-493c-ba39-4ac6997eed1e; type = document; timestamp = 2024-09-21 18:53:00+0000</a></p></div>"
+      },
+      "clinicalStatus" : {
+        "coding" : [{
+          "system" : "http://terminology.hl7.org/CodeSystem/condition-clinical",
+          "code" : "active"
+        }]
+      },
+      "verificationStatus" : {
+        "coding" : [{
+          "system" : "http://terminology.hl7.org/CodeSystem/condition-ver-status",
+          "code" : "confirmed"
+        }]
+      },
+      "code" : {
+        "coding" : [{
+          "system" : "http://snomed.info/sct",
+          "code" : "82971005",
+          "display" : "Impaired Mobility"
+        }]
+      },
+      "subject" : {
+        "reference" : "Patient/d174bd1a-b368-41e6-83a2-af77f2b3c60f"
+      },
+      "onsetDateTime" : "2016-05-25",
+      "recordedDate" : "2016-05-25",
+      "asserter" : {
+        "reference" : "Practitioner/816cf057-b736-4e08-baed-cc21e081b784"
+      }
+    }
+  },
+  {
+    "fullUrl" : "https://fhir.example.com/Condition/77efacd9-b5a6-4b35-9764-269017ea7567",
+    "resource" : {
+      "resourceType" : "Condition",
+      "id" : "77efacd9-b5a6-4b35-9764-269017ea7567",
+      "text" : {
+        "status" : "generated",
+        "div" : "<div xmlns=\"http://www.w3.org/1999/xhtml\"><a name=\"Condition_77efacd9-b5a6-4b35-9764-269017ea7567\"> </a><p class=\"res-header-id\"><b>Generated Narrative: Condition 77efacd9-b5a6-4b35-9764-269017ea7567</b></p><a name=\"77efacd9-b5a6-4b35-9764-269017ea7567\"> </a><a name=\"hc77efacd9-b5a6-4b35-9764-269017ea7567\"> </a><p><b>clinicalStatus</b>: <span title=\"Codes:{http://terminology.hl7.org/CodeSystem/condition-clinical resolved}\">Resolved</span></p><p><b>verificationStatus</b>: <span title=\"Codes:{http://terminology.hl7.org/CodeSystem/condition-ver-status confirmed}\">Confirmed</span></p><p><b>code</b>: <span title=\"Codes:{http://snomed.info/sct 386661006}\">Fever</span></p><p><b>subject</b>: <a href=\"Bundle-bundle-ips-all-sections.html#Patient_d174bd1a-b368-41e6-83a2-af77f2b3c60f\">Bundle: identifier = urn:oid:2.16.724.4.8.10.200.10#ac7a747c-a2c9-493c-ba39-4ac6997eed1e; type = document; timestamp = 2024-09-21 18:53:00+0000</a></p><p><b>onset</b>: 2013-05-25</p><p><b>recordedDate</b>: 2016-05-25</p><p><b>asserter</b>: <a href=\"Bundle-bundle-ips-all-sections.html#Practitioner_816cf057-b736-4e08-baed-cc21e081b784\">Bundle: identifier = urn:oid:2.16.724.4.8.10.200.10#ac7a747c-a2c9-493c-ba39-4ac6997eed1e; type = document; timestamp = 2024-09-21 18:53:00+0000</a></p></div>"
+      },
+      "clinicalStatus" : {
+        "coding" : [{
+          "system" : "http://terminology.hl7.org/CodeSystem/condition-clinical",
+          "code" : "resolved"
+        }]
+      },
+      "verificationStatus" : {
+        "coding" : [{
+          "system" : "http://terminology.hl7.org/CodeSystem/condition-ver-status",
+          "code" : "confirmed"
+        }]
+      },
+      "code" : {
+        "coding" : [{
+          "system" : "http://snomed.info/sct",
+          "code" : "386661006",
+          "display" : "Fever"
+        }]
+      },
+      "subject" : {
+        "reference" : "Patient/d174bd1a-b368-41e6-83a2-af77f2b3c60f"
+      },
+      "onsetDateTime" : "2013-05-25",
+      "recordedDate" : "2016-05-25",
+      "asserter" : {
+        "reference" : "Practitioner/816cf057-b736-4e08-baed-cc21e081b784"
+      }
+    }
+  },
+  {
+    "fullUrl" : "https://fhir.example.com/CarePlan/85d57ac7-ea2d-47cf-b019-b867f876ee7c",
+    "resource" : {
+      "resourceType" : "CarePlan",
+      "id" : "85d57ac7-ea2d-47cf-b019-b867f876ee7c",
+      "text" : {
+        "status" : "additional",
+        "div" : "<div xmlns=\"http://www.w3.org/1999/xhtml\"><a name=\"CarePlan_85d57ac7-ea2d-47cf-b019-b867f876ee7c\"> </a><p>A simple care plan to indicate a patient taking their weight once a day because of hypertension.</p></div>"
+      },
+      "basedOn" : [{
+        "display" : "Management of Hypertension"
+      }],
+      "replaces" : [{
+        "display" : "Plan from urgent care clinic"
+      }],
+      "partOf" : [{
+        "display" : "Overall wellness plan"
+      }],
+      "status" : "active",
+      "intent" : "plan",
+      "category" : [{
+        "text" : "Weight management plan"
+      }],
+      "description" : "Manage obesity and weight loss",
+      "subject" : {
+        "reference" : "Patient/d174bd1a-b368-41e6-83a2-af77f2b3c60f"
+      },
+      "period" : {
+        "end" : "2017-06-01"
+      },
+      "created" : "2016-01-01",
+      "activity" : [{
+        "outcomeCodeableConcept" : [{
+          "coding" : [{
+            "system" : "http://snomed.info/sct",
+            "code" : "262285001",
+            "display" : "Weight decreased"
+          }]
+        }],
+        "detail" : {
+          "code" : {
+            "coding" : [{
+              "system" : "http://loinc.org",
+              "code" : "3141-9",
+              "display" : "Weight Measured"
+            },
+            {
+              "system" : "http://snomed.info/sct",
+              "code" : "27113001",
+              "display" : "Body weight"
+            }]
+          },
+          "status" : "completed",
+          "statusReason" : {
+            "text" : "Achieved weight loss to mitigate diabetes risk."
+          },
+          "doNotPerform" : false,
+          "scheduledTiming" : {
+            "repeat" : {
+              "frequency" : 1,
+              "period" : 1,
+              "periodUnit" : "d"
+            }
+          },
+          "location" : {
+            "display" : "Patient's home"
+          }
+        }
+      }]
+    }
+  },
+  {
+    "fullUrl" : "https://fhir.example.com/Observation/f241ac65-5eab-49a0-8b92-7fb263274110",
+    "resource" : {
+      "resourceType" : "Observation",
+      "id" : "f241ac65-5eab-49a0-8b92-7fb263274110",
+      "text" : {
+        "status" : "generated",
+        "div" : "<div xmlns=\"http://www.w3.org/1999/xhtml\"><a name=\"Observation_f241ac65-5eab-49a0-8b92-7fb263274110\"> </a><p class=\"res-header-id\"><b>Generated Narrative: Observation f241ac65-5eab-49a0-8b92-7fb263274110</b></p><a name=\"f241ac65-5eab-49a0-8b92-7fb263274110\"> </a><a name=\"hcf241ac65-5eab-49a0-8b92-7fb263274110\"> </a><p><b>status</b>: Final</p><p><b>code</b>: <span title=\"Codes:{http://loinc.org 82810-3}\">Pregnancy status</span></p><p><b>subject</b>: <a href=\"Bundle-bundle-ips-all-sections.html#Patient_d174bd1a-b368-41e6-83a2-af77f2b3c60f\">Bundle: identifier = urn:oid:2.16.724.4.8.10.200.10#ac7a747c-a2c9-493c-ba39-4ac6997eed1e; type = document; timestamp = 2024-09-21 18:53:00+0000</a></p><p><b>effective</b>: 2020-01-10</p><p><b>performer</b>: <a href=\"Bundle-bundle-ips-all-sections.html#Practitioner_816cf057-b736-4e08-baed-cc21e081b784\">Bundle: identifier = urn:oid:2.16.724.4.8.10.200.10#ac7a747c-a2c9-493c-ba39-4ac6997eed1e; type = document; timestamp = 2024-09-21 18:53:00+0000</a></p><p><b>value</b>: <span title=\"Codes:{http://snomed.info/sct 60001007}\">Not Pregnant</span></p></div>"
+      },
+      "status" : "final",
+      "code" : {
+        "coding" : [{
+          "system" : "http://loinc.org",
+          "code" : "82810-3",
+          "display" : "Pregnancy status"
+        }]
+      },
+      "subject" : {
+        "reference" : "Patient/d174bd1a-b368-41e6-83a2-af77f2b3c60f"
+      },
+      "effectiveDateTime" : "2020-01-10",
+      "performer" : [{
+        "reference" : "Practitioner/816cf057-b736-4e08-baed-cc21e081b784"
+      }],
+      "valueCodeableConcept" : {
+        "coding" : [{
+          "system" : "http://snomed.info/sct",
+          "code" : "60001007",
+          "display" : "Not Pregnant"
+        }]
+      }
+    }
+  }]
+}

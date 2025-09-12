@@ -10,16 +10,18 @@ import {
   Alert,
   Group,
   LoadingOverlay,
+  Badge,
+  Box,
 } from '@mantine/core';
 import { useForm } from '@mantine/form';
 import { notifications } from '@mantine/notifications';
-import { useMedplum } from '@medplum/react';
 import { useState } from 'react';
 import { IconAlertCircle } from '@tabler/icons-react';
 
 interface CreateSHLFormProps {
   onSHLCreated: (shlUri: string) => void;
   onCancel: () => void;
+  selectedSections?: Record<string, boolean>;
 }
 
 interface FormValues {
@@ -29,9 +31,32 @@ interface FormValues {
   longTerm: boolean;
 }
 
-export function CreateSHLForm({ onSHLCreated, onCancel }: CreateSHLFormProps) {
-  const medplum = useMedplum();
+export function CreateSHLForm({ onSHLCreated, onCancel, selectedSections = {} }: CreateSHLFormProps) {
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  // Map section codes to human-readable names
+  const sectionNames: Record<string, string> = {
+    '11450-4': 'Problem List',
+    '48765-2': 'Allergies and Intolerances',
+    '10160-0': 'Medication Summary',
+    '11369-6': 'Immunizations',
+    '30954-2': 'Results',
+    '47519-4': 'History of Procedures',
+    '46264-8': 'Device Use',
+    '8716-3': 'Vital Signs',
+    '29762-2': 'Social History',
+    '104605-1': 'Alerts',
+    '81338-6': 'Patient Story',
+    '42348-3': 'Advance Directives',
+    '47420-5': 'Functional Status',
+    '11348-0': 'History of Past Problems',
+    '10162-6': 'History of Pregnancy',
+    '18776-5': 'Plan of Care',
+  };
+
+  const selectedSectionNames = Object.entries(selectedSections)
+    .filter(([_, isSelected]) => isSelected)
+    .map(([code]) => sectionNames[code] || code);
 
   const form = useForm<FormValues>({
     initialValues: {
@@ -60,22 +85,16 @@ export function CreateSHLForm({ onSHLCreated, onCancel }: CreateSHLFormProps) {
   const handleSubmit = async (values: FormValues) => {
     setIsSubmitting(true);
     try {
-      // Get the access token from Medplum client
-      const accessToken = medplum.getAccessToken();
-      if (!accessToken) {
-        throw new Error('No access token available. Please sign in again.');
-      }
-
       const response = await fetch('/api/shl', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          Authorization: `Bearer ${accessToken}`,
         },
         body: JSON.stringify({
           passcode: values.passcode,
           label: values.label.trim() || undefined,
           longTerm: values.longTerm,
+          selectedSections,
         }),
       });
 
@@ -115,6 +134,24 @@ export function CreateSHLForm({ onSHLCreated, onCancel }: CreateSHLFormProps) {
         <Alert icon={<IconAlertCircle size="1rem" />} color="blue">
           Your health information will be encrypted and can only be accessed with the passcode you set.
         </Alert>
+
+        {selectedSectionNames.length > 0 && (
+          <Box>
+            <Text size="sm" fw={500} mb="xs">
+              Selected sections to share:
+            </Text>
+            <Group gap="xs">
+              {selectedSectionNames.map((name, index) => (
+                <Badge key={index} variant="light" size="sm">
+                  {name}
+                </Badge>
+              ))}
+            </Group>
+            <Text size="xs" c="dimmed" mt="xs">
+              {selectedSectionNames.length} section{selectedSectionNames.length !== 1 ? 's' : ''} selected
+            </Text>
+          </Box>
+        )}
 
         <form onSubmit={form.onSubmit(handleSubmit)}>
           <Stack gap="md">

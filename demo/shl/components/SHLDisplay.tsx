@@ -1,7 +1,7 @@
 'use client';
 import { Card, Title, Text, Stack, Button, Group, CopyButton, Tooltip, Alert, Code, Box } from '@mantine/core';
 import { notifications } from '@mantine/notifications';
-import { IconCheck, IconCopy, IconQrcode, IconAlertCircle } from '@tabler/icons-react';
+import { IconCheck, IconCopy, IconQrcode, IconAlertCircle, IconExternalLink } from '@tabler/icons-react';
 import { useState, useEffect } from 'react';
 import { SHL } from 'kill-the-clipboard';
 import { base64url } from 'jose';
@@ -105,7 +105,9 @@ export function SHLDisplay({ shlUri, onReset }: SHLDisplayProps) {
             {showQR ? 'Hide QR Code' : 'Show QR Code'}
           </Button>
 
-          <Button onClick={handleView}>View Health Information</Button>
+          <Button leftSection={<IconExternalLink size="1rem" />} onClick={handleView}>
+            View Health Information
+          </Button>
         </Group>
 
         {showQR && (

@@ -1,16 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { MedplumClient } from '@medplum/core';
 import { SHLExpiredError, SHLManifestBuilder } from 'kill-the-clipboard';
-import { buildMedplumFetch } from '@/lib/medplum-fetch';
 import { getManifestBuilder, getStoredPasscode, isSHLInvalidated, incrementFailedAttempts } from '@/lib/storage';
 import { verifyPasscode } from '@/lib/auth';
-import { createManifestFileHandlers } from '@/lib/medplum-file-handlers';
-
-const medplum = new MedplumClient({
-  baseUrl: process.env.NEXT_PUBLIC_MEDPLUM_BASE_URL || 'https://api.medplum.com',
-  clientId: process.env.NEXT_PUBLIC_MEDPLUM_CLIENT_ID!,
-  clientSecret: process.env.MEDPLUM_CLIENT_SECRET!,
-});
+import { createManifestFileHandlers } from '@/lib/filesystem-file-handlers';
 
 interface ManifestRequest {
   recipient: string;
@@ -22,22 +14,6 @@ export async function POST(
   request: NextRequest,
   { params }: { params: Promise<{ entropy: string }> }
 ) {
-  // Get authorization header and authenticate with Medplum
-  const authHeader = request.headers.get('authorization');
-  if (!authHeader) {
-    return NextResponse.json({ error: 'Authorization required' }, { status: 401 });
-  }
-
-  // Set the authorization header for the server-side client
-  const accessToken = authHeader.replace('Bearer ', '');
-  medplum.setAccessToken(accessToken);
-
-  // Verify the user is authenticated
-  const profile = await medplum.getProfileAsync();
-  if (!profile) {
-    return NextResponse.json({ error: 'Invalid authentication' }, { status: 401 });
-  }
-
   const { entropy } = await params;
   const body: ManifestRequest = await request.json();
   const { recipient, passcode, embeddedLengthMax = 4096 } = body;
@@ -51,7 +27,7 @@ export async function POST(
   }
 
   // Get the maximum allowed failed attempts from environment variable (default: 100)
-  const maxFailedAttempts = parseInt(process.env.SHL_MAX_FAILED_ATTEMPTS || '100', 10);
+  const maxFailedAttempts = parseInt(process.env.SHL_SERVER_MAX_FAILED_ATTEMPTS || '100', 10);
 
   // Check if SHL is invalidated due to too many failed attempts
   if (await isSHLInvalidated(entropy)) {
@@ -102,9 +78,7 @@ export async function POST(
   // Reconstruct the manifest builder
   const manifestBuilder = SHLManifestBuilder.deserialize({
     data: builderState,
-    ...createManifestFileHandlers(medplum),
-    // Provide Medplum-authenticated fetch
-    fetch: buildMedplumFetch(medplum),
+    ...createManifestFileHandlers(),
   });
 
   try {

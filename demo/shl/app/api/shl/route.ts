@@ -1,43 +1,95 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { MedplumClient } from '@medplum/core';
 import { Bundle } from '@medplum/fhirtypes';
 import { SHL, SHLManifestBuilder, SmartHealthCardIssuer } from 'kill-the-clipboard';
 import { storeManifestBuilder, storePasscode } from '@/lib/storage';
 import { hashPasscode } from '@/lib/auth';
-import { createManifestFileHandlers } from '@/lib/medplum-file-handlers';
+import { createManifestFileHandlers } from '@/lib/filesystem-file-handlers';
+import ipsBundleData from '@/data/Bundle-bundle-ips-all-sections.json';
 
-const medplum = new MedplumClient({
-  baseUrl: process.env.NEXT_PUBLIC_MEDPLUM_BASE_URL || 'https://api.medplum.com',
-  clientId: process.env.NEXT_PUBLIC_MEDPLUM_CLIENT_ID!,
-  clientSecret: process.env.MEDPLUM_CLIENT_SECRET!,
-});
+// Function to filter bundle based on selected sections
+const filterBundleBySelections = (bundle: Bundle, selectedSections: Record<string, boolean>): Bundle => {
+  if (Object.keys(selectedSections).length === 0) {
+    // If no selections provided, include all sections (default behavior)
+    return bundle;
+  }
+
+  const filteredBundle = { ...bundle };
+  const entries = Array.isArray(bundle.entry) ? [...bundle.entry] : [];
+
+  // Find the composition
+  const compositionEntry = entries.find((entry: any) => entry.resource?.resourceType === 'Composition');
+  if (!compositionEntry?.resource) {
+    return bundle; // Return original if no composition found
+  }
+
+  const composition = compositionEntry.resource as any;
+
+  // Build a set of resource references to keep
+  const resourcesToKeep = new Set<string>();
+
+  // Always keep Patient and Composition
+  entries.forEach((entry: any) => {
+    if (entry.resource?.resourceType === 'Patient' || entry.resource?.resourceType === 'Composition') {
+      resourcesToKeep.add(entry.fullUrl);
+    }
+  });
+
+  // Filter composition sections and collect references to keep
+  const filteredSections = composition.section?.filter((section: any) => {
+    const code = section.code?.coding?.[0]?.code;
+    const sectionKey = code || section.title;
+    const isSelected = selectedSections[sectionKey] ?? true; // Default to selected if not specified
+
+    if (isSelected && section.entry) {
+      // Add all references from this section to the keep set
+      section.entry.forEach((entry: any) => {
+        if (entry.reference) {
+          resourcesToKeep.add(entry.reference);
+        }
+      });
+    }
+
+    return isSelected;
+  }) || [];
+
+  // Update the composition with filtered sections
+  const updatedComposition = {
+    ...composition,
+    section: filteredSections
+  };
+
+  // Filter the bundle entries to only include resources we want to keep
+  const filteredEntries = entries.filter((entry: any) => {
+    return resourcesToKeep.has(entry.fullUrl) ||
+           resourcesToKeep.has(`${entry.resource?.resourceType}/${entry.resource?.id}`);
+  });
+
+  // Update the composition entry
+  const compositionIndex = filteredEntries.findIndex((entry: any) => entry.resource?.resourceType === 'Composition');
+  if (compositionIndex >= 0) {
+    filteredEntries[compositionIndex] = {
+      ...filteredEntries[compositionIndex],
+      resource: updatedComposition
+    };
+  }
+
+  return {
+    ...filteredBundle,
+    entry: filteredEntries
+  };
+};
 
 interface CreateSHLRequest {
   passcode: string;
   label?: string;
   longTerm: boolean;
+  selectedSections?: Record<string, boolean>;
 }
 
 export async function POST(request: NextRequest) {
   try {
-    // Get authorization header and authenticate with Medplum
-    const authHeader = request.headers.get('authorization');
-    if (!authHeader) {
-      return NextResponse.json({ error: 'Authorization required' }, { status: 401 });
-    }
-
-    // Set the authorization header for the server-side client
-    const accessToken = authHeader.replace('Bearer ', '');
-    medplum.setAccessToken(accessToken);
-
-    // Verify the user is authenticated
-    const profile = await medplum.getProfileAsync();
-    if (!profile) {
-      return NextResponse.json({ error: 'Invalid authentication' }, { status: 401 });
-    }
-
     const body: CreateSHLRequest = await request.json();
-    const { passcode, label, longTerm } = body;
+    const { passcode, label, longTerm, selectedSections = {} } = body;
 
     // Validate required fields
     if (!passcode) {
@@ -45,71 +97,25 @@ export async function POST(request: NextRequest) {
     }
 
     // Get the base URL for manifest construction
-    const baseUrl = process.env.SHL_MANIFEST_BASE_URL!
+    const baseManifestURL = process.env.SHL_SERVER_BASE_URL! + '/manifests/'
 
     // Create SHL instance
     const shl = SHL.generate({
-      baseManifestURL: baseUrl,
+      baseManifestURL: baseManifestURL,
       manifestPath: 'manifest.json',
       flag: longTerm ? 'LP' : 'P', // P for passcode, LP for long-term + passcode
       label,
     });
 
-    // Create manifest builder with Medplum file storage
+    // Create manifest builder with filesystem file storage
     const manifestBuilder = new SHLManifestBuilder({
       shl,
-      ...createManifestFileHandlers(medplum),
+      ...createManifestFileHandlers(),
     });
 
-    // Get patient data from Medplum
-    if (profile.resourceType !== 'Patient') {
-      return NextResponse.json(
-        { error: 'Only patients can create SHLs, authenticate as a patient' },
-        { status: 401 }
-      );
-    }
-    const patientData = profile;
-
-    // Create a FHIR Bundle with the patient data
-    const fhirBundle: Bundle = {
-      resourceType: 'Bundle',
-      type: 'collection',
-      entry: [
-        {
-          fullUrl: medplum.fhirUrl('Patient', patientData.id).toString(),
-          resource: patientData
-        }
-      ]
-    };
-
-    // Try to fetch additional health data
-    // Fetch allergies
-    const allergies = await medplum.search('AllergyIntolerance', {
-      patient: patientData.id!,
-      _count: '10'
-    });
-    fhirBundle.entry!.push(...allergies.entry!);
-
-    // Fetch conditions
-    const conditions = await medplum.search('Condition', {
-      patient: patientData.id!,
-      _count: '10'
-    });
-    fhirBundle.entry!.push(...conditions.entry!);
-
-    // Fetch medications
-    const medications = await medplum.search('MedicationRequest', {
-      patient: patientData.id!,
-      _count: '20'
-    });
-    fhirBundle.entry!.push(...medications.entry!);
-
-    // Fetch observations (labs, vitals)
-    const observations = await medplum.search('Observation', {
-      patient: patientData.id!,
-      _count: '20'
-    });
-    fhirBundle.entry!.push(...observations.entry!);
+    // Use the static IPS bundle data and filter based on selections
+    const originalBundle: Bundle = ipsBundleData as Bundle;
+    const fhirBundle: Bundle = filterBundleBySelections(originalBundle, selectedSections);
 
     // Add the FHIR bundle to the manifest
     await manifestBuilder.addFHIRResource({ content: fhirBundle });
@@ -119,6 +125,7 @@ export async function POST(request: NextRequest) {
       issuer: process.env.SHC_ISSUER!,
       privateKey: process.env.SHC_PRIVATE_KEY!,
       publicKey: process.env.NEXT_PUBLIC_SHC_PUBLIC_KEY!,
+      strictReferences: false,
     });
     const shc = await shcIssuer.issue(fhirBundle);
     await manifestBuilder.addHealthCard({ shc });
