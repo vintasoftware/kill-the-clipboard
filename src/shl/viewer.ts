@@ -218,7 +218,11 @@ export class SHLViewer {
 
     // Direct-file (U flag) flow: GET the single encrypted file directly from shl.url
     if (shl.isDirectFile) {
-      const decrypted = await this.fetchAndDecryptFile({ url: shl.url, key: shl.key })
+      const decrypted = await this.fetchAndDecryptFile({
+        url: shl.url,
+        key: shl.key,
+        recipient: params.recipient,
+      })
       const parsed = await this.parseDecrypted(
         [
           {
@@ -432,7 +436,9 @@ export class SHLViewer {
    *
    * @param params.url - HTTPS URL to the encrypted JWE file
    * @param params.key - Base64url-encoded encryption key from SHL
+   * @param params.recipient - Recipient identifier for the request (required only when `U` flag is set)
    * @returns Promise resolving to decrypted file object with `content` and `contentType`
+   * @throws {@link SHLViewerError} When recipient is not provided but `U` flag is set
    * @throws {@link SHLNetworkError} When file cannot be loaded
    * @throws {@link SHLDecryptionError} When JWE decryption fails
    *
@@ -441,10 +447,23 @@ export class SHLViewer {
   private async fetchAndDecryptFile(params: {
     url: string
     key: string
+    recipient?: string
   }): Promise<{ content: string; contentType: string | undefined }> {
     try {
+      let url = params.url
+
+      // Set recipient if provided
+      if (!params.recipient && this.shl.isDirectFile) {
+        throw new SHLViewerError('Recipient is required when U flag is set')
+      }
+      if (params.recipient) {
+        const urlObj = new URL(url)
+        urlObj.searchParams.set('recipient', params.recipient)
+        url = urlObj.toString()
+      }
+
       // Fetch the encrypted file
-      const response = await this.fetchImpl(params.url, {
+      const response = await this.fetchImpl(url, {
         method: 'GET',
       })
 

@@ -155,7 +155,14 @@ describe('SHLViewer', () => {
       // Build a payload with U flag
       const payload = { ...shl.payload, flag: 'U' as const, url: `${shl.url}` }
       const uri = `shlink:/${base64url.encode(new TextEncoder().encode(JSON.stringify(payload)))}`
+      let foundRecipient: string | null = null
       const fetchMock = vi.fn(async (url: string, init?: RequestInit) => {
+        // Remove recipient query parameter
+        const urlObj = new URL(url)
+        foundRecipient = urlObj.searchParams.get('recipient')
+        urlObj.searchParams.delete('recipient')
+        url = urlObj.toString()
+
         if (init?.method === 'GET' && url === payload.url) {
           return {
             ok: true,
@@ -172,6 +179,7 @@ describe('SHLViewer', () => {
       const result = await viewer.resolveSHLink({ recipient: 'r' })
       expect(result.fhirResources).toHaveLength(1)
       expect(result.fhirResources[0]).toEqual(fhirBundle)
+      expect(foundRecipient).toBe('r')
     })
 
     it('resolves U-flag direct-file SHLinks (SHC)', async () => {
@@ -196,7 +204,14 @@ describe('SHLViewer', () => {
       // Build a payload with U flag
       const payload = { ...shl.payload, flag: 'U' as const, url: `${shl.url}` }
       const uri = `shlink:/${base64url.encode(new TextEncoder().encode(JSON.stringify(payload)))}`
+      let foundRecipient: string | null = null
       const fetchMock = vi.fn(async (url: string, init?: RequestInit) => {
+        // Remove recipient query parameter
+        const urlObj = new URL(url)
+        foundRecipient = urlObj.searchParams.get('recipient')
+        urlObj.searchParams.delete('recipient')
+        url = urlObj.toString()
+
         if (init?.method === 'GET' && url === payload.url) {
           return { ok: true, status: 200, statusText: 'OK', text: async () => jwe } as Response
         }
@@ -210,6 +225,7 @@ describe('SHLViewer', () => {
       })
       expect(result.smartHealthCards).toHaveLength(1)
       expect(result.fhirResources).toHaveLength(0)
+      expect(foundRecipient).toBe('r')
     })
 
     it('resolves location file manifests', async () => {
