@@ -209,7 +209,7 @@
 <ol>
 <li>Create an <code>SHL</code> instance with <code>SHL.generate({ baseManifestURL, manifestPath, expirationDate?, label?, flag? })</code></li>
 <li>Use <code>SHLManifestBuilder</code> with implementations for <code>uploadFile</code>, <code>getFileURL</code>, and <code>loadFile</code> that persist encrypted files and return retrievable URLs</li>
-<li>Add content: <code>addFHIRResource({ content })</code>, <code>addHealthCard({ shc })</code></li>
+<li>Add content: <code>addFHIRResource({ content, enableCompression? })</code>, <code>addHealthCard({ shc, enableCompression? })</code></li>
 <li>Persist the builder state via <code>serialize()</code></li>
 <li>Return the SHLink URI to clients via <code>shl.toURI()</code></li>
 </ol>
@@ -268,7 +268,6 @@
 </ul>
 <h2 id="future-work" class="tsd-anchor-link">Future Work<a href="#future-work" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="assets/icons.svg#icon-anchor"></use></svg></a></h2><ul>
 <li><strong>No <code>application/smart-api-access</code></strong>: SMART on FHIR API access tokens are not supported in content types.</li>
-<li><strong>No <code>U</code> Flag Support</strong>: Direct single-file SHLinks (bypassing manifests) are not supported yet.</li>
 <li><strong>No Built-in Automatic Refresh for SHLs with <code>L</code> Flag</strong>: Long-term SHLinks (<code>L</code> flag) require manual implementation of polling or push notifications for updates.</li>
 </ul>
 <h2 id="contributing" class="tsd-anchor-link">Contributing<a href="#contributing" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="assets/icons.svg#icon-anchor"></use></svg></a></h2><p>See <a href="media/CONTRIBUTING.md">CONTRIBUTING.md</a> for development setup and guidelines.</p>
