@@ -21,6 +21,15 @@ const formatDate = (dateString: string | undefined): string => {
   if (!dateString) return '';
 
   try {
+    // Parse date-only strings in local time to avoid timezone issues
+    const dateOnlyPattern = /^\d{4}-\d{2}-\d{2}$/;
+    if (dateOnlyPattern.test(dateString)) {
+      const [year, month, day] = dateString.split('-').map(Number);
+      const date = new Date(year, month - 1, day); // month is 0-indexed
+      dateString = date.toISOString();
+    }
+
+    // For other date formats, use the original parsing
     const date = new Date(dateString);
     if (isNaN(date.getTime())) return dateString; // Return original if invalid
 
@@ -180,6 +189,7 @@ const ProblemListSection: React.FC<{ conditions: any[] } & SectionProps> = ({
               <Table.Td style={{ fontWeight: 'bold', minWidth: '100px' }}>Name</Table.Td>
               <Table.Td style={{ fontWeight: 'bold', width: '100px' }}>Severity</Table.Td>
               <Table.Td style={{ fontWeight: 'bold', width: '100px' }}>Since</Table.Td>
+              <Table.Td style={{ fontWeight: 'bold', width: '100px' }}>Abatement</Table.Td>
               <Table.Td style={{ fontWeight: 'bold', width: '100px' }}>Recorded</Table.Td>
             </Table.Tr>
             {conditions.map((c: any, i: number) => (
@@ -188,6 +198,7 @@ const ProblemListSection: React.FC<{ conditions: any[] } & SectionProps> = ({
                 <Table.Td>{c.code?.text || c.code?.coding?.[0]?.display}</Table.Td>
                 <Table.Td>{c.severity?.coding?.[0]?.display}</Table.Td>
                 <Table.Td>{formatDate(c.onsetDateTime || c.onsetPeriod?.start)}</Table.Td>
+                <Table.Td>{formatDate(c.abatementDateTime || c.abatementPeriod?.start)}</Table.Td>
                 <Table.Td>{formatDate(c.recordedDate)}</Table.Td>
               </Table.Tr>
             ))}
@@ -229,13 +240,17 @@ const AllergiesSection: React.FC<{ allergies: any[] } & SectionProps> = ({
             <Table.Tr>
               <Table.Td style={{ fontWeight: 'bold', width: '100px' }}>Status</Table.Td>
               <Table.Td style={{ fontWeight: 'bold', minWidth: '100px' }}>Name</Table.Td>
+              <Table.Td style={{ fontWeight: 'bold', width: '100px' }}>Category</Table.Td>
               <Table.Td style={{ fontWeight: 'bold', width: '100px' }}>Criticality</Table.Td>
+              <Table.Td style={{ fontWeight: 'bold', width: '100px' }}>Since</Table.Td>
             </Table.Tr>
             {allergies.map((a: any, i: number) => (
               <Table.Tr key={`allergy-${i}`}>
                 <Table.Td>{a.clinicalStatus?.coding?.[0]?.code}</Table.Td>
-                <Table.Td>{a.code?.text || a.code?.coding?.[0]?.display}</Table.Td>
+                <Table.Td>{a.code?.text || a.code?.coding?.[0]?.display || a.code?.coding?.[0]?.code}</Table.Td>
+                <Table.Td>{a.category?.[0]}</Table.Td>
                 <Table.Td>{a.criticality}</Table.Td>
+                <Table.Td>{formatDate(a.onsetDateTime || a.onsetPeriod?.start)}</Table.Td>
               </Table.Tr>
             ))}
           </Table.Tbody>
@@ -283,9 +298,7 @@ const MedicationSummarySection: React.FC<{ medications: any[] } & SectionProps> 
               <Table.Tr key={`med-${i}`}>
                 <Table.Td>{m.status}</Table.Td>
                 <Table.Td>
-                  {m.medicationCodeableConcept?.coding?.[0]?.display ||
-                    m.medicationCodeableConcept?.text ||
-                    'No information about medications'}
+                  {m.medicationCodeableConcept?.coding?.[0]?.display || m.medicationCodeableConcept?.text}
                 </Table.Td>
                 <Table.Td>
                   <TruncatedText text={m.dosage?.[0]?.text || ''} length={30} />
@@ -395,7 +408,7 @@ const ResultsSection: React.FC<{ labResults: any[] } & SectionProps> = ({
                 <Table.Td>{obs.category?.[0]?.coding?.[0]?.code}</Table.Td>
                 <Table.Td>{obs.code?.text || obs.code?.coding?.[0]?.display}</Table.Td>
                 <Table.Td>
-                  <TruncatedText text={getValue(obs)} length={30} />
+                  <TruncatedText text={getValue(obs) || ''} length={30} />
                 </Table.Td>
                 <Table.Td>
                   <TruncatedText text={obs.note?.[0]?.text || ''} length={40} />
@@ -818,6 +831,7 @@ const PastProblemsSection: React.FC<{ conditions: any[] } & SectionProps> = ({
               <Table.Td style={{ fontWeight: 'bold', minWidth: '100px' }}>Problem</Table.Td>
               <Table.Td style={{ fontWeight: 'bold', width: '100px' }}>Severity</Table.Td>
               <Table.Td style={{ fontWeight: 'bold', width: '100px' }}>Since</Table.Td>
+              <Table.Td style={{ fontWeight: 'bold', width: '100px' }}>Abatement</Table.Td>
               <Table.Td style={{ fontWeight: 'bold', width: '100px' }}>Recorded</Table.Td>
             </Table.Tr>
             {conditions.map((cond: any, i: number) => (
@@ -828,6 +842,7 @@ const PastProblemsSection: React.FC<{ conditions: any[] } & SectionProps> = ({
                 <Table.Td>{cond.code?.text || cond.code?.coding?.[0]?.display}</Table.Td>
                 <Table.Td>{cond.severity?.coding?.[0]?.display}</Table.Td>
                 <Table.Td>{formatDate(cond.onsetDateTime || cond.onsetPeriod?.start)}</Table.Td>
+                <Table.Td>{formatDate(cond.abatementDateTime || cond.abatementPeriod?.start)}</Table.Td>
                 <Table.Td>{formatDate(cond.recordedDate)}</Table.Td>
               </Table.Tr>
             ))}
