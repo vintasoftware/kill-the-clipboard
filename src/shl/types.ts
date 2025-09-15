@@ -21,7 +21,9 @@ export type FHIRResource = Resource
  * Flags modify the behavior of Smart Health Links:
  * - `'L'`: Long-term - Recipients may poll the manifest URL for updates over time
  * - `'P'`: Passcode-protected - A passcode is required to access the manifest
+ * - `'U'`: Direct file - Resolves to a single encrypted file accessible via `GET`, bypassing the manifest
  * - `'LP'`: Both long-term and passcode-protected
+ * - `'LU'`: Both long-term and direct file
  *
  * Flags are concatenated in the SHL payload (e.g., 'LP' means both L and P flags are set).
  *
@@ -29,7 +31,7 @@ export type FHIRResource = Resource
  * @group SHL
  * @category Types
  */
-export type SHLFlag = 'L' | 'P' | 'LP'
+export type SHLFlag = 'L' | 'P' | 'LP' | 'U' | 'LU'
 
 /**
  * Content types supported for SHL files.
@@ -90,7 +92,6 @@ export interface SHLinkPayloadV1 {
   exp?: number
   /**
    * Optional flag string (concatenated single-character flags).
-   * Modifies SHL behavior: 'L' (long-term), 'P' (passcode), 'LP' (both).
    */
   flag?: SHLFlag
   /**
@@ -422,8 +423,9 @@ export interface SHLResolvedContent {
   /**
    * The fetched manifest response.
    * Contains the raw manifest structure with file descriptors.
+   * undefined if the SHL is a direct file (has `U` flag).
    */
-  manifest: SHLManifestV1
+  manifest: SHLManifestV1 | undefined
   /**
    * Smart Health Cards extracted from application/smart-health-card files.
    * Each card is fully parsed and ready for verification or display.

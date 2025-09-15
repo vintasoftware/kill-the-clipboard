@@ -155,7 +155,7 @@ Server responsibilities are required for a functional SHL implementation. Refer 
 - On the server side, during SHLink creation:
     1. Create an `SHL` instance with `SHL.generate({ baseManifestURL, manifestPath, expirationDate?, label?, flag? })`
     2. Use `SHLManifestBuilder` with implementations for `uploadFile`, `getFileURL`, and `loadFile` that persist encrypted files and return retrievable URLs
-    3. Add content: `addFHIRResource({ content })`, `addHealthCard({ shc })`
+    3. Add content: `addFHIRResource({ content, enableCompression? })`, `addHealthCard({ shc, enableCompression? })`
     4. Persist the builder state via `serialize()`
     5. Return the SHLink URI to clients via `shl.toURI()`
 - On the client side, during SHLink resolution:
@@ -500,7 +500,6 @@ const config = {
 ## Future Work
 
 - **No `application/smart-api-access`**: SMART on FHIR API access tokens are not supported in content types.
-- **No `U` Flag Support**: Direct single-file SHLinks (bypassing manifests) are not supported yet.
 - **No Built-in Automatic Refresh for SHLs with `L` Flag**: Long-term SHLinks (`L` flag) require manual implementation of polling or push notifications for updates.
 
 ## Contributing

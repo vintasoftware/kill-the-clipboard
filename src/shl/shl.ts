@@ -75,10 +75,7 @@ export class SHL {
    * @param params.baseManifestURL - Base URL for constructing manifest URLs (e.g., 'https://shl.example.org/manifests/')
    * @param params.manifestPath - Optional manifestPath for constructing manifest URLs (e.g., '/manifest.json')
    * @param params.expirationDate - Optional expiration date for the SHLink. When set, fills the `exp` field in the SHLink payload with Unix timestamp.
-   * @param params.flag - Optional flag for the SHLink:
-   *   - `'L'`: Long-term (allows polling for updates)
-   *   - `'P'`: Passcode-protected (requires passcode for access)
-   *   - `'LP'`: Both long-term and passcode-protected
+   * @param params.flag - Optional flag for the SHLink (see {@link SHLFlag})
    * @param params.label - Optional short description of the shared data. Maximum 80 characters.
    * @returns New SHL instance with generated full manifest URL and encryption key
    * @throws {@link SHLFormatError} When label exceeds 80 characters
@@ -217,10 +214,7 @@ export class SHL {
   /**
    * Get the SHL flags if set.
    *
-   * Returns the flag string indicating SHL capabilities:
-   * - `'L'`: Long-term (supports polling for updates)
-   * - `'P'`: Passcode-protected (requires passcode for access)
-   * - `'LP'`: Both long-term and passcode-protected
+   * Returns the flag string indicating SHL capabilities.
    *
    * @returns Flag string, or undefined if no flags set
    */
@@ -273,6 +267,16 @@ export class SHL {
    */
   get isLongTerm(): boolean {
     return this._flag?.includes('L') ?? false
+  }
+
+  /**
+   * Check if this SHL is a direct-file link (bypasses manifest).
+   *
+   * Returns true if the SHL has the 'U' flag, indicating that the `url` points
+   * directly to a single encrypted file retrievable via GET.
+   */
+  get isDirectFile(): boolean {
+    return this._flag?.includes('U') ?? false
   }
 
   /**
@@ -439,8 +443,10 @@ export class SHL {
     }
 
     // Validate flag format if present
-    if (p.flag && !['L', 'P', 'LP'].includes(p.flag)) {
-      throw new SHLFormatError('Invalid SHLink payload: "flag" not one of "L", "P", "LP"')
+    if (p.flag && !['L', 'P', 'LP', 'U', 'LU'].includes(p.flag)) {
+      throw new SHLFormatError(
+        'Invalid SHLink payload: "flag" not one of "L", "P", "LP", "U", "LU"'
+      )
     }
   }
 

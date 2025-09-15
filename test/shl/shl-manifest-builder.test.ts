@@ -347,6 +347,51 @@ describe('SHLManifestBuilder', () => {
     expect(manifestBuilder.files[1]?.type).toBe('application/fhir+json')
   })
 
+  it('should handle compression options for different file types', async () => {
+    const issuer = new SmartHealthCardIssuer({
+      issuer: 'https://example.com',
+      privateKey: testPrivateKeyPKCS8,
+      publicKey: testPublicKeySPKI,
+    })
+    const healthCard = await issuer.issue(createValidFHIRBundle())
+    const fhirResource = createValidFHIRBundle()
+
+    await manifestBuilder.addHealthCard({ shc: healthCard, enableCompression: true })
+    await manifestBuilder.addFHIRResource({ content: fhirResource, enableCompression: false })
+
+    expect(manifestBuilder.files).toHaveLength(2)
+    expect(manifestBuilder.files[0]?.type).toBe('application/smart-health-card')
+    expect(manifestBuilder.files[1]?.type).toBe('application/fhir+json')
+  })
+
+  it('sets zip=DEF when compression enabled and omits otherwise', async () => {
+    await manifestBuilder.addFHIRResource({
+      content: createValidFHIRBundle(),
+      enableCompression: true,
+    })
+    await manifestBuilder.addFHIRResource({
+      content: createValidFHIRBundle(),
+      enableCompression: false,
+    })
+
+    const jwes = Array.from(uploadedFiles.values())
+    expect(jwes.length).toBe(2)
+
+    const headers = [] as Array<Record<string, unknown>>
+    for (const jwe of jwes) {
+      const [protectedHeaderB64u] = jwe.split('.') as [string, ...string[]]
+      const { base64url } = await import('jose')
+      const bytes = base64url.decode(protectedHeaderB64u)
+      const json = new TextDecoder().decode(bytes)
+      headers.push(JSON.parse(json) as Record<string, unknown>)
+    }
+
+    const hasZip = headers.some(h => h.zip === 'DEF')
+    const hasNoZip = headers.some(h => !('zip' in h))
+    expect(hasZip).toBe(true)
+    expect(hasNoZip).toBe(true)
+  })
+
   it('should handle string JWS input for addHealthCard', async () => {
     const issuer = new SmartHealthCardIssuer({
       issuer: 'https://example.com',
@@ -797,6 +842,29 @@ describe('SHLManifestBuilder', () => {
       await expect(
         builderWithFailingUpdate.updateFHIRResource(result.storagePath, createValidFHIRBundle())
       ).rejects.toThrow('Failed to update FHIR resource in storage: Storage update failed')
+    })
+
+    it('should handle compression options when updating FHIR resources', async () => {
+      const originalBundle = createValidFHIRBundle()
+      const result = await manifestBuilder.addFHIRResource({
+        content: originalBundle,
+        enableCompression: true,
+      })
+
+      const updatedBundle = { ...originalBundle, id: 'updated' }
+      await manifestBuilder.updateFHIRResource(result.storagePath, updatedBundle, false)
+
+      // Verify the file was updated and compression setting was applied
+      const encryptedContent = uploadedFiles.get(result.storagePath)
+      expect(encryptedContent).toBeDefined()
+      const [protectedHeaderB64u] = (encryptedContent as string).split('.') as [string, ...string[]]
+      const { base64url } = await import('jose')
+      const bytes = base64url.decode(protectedHeaderB64u)
+      const json = new TextDecoder().decode(bytes)
+      const header = JSON.parse(json) as Record<string, unknown>
+
+      // Should not have zip header when compression disabled
+      expect('zip' in header).toBe(false)
     })
   })
 

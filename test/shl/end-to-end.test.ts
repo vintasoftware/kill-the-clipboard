@@ -44,7 +44,7 @@ describe('End-to-End SHL Workflow', () => {
       publicKey: testPublicKeySPKI,
     })
     const healthCard = await issuer.issue(fhirBundle)
-    await manifestBuilder.addHealthCard({ shc: healthCard })
+    await manifestBuilder.addHealthCard({ shc: healthCard, enableCompression: true })
 
     // Persist the builder state
     const serialized = manifestBuilder.serialize()

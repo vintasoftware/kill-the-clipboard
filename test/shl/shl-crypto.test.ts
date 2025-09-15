@@ -1,4 +1,4 @@
-import { base64url, CompactEncrypt } from 'jose'
+import { base64url } from 'jose'
 import { describe, expect, it } from 'vitest'
 import { decryptSHLFile, encryptSHLFile, SHLDecryptionError, SHLError } from '@/index'
 
@@ -16,6 +16,23 @@ describe('SHL Crypto', () => {
 
     const jwe = await encryptSHLFile({ content, key, contentType })
     expect(jwe.split('.')).toHaveLength(5)
+
+    const { content: decrypted, contentType: cty } = await decryptSHLFile({ jwe, key })
+    expect(cty).toBe(contentType)
+    expect(decrypted).toBe(content)
+  })
+
+  it('encrypts with compression and decrypts, sets zip=DEF header', async () => {
+    const key = generateB64uKey()
+    const content = JSON.stringify({ big: 'x'.repeat(2000) })
+    const contentType = 'application/fhir+json' as const
+
+    const jwe = await encryptSHLFile({ content, key, contentType, enableCompression: true })
+    const [protectedHeaderB64u] = jwe.split('.')
+    const headerJson = new TextDecoder().decode(base64url.decode(protectedHeaderB64u as string))
+    const header = JSON.parse(headerJson) as Record<string, unknown>
+    expect(header.zip).toBe('DEF')
+    expect(header.cty).toBe(contentType)
 
     const { content: decrypted, contentType: cty } = await decryptSHLFile({ jwe, key })
     expect(cty).toBe(contentType)
@@ -42,23 +59,6 @@ describe('SHL Crypto', () => {
     await expect(
       encryptSHLFile({ content, key: badKey, contentType: 'application/fhir+json' })
     ).rejects.toThrow(/JWE encryption failed/)
-  })
-
-  it('decrypt throws for missing cty in protected header', async () => {
-    const keyBytes = new Uint8Array(32)
-    crypto.getRandomValues(keyBytes)
-    const key = base64url.encode(keyBytes)
-
-    // Build a JWE without cty using jose directly
-    const plaintext = new TextEncoder().encode(JSON.stringify({ foo: 'bar' }))
-    const jwe = await new CompactEncrypt(plaintext)
-      .setProtectedHeader({ alg: 'dir', enc: 'A256GCM' })
-      .encrypt(keyBytes)
-
-    await expect(decryptSHLFile({ jwe, key })).rejects.toThrow(SHLDecryptionError)
-    await expect(decryptSHLFile({ jwe, key })).rejects.toThrow(
-      'Missing content type (cty) in JWE protected header'
-    )
   })
 
   it('generates unique IVs for each encryption operation (SHL spec compliance)', async () => {

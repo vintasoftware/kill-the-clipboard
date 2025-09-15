@@ -6,6 +6,7 @@ import {
   SHLDecryptionError,
   SHLExpiredError,
   SHLFormatError,
+  SHLInvalidContentError,
   SHLInvalidPasscodeError,
   SHLManifestBuilder,
   SHLManifestError,
@@ -14,8 +15,9 @@ import {
   SHLNetworkError,
   SHLViewer,
   SHLViewerError,
+  SmartHealthCardIssuer,
 } from '@/index'
-import { createValidFHIRBundle } from '../helpers'
+import { createValidFHIRBundle, testPrivateKeyPKCS8, testPublicKeySPKI } from '../helpers'
 
 describe('SHLViewer', () => {
   describe('URI Parsing', () => {
@@ -93,7 +95,7 @@ describe('SHLViewer', () => {
       const uri4 = `shlink:/${base64url.encode(new TextEncoder().encode(JSON.stringify(p4)))}`
       expect(() => new SHLViewer({ shlinkURI: uri4 })).toThrow(SHLFormatError)
       expect(() => new SHLViewer({ shlinkURI: uri4 })).toThrow(
-        'Invalid SHLink payload: "flag" not one of "L", "P", "LP"'
+        'Invalid SHLink payload: "flag" not one of "L", "P", "LP", "U", "LU"'
       )
     })
   })
@@ -137,6 +139,77 @@ describe('SHLViewer', () => {
       expect(result.fhirResources).toHaveLength(1)
       expect(result.fhirResources[0]).toEqual(fhirBundle)
       expect(fetchMock).toHaveBeenCalled()
+    })
+
+    it('resolves U-flag direct-file SHLinks (FHIR JSON)', async () => {
+      // Create SHL and craft a U-flag payload pointing directly to a file URL
+      const shl = SHL.generate({ baseManifestURL: 'https://files.example.org', label: 'Direct' })
+
+      const fhirBundle = createValidFHIRBundle()
+      const jwe = await encryptSHLFile({
+        content: JSON.stringify(fhirBundle),
+        key: shl.key,
+        contentType: 'application/fhir+json',
+      })
+
+      // Build a payload with U flag
+      const payload = { ...shl.payload, flag: 'U' as const, url: `${shl.url}` }
+      const uri = `shlink:/${base64url.encode(new TextEncoder().encode(JSON.stringify(payload)))}`
+      const fetchMock = vi.fn(async (url: string, init?: RequestInit) => {
+        if (init?.method === 'GET' && url === payload.url) {
+          return {
+            ok: true,
+            status: 200,
+            statusText: 'OK',
+            text: async () => jwe,
+          } as Response
+        }
+        // Any manifest POST should not be called for U flag
+        return { ok: false, status: 404, statusText: 'Not Found', text: async () => '' } as Response
+      })
+
+      const viewer = new SHLViewer({ shlinkURI: uri, fetch: fetchMock })
+      const result = await viewer.resolveSHLink({ recipient: 'r' })
+      expect(result.fhirResources).toHaveLength(1)
+      expect(result.fhirResources[0]).toEqual(fhirBundle)
+    })
+
+    it('resolves U-flag direct-file SHLinks (SHC)', async () => {
+      const shl = SHL.generate({
+        baseManifestURL: 'https://files.example.org',
+        label: 'Direct SHC',
+      })
+      const issuer = new SmartHealthCardIssuer({
+        issuer: 'https://example.com',
+        privateKey: testPrivateKeyPKCS8,
+        publicKey: testPublicKeySPKI,
+      })
+      const fhirBundle = createValidFHIRBundle()
+      const healthCard = await issuer.issue(fhirBundle)
+      const fileContent = JSON.stringify({ verifiableCredential: [healthCard.asJWS()] })
+      const jwe = await encryptSHLFile({
+        content: fileContent,
+        key: shl.key,
+        contentType: 'application/smart-health-card',
+      })
+
+      // Build a payload with U flag
+      const payload = { ...shl.payload, flag: 'U' as const, url: `${shl.url}` }
+      const uri = `shlink:/${base64url.encode(new TextEncoder().encode(JSON.stringify(payload)))}`
+      const fetchMock = vi.fn(async (url: string, init?: RequestInit) => {
+        if (init?.method === 'GET' && url === payload.url) {
+          return { ok: true, status: 200, statusText: 'OK', text: async () => jwe } as Response
+        }
+        return { ok: false, status: 404, statusText: 'Not Found', text: async () => '' } as Response
+      })
+
+      const viewer = new SHLViewer({ shlinkURI: uri, fetch: fetchMock })
+      const result = await viewer.resolveSHLink({
+        recipient: 'r',
+        shcReaderConfig: { publicKey: testPublicKeySPKI },
+      })
+      expect(result.smartHealthCards).toHaveLength(1)
+      expect(result.fhirResources).toHaveLength(0)
     })
 
     it('resolves location file manifests', async () => {
@@ -480,7 +553,7 @@ describe('SHLViewer', () => {
       )
       await expect(
         new SHLViewer({ shlinkURI, fetch: fetchMock }).resolveSHLink({ recipient: 'r' })
-      ).rejects.toThrow(SHLManifestError)
+      ).rejects.toThrow(SHLInvalidContentError)
       await expect(
         new SHLViewer({ shlinkURI, fetch: fetchMock }).resolveSHLink({ recipient: 'r' })
       ).rejects.toThrow('missing verifiableCredential array')
@@ -517,10 +590,10 @@ describe('SHLViewer', () => {
       )
       await expect(
         new SHLViewer({ shlinkURI, fetch: fetchNotJson }).resolveSHLink({ recipient: 'r' })
-      ).rejects.toThrow(SHLManifestError)
+      ).rejects.toThrow(SHLInvalidContentError)
       await expect(
         new SHLViewer({ shlinkURI, fetch: fetchNotJson }).resolveSHLink({ recipient: 'r' })
-      ).rejects.toThrow('Invalid FHIR JSON file: not valid JSON')
+      ).rejects.toThrow('Invalid JSON file: not valid JSON')
 
       const fetchMissingType = vi.fn(
         async () =>
@@ -533,7 +606,7 @@ describe('SHLViewer', () => {
       )
       await expect(
         new SHLViewer({ shlinkURI, fetch: fetchMissingType }).resolveSHLink({ recipient: 'r' })
-      ).rejects.toThrow(SHLManifestError)
+      ).rejects.toThrow(SHLInvalidContentError)
       await expect(
         new SHLViewer({ shlinkURI, fetch: fetchMissingType }).resolveSHLink({ recipient: 'r' })
       ).rejects.toThrow('Invalid FHIR JSON file: missing resourceType')

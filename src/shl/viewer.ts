@@ -6,6 +6,7 @@ import { decryptSHLFile } from './crypto.js'
 import {
   SHLError,
   SHLExpiredError,
+  SHLInvalidContentError,
   SHLInvalidPasscodeError,
   SHLManifestError,
   SHLManifestNotFoundError,
@@ -16,7 +17,6 @@ import {
 import { SHL } from './shl.js'
 import type {
   SHLFileContentType,
-  SHLManifestFileDescriptor,
   SHLManifestRequestV1,
   SHLManifestV1,
   SHLResolvedContent,
@@ -160,6 +160,7 @@ export class SHLViewer {
    * @throws {@link SHLNetworkError} When network requests fail
    * @throws {@link SHLDecryptionError} When file decryption fails
    * @throws {@link SHLManifestError} When manifest structure is invalid or file content is malformed
+   * @throws {@link SHLInvalidContentError} When file content is not valid JSON or invalid SHC/FHIR resource
    *
    * @example
    * ```typescript
@@ -215,7 +216,26 @@ export class SHLViewer {
       throw new SHLInvalidPasscodeError('SHL requires a passcode')
     }
 
-    // Fetch manifest
+    // Direct-file (U flag) flow: GET the single encrypted file directly from shl.url
+    if (shl.isDirectFile) {
+      const decrypted = await this.fetchAndDecryptFile({ url: shl.url, key: shl.key })
+      const parsed = await this.parseDecrypted(
+        [
+          {
+            content: decrypted.content,
+            contentType: decrypted.contentType,
+          },
+        ],
+        params.shcReaderConfig
+      )
+      return {
+        manifest: undefined,
+        smartHealthCards: parsed.smartHealthCards,
+        fhirResources: parsed.fhirResources,
+      }
+    }
+
+    // Manifest-based flow
     const manifest = await this.fetchManifest({
       url: shl.url,
       recipient: params.recipient,
@@ -412,7 +432,7 @@ export class SHLViewer {
    *
    * @param params.url - HTTPS URL to the encrypted JWE file
    * @param params.key - Base64url-encoded encryption key from SHL
-   * @returns Promise resolving to decrypted file `content` and `contentType`
+   * @returns Promise resolving to decrypted file object with `content` and `contentType`
    * @throws {@link SHLNetworkError} When file cannot be loaded
    * @throws {@link SHLDecryptionError} When JWE decryption fails
    *
@@ -421,7 +441,7 @@ export class SHLViewer {
   private async fetchAndDecryptFile(params: {
     url: string
     key: string
-  }): Promise<{ content: string; contentType: string }> {
+  }): Promise<{ content: string; contentType: string | undefined }> {
     try {
       // Fetch the encrypted file
       const response = await this.fetchImpl(params.url, {
@@ -465,7 +485,7 @@ export class SHLViewer {
    * It validates that the decrypted content type matches the manifest descriptor.
    *
    * @param manifest - SHL manifest containing file descriptors
-   * @returns Promise resolving to array of decrypted files with metadata (`descriptor`, `content`, `contentType`)
+   * @returns Promise resolving to array of decrypted file objects with `content` and `contentType`
    * @throws {@link SHLManifestError} When content type mismatch occurs
    * @throws {@link SHLNetworkError} When file fetching fails
    * @throws {@link SHLDecryptionError} When file decryption fails
@@ -483,17 +503,11 @@ export class SHLViewer {
    */
   async decryptFiles(
     manifest: SHLManifestV1
-  ): Promise<
-    Array<{ descriptor: SHLManifestFileDescriptor; content: string; contentType: string }>
-  > {
+  ): Promise<Array<{ content: string; contentType: string | undefined }>> {
     const shl = this.shl
-    const results: Array<{
-      descriptor: SHLManifestFileDescriptor
-      content: string
-      contentType: string
-    }> = []
+    const results = []
     for (const fileDescriptor of manifest.files) {
-      let decryptedFile: { content: string; contentType: string }
+      let decryptedFile: { content: string; contentType: string | undefined }
       if ('embedded' in fileDescriptor) {
         decryptedFile = await decryptSHLFile({ jwe: fileDescriptor.embedded, key: shl.key })
       } else {
@@ -507,13 +521,38 @@ export class SHLViewer {
           `Content type mismatch: expected ${fileDescriptor.contentType}, got ${decryptedFile.contentType}`
         )
       }
-      results.push({
-        descriptor: fileDescriptor,
-        content: decryptedFile.content,
-        contentType: decryptedFile.contentType,
-      })
+      results.push(decryptedFile)
     }
     return results
+  }
+
+  /**
+   * Inspect the content of a parsed JSON to determine its type when contentType is undefined.
+   *
+   * This method analyzes the JSON structure to detect whether it's a
+   * Smart Health Card (has verifiableCredential at root) or FHIR JSON (has resourceType).
+   *
+   * @param content - The parsed JSON
+   * @returns The detected content type (application/smart-health-card or application/fhir+json)
+   * @throws {@link SHLInvalidContentError} When content is not valid JSON
+   *
+   * @private
+   */
+  private inspectContentType(content: Record<string, unknown>): SHLFileContentType {
+    try {
+      // Check if it's a Smart Health Card (has verifiableCredential at root)
+      if (content && typeof content === 'object' && Array.isArray(content.verifiableCredential)) {
+        return 'application/smart-health-card'
+      }
+
+      // Check if it's a FHIR resource (has resourceType)
+      if (content && typeof content === 'object' && typeof content.resourceType === 'string') {
+        return 'application/fhir+json'
+      }
+    } catch {
+      // Not valid JSON, can't determine type
+    }
+    throw new SHLInvalidContentError('Invalid content: not valid JSON')
   }
 
   /**
@@ -526,7 +565,7 @@ export class SHLViewer {
    * @param files - Array of decrypted files with metadata
    * @param shcReaderConfig - Optional configuration for Smart Health Card verification
    * @returns Promise resolving to structured content organized by type (`smartHealthCards`, `fhirResources`)
-   * @throws {@link SHLManifestError} When file content is malformed or invalid
+   * @throws {@link SHLInvalidContentError} When file content is not valid JSON or invalid SHC/FHIR resource
    *
    * @example
    * ```typescript
@@ -541,21 +580,34 @@ export class SHLViewer {
    * ```
    */
   async parseDecrypted(
-    files: Array<{ descriptor: SHLManifestFileDescriptor; content: string; contentType: string }>,
+    files: Array<{
+      content: string
+      contentType: string | undefined
+    }>,
     shcReaderConfig?: SmartHealthCardReaderConfigParams
   ): Promise<{ smartHealthCards: SmartHealthCard[]; fhirResources: Resource[] }> {
     const smartHealthCards: SmartHealthCard[] = []
     const fhirResources: Resource[] = []
     for (const file of files) {
-      if (file.descriptor.contentType === 'application/smart-health-card') {
+      let parsedContent: Record<string, unknown>
+      try {
+        parsedContent = JSON.parse(file.content)
+      } catch {
+        throw new SHLInvalidContentError('Invalid JSON file: not valid JSON')
+      }
+
+      // Use inspectContentType when contentType is undefined
+      const effectiveContentType = file.contentType ?? this.inspectContentType(parsedContent)
+
+      if (effectiveContentType === 'application/smart-health-card') {
         let fileContent: { verifiableCredential: string[] }
         try {
-          fileContent = JSON.parse(file.content) as { verifiableCredential: string[] }
+          fileContent = parsedContent as { verifiableCredential: string[] }
         } catch {
-          throw new SHLManifestError('Invalid SMART Health Card file: not valid JSON')
+          throw new SHLInvalidContentError('Invalid SMART Health Card file: not valid JSON')
         }
         if (!Array.isArray(fileContent.verifiableCredential)) {
-          throw new SHLManifestError(
+          throw new SHLInvalidContentError(
             'Invalid SMART Health Card file: missing verifiableCredential array'
           )
         }
@@ -566,18 +618,13 @@ export class SHLViewer {
             smartHealthCards.push(shc)
           } catch (error) {
             const message = error instanceof Error ? error.message : String(error)
-            throw new SHLManifestError(`Invalid SMART Health Card file: ${message}`)
+            throw new SHLInvalidContentError(`Invalid SMART Health Card file: ${message}`)
           }
         }
-      } else if (file.descriptor.contentType === 'application/fhir+json') {
-        let fhirResource: Resource
-        try {
-          fhirResource = JSON.parse(file.content) as Resource
-        } catch {
-          throw new SHLManifestError('Invalid FHIR JSON file: not valid JSON')
-        }
+      } else if (effectiveContentType === 'application/fhir+json') {
+        const fhirResource = parsedContent as unknown as Resource
         if (!fhirResource.resourceType) {
-          throw new SHLManifestError('Invalid FHIR JSON file: missing resourceType')
+          throw new SHLInvalidContentError('Invalid FHIR JSON file: missing resourceType')
         }
         fhirResources.push(fhirResource)
       }
