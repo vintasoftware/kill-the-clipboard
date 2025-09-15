@@ -107,7 +107,7 @@ demo/shl/
 ├── components/
 │   ├── CreateSHLForm.tsx               # Form for creating SHLs
 │   ├── PatientDataBundleDisplay.tsx    # IPS data display component with table format
-│   ├── PatientDataManager.tsx          # Manager for loading and displaying IPS data
+│   ├── PatientDataControl.tsx          # Manager for loading and displaying IPS data
 │   └── SHLDisplay.tsx                  # Component for displaying created SHLs
 ├── data/
 │   └── Bundle-bundle-ips-all-sections.json # IPS FHIR Bundle sample data

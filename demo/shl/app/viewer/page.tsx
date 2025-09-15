@@ -21,7 +21,7 @@ import { notifications } from '@mantine/notifications';
 import { SHLViewer, SHLResolvedContent } from 'kill-the-clipboard';
 import { useState, useEffect, useCallback } from 'react';
 import { IconAlertCircle, IconCheck, IconX } from '@tabler/icons-react';
-import { PatientDataBundleDisplay } from '@/components/PatientDataBundleDisplay';
+import { PatientDataBundleDisplay } from '@/components/PatientIPSControl';
 import { Bundle } from '@medplum/fhirtypes';
 
 interface ViewerFormValues {

@@ -3,7 +3,7 @@ import { Container, Title, Text, Stack, Button, Group } from '@mantine/core';
 import { Suspense, useState } from 'react';
 import { CreateSHLForm } from '@/components/CreateSHLForm';
 import { SHLDisplay } from '@/components/SHLDisplay';
-import { PatientDataManager } from '@/components/PatientDataManager';
+import { PatientDataControl } from '@/components/PatientDataControl';
 
 export default function HomePage() {
   const [isCreating, setIsCreating] = useState(false);
@@ -43,7 +43,7 @@ export default function HomePage() {
         <Suspense fallback={<div>Loading...</div>}>
           {!isCreating && !createdSHL && (
             <Stack gap="lg">
-              <PatientDataManager
+              <PatientDataControl
                 title="International Patient Summary"
                 selectedSections={selectedSections}
                 onSelectionsChange={handleSelectionsChange}

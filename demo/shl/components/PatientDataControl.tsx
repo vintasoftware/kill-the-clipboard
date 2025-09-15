@@ -2,10 +2,10 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { Card, Title, Text, Stack, Button, LoadingOverlay, Group } from '@mantine/core';
 import { notifications } from '@mantine/notifications';
 import { Bundle } from '@medplum/fhirtypes';
-import { PatientDataBundleDisplay } from './PatientDataBundleDisplay';
+import { PatientDataBundleDisplay } from './PatientIPSControl';
 import ipsBundleData from '../data/Bundle-bundle-ips-all-sections.json';
 
-interface PatientDataManagerProps {
+interface PatientDataControlProps {
   /** Title for the health data section */
   title?: string;
   selectedSections?: Record<string, boolean>;
@@ -15,13 +15,13 @@ interface PatientDataManagerProps {
 // IPS Bundle data is imported directly and used as the primary data source
 const IPS_BUNDLE: Bundle = ipsBundleData as Bundle;
 
-export const PatientDataManager: React.FC<PatientDataManagerProps> = ({
+export const PatientDataControl: React.FC<PatientDataControlProps> = ({
   title = 'International Patient Summary',
   selectedSections = {},
   onSelectionsChange,
 }) => {
   const [bundle, setBundle] = useState<Bundle | null>(null);
-  const [isLoading, setIsLoading] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
 
   const loadIPSHealthData = useCallback(async () => {
     setIsLoading(true);
