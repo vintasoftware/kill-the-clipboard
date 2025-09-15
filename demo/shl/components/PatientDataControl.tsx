@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { Card, Title, Text, Stack, Button, LoadingOverlay, Group } from '@mantine/core';
 import { notifications } from '@mantine/notifications';
-import { Bundle } from '@medplum/fhirtypes';
+import type { Bundle } from '@medplum/fhirtypes';
 import { PatientDataBundleDisplay } from './PatientIPSControl';
 import ipsBundleData from '../data/Bundle-bundle-ips-all-sections.json';
 

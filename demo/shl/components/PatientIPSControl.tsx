@@ -14,7 +14,7 @@ import {
   Checkbox,
   Group,
 } from '@mantine/core';
-import { Bundle } from '@medplum/fhirtypes';
+import type { Bundle } from '@medplum/fhirtypes';
 
 // Utility function to format dates in a human-readable way
 const formatDate = (dateString: string | undefined): string => {
@@ -910,15 +910,15 @@ const PlanOfCareSection: React.FC<{ carePlans: any[] } & SectionProps> = ({
   return (
     <Box>
       <SectionTitle title="Plan of Care" isSelected={isSelected} onSelectionChange={onSelectionChange} />
-      <ResponsiveTable minWidth={1100}>
+      <ResponsiveTable minWidth={700}>
         <Table>
           <Table.Tbody>
             <Table.Tr>
               <Table.Td style={{ fontWeight: 'bold', width: '100px' }}>Title</Table.Td>
-              <Table.Td style={{ fontWeight: 'bold', minWidth: '200px' }}>Description</Table.Td>
-              <Table.Td style={{ fontWeight: 'bold', width: '100px' }}>Status</Table.Td>
-              <Table.Td style={{ fontWeight: 'bold', width: '100px' }}>Intent</Table.Td>
-              <Table.Td style={{ fontWeight: 'bold', width: '100px' }}>Category</Table.Td>
+              <Table.Td style={{ fontWeight: 'bold', minWidth: '100px' }}>Description</Table.Td>
+              <Table.Td style={{ fontWeight: 'bold', width: '50px' }}>Status</Table.Td>
+              <Table.Td style={{ fontWeight: 'bold', width: '50px' }}>Intent</Table.Td>
+              <Table.Td style={{ fontWeight: 'bold', width: '200px' }}>Category</Table.Td>
               <Table.Td style={{ fontWeight: 'bold', width: '100px' }}>Period Start</Table.Td>
               <Table.Td style={{ fontWeight: 'bold', width: '100px' }}>Period End</Table.Td>
             </Table.Tr>

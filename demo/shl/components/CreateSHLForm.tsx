@@ -176,6 +176,7 @@ export function CreateSHLForm({ onSHLCreated, onCancel, selectedSections = {} }:
               label="Label (Optional)"
               description="A short description of this health information (max 80 characters)"
               placeholder="e.g., Annual Physical Results"
+              autoComplete="off"
               disabled={isSubmitting}
               {...form.getInputProps('label')}
             />

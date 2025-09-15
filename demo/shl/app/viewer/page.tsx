@@ -17,12 +17,11 @@ import {
   Box,
 } from '@mantine/core';
 import { useForm } from '@mantine/form';
-import { notifications } from '@mantine/notifications';
 import { SHLViewer, SHLResolvedContent } from 'kill-the-clipboard';
 import { useState, useEffect, useCallback } from 'react';
 import { IconAlertCircle, IconCheck, IconX } from '@tabler/icons-react';
 import { PatientDataBundleDisplay } from '@/components/PatientIPSControl';
-import { Bundle } from '@medplum/fhirtypes';
+import type { Bundle } from '@medplum/fhirtypes';
 
 interface ViewerFormValues {
   recipient: string;
@@ -214,6 +213,7 @@ export default function ViewerPage() {
                     name="shlUri"
                     label="Smart Health Link URI"
                     placeholder="shlink:/..."
+                    autoComplete="off"
                     value={shlUri}
                     onChange={(e) => {
                       setShlUri(e.currentTarget.value);
@@ -294,6 +294,7 @@ export default function ViewerPage() {
                     label="Your Name"
                     description="Enter your name as the recipient of this health information"
                     placeholder="e.g. John Doe"
+                    autoComplete="off"
                     required
                     disabled={isLoading || isInvalidated}
                     {...form.getInputProps('recipient')}

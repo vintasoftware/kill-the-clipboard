@@ -20,15 +20,6 @@ importers:
       '@mantine/notifications':
         specifier: 7.17.8
         version: 7.17.8(@mantine/core@7.17.8(@mantine/hooks@7.17.8(react@19.1.1))(@types/react@19.1.9)(react-dom@19.1.1(react@19.1.1))(react@19.1.1))(@mantine/hooks@7.17.8(react@19.1.1))(react-dom@19.1.1(react@19.1.1))(react@19.1.1)
-      '@medplum/core':
-        specifier: 4.3.10
-        version: 4.3.10
-      '@medplum/fhirtypes':
-        specifier: 4.3.10
-        version: 4.3.10
-      '@medplum/react':
-        specifier: 4.3.10
-        version: 4.3.10(@mantine/core@7.17.8(@mantine/hooks@7.17.8(react@19.1.1))(@types/react@19.1.9)(react-dom@19.1.1(react@19.1.1))(react@19.1.1))(@mantine/hooks@7.17.8(react@19.1.1))(@mantine/notifications@7.17.8(@mantine/core@7.17.8(@mantine/hooks@7.17.8(react@19.1.1))(@types/react@19.1.9)(react-dom@19.1.1(react@19.1.1))(react@19.1.1))(@mantine/hooks@7.17.8(react@19.1.1))(react-dom@19.1.1(react@19.1.1))(react@19.1.1))(@medplum/core@4.3.10)(@medplum/react-hooks@4.3.10(@medplum/core@4.3.10)(react@19.1.1))(react-dom@19.1.1(react@19.1.1))(react@19.1.1)
       '@tabler/icons-react':
         specifier: ^3.34.1
         version: 3.34.1(react@19.1.1)
@@ -51,6 +42,9 @@ importers:
         specifier: ^11.1.0
         version: 11.1.0
     devDependencies:
+      '@medplum/fhirtypes':
+        specifier: 4.3.10
+        version: 4.3.10
       '@prisma/client':
         specifier: ^6.15.0
         version: 6.15.0(prisma@6.15.0(typescript@5.8.3))(typescript@5.8.3)
@@ -307,50 +301,9 @@ packages:
     peerDependencies:
       react: ^18.x || ^19.x
 
-  '@medplum/core@4.3.10':
-    resolution: {integrity: sha512-CZF0UFH6n9bgkW0pBACReFVSzxjunlVx2UxwHLiz9Ra3fPSpS3aa8Ll35hWKSLw88q+MI2ewZn0wIPSpNo82iQ==}
-    engines: {node: ^20.19.0 || >=22.12.0}
-    peerDependencies:
-      pdfmake: ^0.2.5
-    peerDependenciesMeta:
-      pdfmake:
-        optional: true
-
   '@medplum/fhirtypes@4.3.10':
     resolution: {integrity: sha512-ExTcxsxhup/N8QBNanYCC0DIcI6yI9mkbYLxOaijs9Rae9QHsXm/BJvKF8J930YV9zmRbV198YsP9sHGzE8t2g==}
     engines: {node: ^20.19.0 || >=22.12.0}
-
-  '@medplum/react-hooks@4.3.10':
-    resolution: {integrity: sha512-gOaz6jiPLGOYlQZLVtZewKM4D5f1KwU+LTcHqbzj7aNKpGPK/J/1o0JAjJu7y03Npij5Uft7ZOmqvK5iGCSL9g==}
-    engines: {node: ^20.19.0 || >=22.12.0}
-    peerDependencies:
-      '@medplum/core': 4.3.10
-      react: ^17.0.2 || ^18.0.0 || ^19.0.0
-
-  '@medplum/react@4.3.10':
-    resolution: {integrity: sha512-GJhz+IpH3Aeu4uvKiinq7EvJ9g99lkRpPZ5tC/iNiZ8RIlO8uHCuSwCOfDX0B4eSO3KtFcQ3EXKEgPHnUlYVeA==}
-    engines: {node: ^20.19.0 || >=22.12.0}
-    peerDependencies:
-      '@mantine/core': ^7.0.0
-      '@mantine/hooks': ^7.0.0
-      '@mantine/notifications': ^7.0.0
-      '@medplum/core': 4.3.10
-      '@medplum/react-hooks': 4.3.10
-      react: ^17.0.2 || ^18.0.0 || ^19.0.0
-      react-dom: ^17.0.2 || ^18.0.0 || ^19.0.0
-      rfc6902: ^5.0.1
-      signature_pad: ^5.0.10
-    peerDependenciesMeta:
-      '@mantine/core':
-        optional: true
-      '@mantine/hooks':
-        optional: true
-      '@mantine/notifications':
-        optional: true
-      rfc6902:
-        optional: true
-      signature_pad:
-        optional: true
 
   '@napi-rs/wasm-runtime@0.2.12':
     resolution: {integrity: sha512-ZVWUcfwY4E/yPitQJl481FjFo3K22D6qF0DuFH6Y/nbnE11GY5uguDxZMGXPQ8WQ0128MXQD7TnfHyK4oWoIJQ==}
@@ -2281,25 +2234,7 @@ snapshots:
     dependencies:
       react: 19.1.1
 
-  '@medplum/core@4.3.10': {}
-
   '@medplum/fhirtypes@4.3.10': {}
-
-  '@medplum/react-hooks@4.3.10(@medplum/core@4.3.10)(react@19.1.1)':
-    dependencies:
-      '@medplum/core': 4.3.10
-      react: 19.1.1
-
-  '@medplum/react@4.3.10(@mantine/core@7.17.8(@mantine/hooks@7.17.8(react@19.1.1))(@types/react@19.1.9)(react-dom@19.1.1(react@19.1.1))(react@19.1.1))(@mantine/hooks@7.17.8(react@19.1.1))(@mantine/notifications@7.17.8(@mantine/core@7.17.8(@mantine/hooks@7.17.8(react@19.1.1))(@types/react@19.1.9)(react-dom@19.1.1(react@19.1.1))(react@19.1.1))(@mantine/hooks@7.17.8(react@19.1.1))(react-dom@19.1.1(react@19.1.1))(react@19.1.1))(@medplum/core@4.3.10)(@medplum/react-hooks@4.3.10(@medplum/core@4.3.10)(react@19.1.1))(react-dom@19.1.1(react@19.1.1))(react@19.1.1)':
-    dependencies:
-      '@medplum/core': 4.3.10
-      '@medplum/react-hooks': 4.3.10(@medplum/core@4.3.10)(react@19.1.1)
-      react: 19.1.1
-      react-dom: 19.1.1(react@19.1.1)
-    optionalDependencies:
-      '@mantine/core': 7.17.8(@mantine/hooks@7.17.8(react@19.1.1))(@types/react@19.1.9)(react-dom@19.1.1(react@19.1.1))(react@19.1.1)
-      '@mantine/hooks': 7.17.8(react@19.1.1)
-      '@mantine/notifications': 7.17.8(@mantine/core@7.17.8(@mantine/hooks@7.17.8(react@19.1.1))(@types/react@19.1.9)(react-dom@19.1.1(react@19.1.1))(react@19.1.1))(@mantine/hooks@7.17.8(react@19.1.1))(react-dom@19.1.1(react@19.1.1))(react@19.1.1)
 
   '@napi-rs/wasm-runtime@0.2.12':
     dependencies:

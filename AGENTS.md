@@ -36,7 +36,7 @@ This document provides essential context for AI models interacting with this pro
 * **Error Handling:** Structured error hierarchy with specific error types
 * **Demo Applications:**
     * `demo/shc/`: Vanilla JS browser demo for SMART Health Cards QR generation and scanning
-    * `demo/shl/`: Next.js full-stack with Medplum demo for Smart Health Links generation and viewing
+    * `demo/shl/`: Next.js full-stack demo for Smart Health Links generation and viewing
 
 ## 4. Development Workflow & Commands
 
@@ -56,7 +56,7 @@ This document provides essential context for AI models interacting with this pro
     * `pnpm docs:watch`: Generate docs in watch mode
 * **Demo Commands:**
     * `pnpm shc:demo:dev`: Build library and start SMART Health Cards demo
-    * `pnpm shl:demo:dev`: Build library and start Smart Health Links demo (requires Medplum setup)
+    * `pnpm shl:demo:dev`: Build library and start Smart Health Links demo
 * **Validation Commands:**
     * `pnpm validate:examples`: Validate all SHCs examples in the `examples/` directory
 * **Testing Strategy:** Comprehensive test suite covers core functionality with coverage requirements enforced in CI.

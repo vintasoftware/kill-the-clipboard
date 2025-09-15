@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { Bundle } from '@medplum/fhirtypes';
+import type { Bundle } from '@medplum/fhirtypes';
 import { SHL, SHLManifestBuilder, SmartHealthCardIssuer } from 'kill-the-clipboard';
 import { storeManifestBuilder, storePasscode } from '@/lib/storage';
 import { hashPasscode } from '@/lib/auth';
