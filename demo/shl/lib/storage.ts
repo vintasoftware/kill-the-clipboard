@@ -159,3 +159,12 @@ export async function findSHLIdByEntropy(entropy: string): Promise<string | null
 
   return shl?.id || null;
 }
+
+export async function trackRecipientAccess(shlId: string, recipient: string): Promise<void> {
+  await prisma.recipient.create({
+    data: {
+      shlId,
+      recipient,
+    },
+  });
+}

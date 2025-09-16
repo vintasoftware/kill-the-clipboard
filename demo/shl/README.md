@@ -17,6 +17,7 @@ This is a Next.js demo application that demonstrates SMART Health Links (SHL) fu
     - **Manifest serving**: POST manifest endpoint; embeds JWEs ≤ 4 KiB, otherwise returns JWE file URLs
     - **Optional long-term flag (`L`)**: Flag is settable on creation; no polling implemented yet
     - **Failed attempt tracking**: Tracks failed passcode attempts and permanently invalidates SHLs after exceeding the configured limit (default: 100 attempts)
+    - **Recipient tracking**: Records the name and access time of each recipient who successfully accesses an SHL
 
 ## URL Paths
 
@@ -133,11 +134,13 @@ demo/shl/
 
 ### Database Schema
 
-The demo uses a relational database schema with three main tables:
+The demo uses a relational database schema with the following tables:
 
 - **`shls`**: Stores complete SHL payloads with server-generated CUID 2 IDs
 - **`manifests`**: Stores `SHLManifestBuilder` attributes linked to SHL IDs
+- **`manifest_files`**: Stores metadata about JWE files
 - **`passcodes`**: Stores Argon2id-hashed passcodes and failure tracking linked to SHL IDs
+- **`recipients`**: Tracks recipient access with SHL ID, recipient name, and access time
 
 ### Database Management
 
@@ -148,4 +151,4 @@ For development purposes, you can inspect and manage the database using Prisma S
 npx prisma studio
 ```
 
-This will open a web interface at [http://localhost:5555](http://localhost:5555) where you can view and edit the stored SHLs, manifests, and passcodes.
+This will open a web interface at [http://localhost:5555](http://localhost:5555) where you can view and edit the DB tables.

@@ -17,8 +17,9 @@ model Shl {
   createdAt DateTime @default(now())
 
   // Relations
-  manifest Manifest?
-  passcode Passcode?
+  manifest   Manifest?
+  passcode   Passcode?
+  recipients Recipient[]
 
   @@map("shls")
 }
@@ -63,4 +64,17 @@ model Passcode {
   shl Shl @relation(fields: [shlId], references: [id], onDelete: Cascade)
 
   @@map("passcodes")
+}
+
+model Recipient {
+  id         Int      @id @default(autoincrement())
+  shlId      String
+  recipient  String
+  accessTime DateTime @default(now())
+
+  // Relations
+  shl Shl @relation(fields: [shlId], references: [id], onDelete: Cascade)
+
+  @@index([shlId])
+  @@map("recipients")
 }
