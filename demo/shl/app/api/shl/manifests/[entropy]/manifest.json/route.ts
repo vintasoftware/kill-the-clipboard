@@ -30,7 +30,7 @@ export async function POST(
   const shlId = await findSHLIdByEntropy(entropy);
   if (!shlId) {
     return NextResponse.json(
-      { error: 'Smart Health Link not found' },
+      { error: 'SMART Health Link not found' },
       { status: 404 }
     );
   }
@@ -41,7 +41,7 @@ export async function POST(
   // Check if SHL is invalidated due to too many failed attempts
   if (await isSHLInvalidated(shlId)) {
     return NextResponse.json(
-      { error: 'Smart Health Link not found' },
+      { error: 'SMART Health Link not found' },
       { status: 404 }
     );
   }
@@ -51,7 +51,7 @@ export async function POST(
   const builderAttrs = await getManifestBuilder(shlId);
   if (!shlPayload || !builderAttrs) {
     return NextResponse.json(
-      { error: 'Smart Health Link not found' },
+      { error: 'SMART Health Link not found' },
       { status: 404 }
     );
   }
@@ -73,7 +73,7 @@ export async function POST(
       if (invalidated) {
         // Return 404 instead of 401 to hide the fact that the SHL exists
         return NextResponse.json(
-          { error: 'Smart Health Link not found' },
+          { error: 'SMART Health Link not found' },
           { status: 404 }
         );
       }
@@ -101,7 +101,7 @@ export async function POST(
   } catch (error) {
     if (error instanceof SHLExpiredError) {
       return NextResponse.json(
-        { error: 'Smart Health Link not found' },
+        { error: 'SMART Health Link not found' },
         { status: 404 }
       );
     }

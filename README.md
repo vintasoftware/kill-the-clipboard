@@ -2,7 +2,7 @@
 
 ![Tests Badge](https://github.com/vintasoftware/kill-the-clipboard/actions/workflows/test-coverage.yml/badge.svg)
 
-JavaScript/TypeScript universal (browser and node) library to generate QR codes containing medical records for patients to share with providers. Implements both the [SMART Health Cards Framework](https://smarthealth.cards/) and [Smart Health Links Specification](https://hl7.org/fhir/uv/smart-health-cards-and-links/links-specification.html) for handling FHIR-based medical records, enabling patients to "Kill the Clipboard" by sharing health data via secure, verifiable QR codes.
+JavaScript/TypeScript universal (browser and node) library to generate QR codes containing medical records for patients to share with providers. Implements both the [SMART Health Cards Framework](https://smarthealth.cards/) and [SMART Health Links Specification](https://hl7.org/fhir/uv/smart-health-cards-and-links/links-specification.html) for handling FHIR-based medical records, enabling patients to "Kill the Clipboard" by sharing health data via secure, verifiable QR codes.
 
 This aligns with the [CMS Interoperability Framework](https://www.cms.gov/health-technology-ecosystem/interoperability-framework) call to action for Patient Facing Apps to "Kill the Clipboard":
 
@@ -19,7 +19,7 @@ This aligns with the [CMS Interoperability Framework](https://www.cms.gov/health
 - QR code generation with optional chunking support
 - Decoding / Verification support
 
-**Smart Health Links (SHL)**
+**SMART Health Links (SHL)**
 - SHLink URI generation per SHL specification
 - `SHLManifestBuilder` for producing manifests with embedded and location file entries
 - `SHLViewer` to resolve SHLinks, fetch manifests, and decrypt content
@@ -38,9 +38,9 @@ This aligns with the [CMS Interoperability Framework](https://www.cms.gov/health
 
 Interactive browser demo that showcases QR code generation and camera-based scanning: https://vintasoftware.github.io/kill-the-clipboard/demo/shc/
 
-## Smart Health Links Demo
+## SMART Health Links Demo
 
-For Smart Health Links (SHL), see the Next.js demo application under `demo/shl/` and follow its README to run locally.
+For SMART Health Links (SHL), see the Next.js demo application under `demo/shl/` and follow its README to run locally.
 
 ## Installation
 
@@ -143,7 +143,7 @@ const healthCardFromQR = await reader.fromQRNumeric(qrNumericStrings);
 console.log('Bundle from QR:', await healthCardFromQR.asBundle());
 ```
 
-### Smart Health Links Quick Start
+### SMART Health Links Quick Start
 
 SHLinks enable encrypted, link-based sharing of health information. The flow involves:
 

@@ -1179,7 +1179,7 @@ export const PatientDataBundleDisplay: React.FC<PatientDataBundleDisplayProps> =
           <Card withBorder p="sm" style={{ backgroundColor: '#f8f9fa' }}>
             <Group justify="space-between" align="center">
               <Text size="sm" fw={500}>
-                Select sections to include in your Smart Health Link:
+                Select sections to include in your SMART Health Link:
               </Text>
               <Group gap="xs">
                 {!allSectionsSelected && (

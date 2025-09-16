@@ -1,4 +1,4 @@
-// Encryption and decryption functions for Smart Health Links
+// Encryption and decryption functions for SMART Health Links
 import { base64url, CompactEncrypt, compactDecrypt } from 'jose'
 import { compressDeflateRaw, decompressDeflateRaw } from '../common/compression.js'
 import { SHLDecryptionError, SHLError } from './errors.js'
@@ -7,7 +7,7 @@ import type { SHLFileContentType } from './types.js'
 /**
  * Encrypts content as JWE Compact using A256GCM direct encryption.
  *
- * Follows the Smart Health Links specification for file encryption using:
+ * Follows the SMART Health Links specification for file encryption using:
  * - Direct key agreement (alg: 'dir')
  * - AES-256-GCM encryption (enc: 'A256GCM')
  * - Optional raw DEFLATE compression (zip: 'DEF')
@@ -104,7 +104,7 @@ export async function encryptSHLFile(params: {
 /**
  * Decrypts JWE Compact using A256GCM direct decryption.
  *
- * Follows the Smart Health Links specification for file decryption.
+ * Follows the SMART Health Links specification for file decryption.
  * The function:
  * 1. Decrypts the JWE using the provided key
  * 2. Extracts the content type from the cty header

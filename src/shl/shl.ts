@@ -4,13 +4,13 @@ import { SHLError, SHLFormatError } from './errors.js'
 import type { SHLFlag, SHLinkPayloadV1, SHLQREncodeParams } from './types.js'
 
 /**
- * Immutable SHL class representing a Smart Health Link payload and URI.
+ * Immutable SHL class representing a SMART Health Link payload and URI.
  *
  * This class handles the SHLink "pointer" - the payload containing url, key, flags, etc.
  * It provides methods to generate SHLink URIs and access payload properties.
  * Use {@link SHLManifestBuilder} to manage the manifest and files referenced by this SHL.
  *
- * Smart Health Links enable secure sharing of health data through encrypted links.
+ * SMART Health Links enable secure sharing of health data through encrypted links.
  * The SHL contains a manifest URL and encryption key, allowing recipients to fetch
  * and decrypt the shared health information.
  *
@@ -68,7 +68,7 @@ export class SHL {
   }
 
   /**
-   * Create an immutable SHL representing a Smart Health Link payload and URI.
+   * Create an immutable SHL representing a SMART Health Link payload and URI.
    *
    * The SHL payload contains a cryptographically secure manifest URL and encryption key.
    * The manifest URL is constructed as: `${baseManifestURL}/${entropy}/${manifestPath}` where `entropy` is a
@@ -145,7 +145,7 @@ export class SHL {
   }
 
   /**
-   * Generate the SHLink URI following the Smart Health Links specification.
+   * Generate the SHLink URI following the SMART Health Links specification.
    *
    * Creates a `shlink:/` URI with base64url-encoded JSON payload containing
    * the manifest URL, encryption key, and optional metadata (expiration, flags, label).
@@ -190,7 +190,7 @@ export class SHL {
    * Get the full manifest URL that servers must handle.
    *
    * Returns the complete HTTPS URL where the manifest can be fetched via POST request
-   * as specified in the Smart Health Links protocol.
+   * as specified in the SMART Health Links protocol.
    *
    * @returns Complete manifest URL (e.g., 'https://shl.example.org/manifests/abc123.../manifest.json')
    */
@@ -257,7 +257,7 @@ export class SHL {
   /**
    * Get the SHL payload version.
    *
-   * Always returns 1 for the current Smart Health Links v1 specification.
+   * Always returns 1 for the current SMART Health Links v1 specification.
    *
    * @returns Version number (always 1)
    */
@@ -409,7 +409,7 @@ export class SHL {
   /**
    * Static method to validate a SHLink payload structure.
    *
-   * Validates that the payload conforms to the Smart Health Links v1 specification,
+   * Validates that the payload conforms to the SMART Health Links v1 specification,
    * including required fields (url, key), optional fields (exp, flag, label, v),
    * and format constraints (key length, label length, URL validity, flag characters).
    *

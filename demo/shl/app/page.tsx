@@ -33,10 +33,10 @@ export default function HomePage() {
       <Stack gap="xl">
         <div>
           <Title order={1} mb="md">
-            Smart Health Links Demo
+            SMART Health Links Demo
           </Title>
           <Text size="lg" c="dimmed">
-            Create and share health information using Smart Health Links
+            Create and share health information using SMART Health Links
           </Text>
         </div>
 
@@ -50,7 +50,7 @@ export default function HomePage() {
               />
               <Group>
                 <Button size="lg" onClick={handleCreateSHL}>
-                  Create Smart Health Link
+                  Create SMART Health Link
                 </Button>
               </Group>
             </Stack>

@@ -156,7 +156,7 @@ export async function POST(request: NextRequest) {
   } catch (error) {
     console.error('Error creating SHL:', error);
     return NextResponse.json(
-      { error: `Failed to create Smart Health Link: ${error instanceof Error ? error.message : String(error)}` },
+      { error: `Failed to create SMART Health Link: ${error instanceof Error ? error.message : String(error)}` },
       { status: 500 }
     );
   }

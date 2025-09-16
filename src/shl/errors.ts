@@ -1,7 +1,7 @@
-// Error Classes for Smart Health Links
+// Error Classes for SMART Health Links
 
 /**
- * Base error class for Smart Health Links operations.
+ * Base error class for SMART Health Links operations.
  *
  * @public
  * @group SHL

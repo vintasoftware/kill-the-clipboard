@@ -1,4 +1,4 @@
-// Types for Smart Health Links
+// Types for SMART Health Links
 import type { List, Resource } from '@medplum/fhirtypes'
 import type { SmartHealthCard } from '../shc/shc.js'
 import type { QREncodeParams } from '../shc/types.js'
@@ -6,7 +6,7 @@ import type { QREncodeParams } from '../shc/types.js'
 /**
  * FHIR R4 Resource type re-exported from @medplum/fhirtypes for convenience.
  *
- * Represents any valid FHIR R4 resource that can be shared via Smart Health Links.
+ * Represents any valid FHIR R4 resource that can be shared via SMART Health Links.
  * This includes Patient, Bundle, Observation, Condition, and all other FHIR resource types.
  *
  * @public
@@ -18,7 +18,7 @@ export type FHIRResource = Resource
 /**
  * SHL flags supported by this implementation.
  *
- * Flags modify the behavior of Smart Health Links:
+ * Flags modify the behavior of SMART Health Links:
  * - `'L'`: Long-term - Recipients may poll the manifest URL for updates over time
  * - `'P'`: Passcode-protected - A passcode is required to access the manifest
  * - `'U'`: Direct file - Resolves to a single encrypted file accessible via `GET`, bypassing the manifest

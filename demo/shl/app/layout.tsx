@@ -8,8 +8,8 @@ import { theme } from './theme';
 import { Notifications } from '@mantine/notifications';
 
 export const metadata: Metadata = {
-  title: 'SHL Demo - Smart Health Links',
-  description: 'Demo application for Smart Health Links using Next.js',
+  title: 'SHL Demo - SMART Health Links',
+  description: 'Demo application for SMART Health Links using Next.js',
   icons: {
     icon: '/favicon.svg',
   },

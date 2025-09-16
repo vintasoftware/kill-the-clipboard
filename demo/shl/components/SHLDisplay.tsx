@@ -54,7 +54,7 @@ export function SHLDisplay({ shlUri, onReset }: SHLDisplayProps) {
       <Stack gap="lg">
         <div>
           <Title order={2} mb="xs">
-            Smart Health Link Created
+            SMART Health Link Created
           </Title>
           <Text size="sm" c="dimmed">
             Your health information is now securely accessible via this link.
@@ -68,7 +68,7 @@ export function SHLDisplay({ shlUri, onReset }: SHLDisplayProps) {
 
         <Box>
           <Text size="sm" fw={500} mb="xs">
-            Smart Health Link:
+            SMART Health Link:
           </Text>
           <Code block>{shlUri}</Code>
         </Box>
@@ -127,7 +127,7 @@ export function SHLDisplay({ shlUri, onReset }: SHLDisplayProps) {
                 bg="gray.0"
               >
                 {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img src={qrCodeDataUrl} alt="Smart Health Link QR Code" />
+                <img src={qrCodeDataUrl} alt="SMART Health Link QR Code" />
               </Box>
             ) : isGeneratingQR ? (
               <Box

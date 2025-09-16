@@ -23,12 +23,12 @@ import type {
 } from './types.js'
 
 /**
- * SHL Viewer handles parsing and resolving Smart Health Links.
+ * SHL Viewer handles parsing and resolving SMART Health Links.
  *
  * This class processes SHLink URIs and fetches/decrypts the referenced content.
  * It supports both embedded and location-based file descriptors, handles
  * passcode authentication, and validates manifest structures according to
- * the Smart Health Links specification.
+ * the SMART Health Links specification.
  *
  * The viewer automatically handles:
  * - SHLink URI parsing and payload validation

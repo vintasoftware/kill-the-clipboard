@@ -1,4 +1,4 @@
-// Smart Health Links barrel export
+// SMART Health Links barrel export
 
 export * from './crypto.js'
 export * from './errors.js'

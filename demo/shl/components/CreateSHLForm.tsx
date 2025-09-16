@@ -100,7 +100,7 @@ export function CreateSHLForm({ onSHLCreated, onCancel, selectedSections = {} }:
 
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({ error: 'Unknown error' }));
-        throw new Error(errorData.error || 'Failed to create Smart Health Link');
+        throw new Error(errorData.error || 'Failed to create SMART Health Link');
       }
 
       const { shlUri } = await response.json();
@@ -110,7 +110,7 @@ export function CreateSHLForm({ onSHLCreated, onCancel, selectedSections = {} }:
       console.error('Error creating SHL:', error);
       notifications.show({
         title: 'Error',
-        message: error instanceof Error ? error.message : 'Failed to create Smart Health Link',
+        message: error instanceof Error ? error.message : 'Failed to create SMART Health Link',
         color: 'red',
       });
     } finally {
@@ -124,7 +124,7 @@ export function CreateSHLForm({ onSHLCreated, onCancel, selectedSections = {} }:
       <Stack gap="lg">
         <div>
           <Text size="lg" fw={500} mb="xs">
-            Create Smart Health Link
+            Create SMART Health Link
           </Text>
           <Text size="sm" c="dimmed">
             This will create a secure link to your health information that you can share with others.
@@ -193,7 +193,7 @@ export function CreateSHLForm({ onSHLCreated, onCancel, selectedSections = {} }:
                 Cancel
               </Button>
               <Button type="submit" loading={isSubmitting} disabled={isSubmitting}>
-                Create Smart Health Link
+                Create SMART Health Link
               </Button>
             </Group>
           </Stack>

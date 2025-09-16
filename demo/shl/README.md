@@ -1,19 +1,19 @@
-# Smart Health Links (SHL) Demo
+# SMART Health Links (SHL) Demo
 
-This is a Next.js demo application that demonstrates Smart Health Links (SHL) functionality using International Patient Summary (IPS) data and the `kill-the-clipboard` library.
+This is a Next.js demo application that demonstrates SMART Health Links (SHL) functionality using International Patient Summary (IPS) data and the `kill-the-clipboard` library.
 
 **⚠️ Warning: This is a demo project using filesystem storage for SHL files. Not suitable for production or deployment to serverless platforms like Vercel. For production use, implement proper cloud storage and security measures.**
 
 ## What this demo implements
 
 - **International Patient Summary (IPS) Integration**: Uses IPS-formatted FHIR Bundle data as defined by the [HL7 IPS Implementation Guide](https://hl7.org/fhir/uv/ips/) for demonstrating comprehensive patient health information display
-- **Smart Health Link Generator**: Creates Smart Health Links that point to a manifest; `U` flag unsupported
+- **SMART Health Link Generator**: Creates SMART Health Links that point to a manifest; `U` flag unsupported
     - **ID-based Database Design**: Uses server-generated CUID 2 IDs for identifying SHLs in the database
     - **Passcode protection (`P` flag)**: Server-enforced passcode prompted on the viewer; passcodes are stored as Argon2id hashes in SQLite database using OWASP recommended security parameters
     - **Persistent SHL Storage**: Complete SHL payloads, `SHLManifestBuilder` state, and passcode hashes stored in SQLite database using Prisma ORM with proper relational structure
     - **File storage**: Encrypted JWE files persisted to local filesystem (not suitable for production deployment)
     - **QR code rendering**: Rendering of SHL QR codes using `qr` library
-- **Smart Health Link Viewer**: Resolves `shlink:/...`, prompts for passcode if needed, fetches manifest, decrypts files, and displays FHIR resources
+- **SMART Health Link Viewer**: Resolves `shlink:/...`, prompts for passcode if needed, fetches manifest, decrypts files, and displays FHIR resources
     - **Manifest serving**: POST manifest endpoint; embeds JWEs ≤ 4 KiB, otherwise returns JWE file URLs
     - **Optional long-term flag (`L`)**: Flag is settable on creation; no polling implemented yet
     - **Failed attempt tracking**: Tracks failed passcode attempts and permanently invalidates SHLs after exceeding the configured limit (default: 100 attempts)
@@ -67,11 +67,11 @@ This is a Next.js demo application that demonstrates Smart Health Links (SHL) fu
 
 ## Usage
 
-### Creating a Smart Health Link
+### Creating a SMART Health Link
 
 1. Open the home page at `http://localhost:3000`
 2. The page displays a comprehensive International Patient Summary with all standard IPS sections
-3. Click "Create Smart Health Link" to generate a SHL from this IPS data
+3. Click "Create SMART Health Link" to generate a SHL from this IPS data
 4. Set a passcode (minimum 6 characters); optionally set label and `L` flag
 5. Submit the form; the server will:
    - Generate a server-managed CUID 2-based ID for the SHL
@@ -80,10 +80,10 @@ This is a Next.js demo application that demonstrates Smart Health Links (SHL) fu
    - Persist SHL payload, manifest builder attributes, and passcode hash in SQLite database using Prisma
 6. You'll get a `shlink:/...` URI and a button to open the viewer
 
-### Viewing a Smart Health Link
+### Viewing a SMART Health Link
 
 1. Navigate to `/viewer` (or open from the creation screen)
-2. Paste the Smart Health Link URI (or it is pre-filled when opened via button)
+2. Paste the SMART Health Link URI (or it is pre-filled when opened via button)
 3. Enter the passcode and your name as the recipient
 4. Click "View Health Information" to resolve and decrypt the link content, displaying the International Patient Summary
 

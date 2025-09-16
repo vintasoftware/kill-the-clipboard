@@ -14,7 +14,7 @@ import type {
 } from './types.js'
 
 /**
- * Class that builds the manifest and files for a Smart Health Link.
+ * Class that builds the manifest and files for a SMART Health Link.
  *
  * This class handles file encryption, upload, and manifest building for SHL content.
  * It encrypts files using JWE with A256GCM, manages file storage through provided

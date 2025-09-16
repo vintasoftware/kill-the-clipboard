@@ -4,10 +4,10 @@ This document provides essential context for AI models interacting with this pro
 
 ## 1. Project Overview & Purpose
 
-* **Primary Goal:** This is a TypeScript library designed to facilitate the secure sharing of medical records by generating QR codes, SMART Health Cards and Smart Health Links. It aims to replace manual data entry, which is inefficient and error-prone.
+* **Primary Goal:** This is a TypeScript library designed to facilitate the secure sharing of medical records by generating QR codes, SMART Health Cards and SMART Health Links. It aims to replace manual data entry, which is inefficient and error-prone.
 * **Key Features:** The library implements two main standards for health data interchange:
     * **SMART Health Cards:** Compact verifiable credentials containing essential health information, like vaccination records.
-    * **Smart Health Links:** Secure and shareable links to access comprehensive health records, like a patient's entire medical history.
+    * **SMART Health Links:** Secure and shareable links to access comprehensive health records, like a patient's entire medical history.
 * **Business Domain:** Health-tech, focusing on interoperability and patient data privacy.
 
 ## 2. Core Technologies & Stack
@@ -26,7 +26,7 @@ This document provides essential context for AI models interacting with this pro
 * **Universal Library Design:** The library is built for both browser and Node.js environments with dual ESM/CJS exports.
 * **Modular Architecture:** Core functionality is organized into distinct modules:
     * `src/shc/`: SMART Health Cards implementation (JWS, QR codes, verification)
-    * `src/shl/`: Smart Health Links implementation (encryption, manifest serving, decryption)
+    * `src/shl/`: SMART Health Links implementation (encryption, manifest serving, decryption)
     * `src/common/`: Shared utilities (compression, etc.)
 * **Main Entry Points:**
     * **SmartHealthCardIssuer**: Server-side health card creation and signing
@@ -36,7 +36,7 @@ This document provides essential context for AI models interacting with this pro
 * **Error Handling:** Structured error hierarchy with specific error types
 * **Demo Applications:**
     * `demo/shc/`: Vanilla JS browser demo for SMART Health Cards QR generation and scanning
-    * `demo/shl/`: Next.js full-stack demo for Smart Health Links generation and viewing
+    * `demo/shl/`: Next.js full-stack demo for SMART Health Links generation and viewing
 
 ## 4. Development Workflow & Commands
 
@@ -56,7 +56,7 @@ This document provides essential context for AI models interacting with this pro
     * `pnpm docs:watch`: Generate docs in watch mode
 * **Demo Commands:**
     * `pnpm shc:demo:dev`: Build library and start SMART Health Cards demo
-    * `pnpm shl:demo:dev`: Build library and start Smart Health Links demo
+    * `pnpm shl:demo:dev`: Build library and start SMART Health Links demo
 * **Validation Commands:**
     * `pnpm validate:examples`: Validate all SHCs examples in the `examples/` directory
 * **Testing Strategy:** Comprehensive test suite covers core functionality with coverage requirements enforced in CI.
