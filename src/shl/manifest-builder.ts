@@ -769,12 +769,12 @@ export class SHLManifestBuilder {
    *
    * @example
    * ```typescript
-   * // Serialize for storage
+   * // Serialize for storage (when creating the SHL)
    * const builderState = builder.serialize();
-   * await database.saveSHLBuilder(shlId, builderState);
+   * await database.storeManifestBuilder(shlId, builderState);
    *
-   * // Later, reconstruct the builder
-   * const savedState = await database.loadSHLBuilder(shlId);
+   * // Later, reconstruct the builder (when serving the manifest)
+   * const savedState = await database.getManifestBuilder(shlId);
    * const reconstructedBuilder = SHLManifestBuilder.deserialize({
    *   data: savedState,
    *   uploadFile: myUploadFunction,
@@ -826,10 +826,10 @@ export class SHLManifestBuilder {
    *
    * @example
    * ```typescript
-   * // Load from database
-   * const savedState = await database.loadSHLBuilder(shlId);
+   * // Load from database (when serving the manifest)
+   * const savedState = await database.getManifestBuilder(shlId);
    *
-   * // Reconstruct builder
+   * // Reconstruct builder (implement the same functions as the constructor)
    * const builder = SHLManifestBuilder.deserialize({
    *   data: savedState,
    *   uploadFile: async (content) => await storage.upload(content),
@@ -839,7 +839,7 @@ export class SHLManifestBuilder {
    *   updateFile: async (path, content) => await storage.update(path, content)
    * });
    *
-   * // Builder is ready to use
+   * // Builder is ready to serve the manifest
    * const manifest = await builder.buildManifest();
    * ```
    */

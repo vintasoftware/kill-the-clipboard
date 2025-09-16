@@ -35,6 +35,7 @@ import type { SHLFlag, SHLinkPayloadV1, SHLQREncodeParams } from './types.js'
  * @category High-Level API
  */
 export class SHL {
+  private readonly _id: string | undefined
   private readonly _manifestURL: string
   private readonly _key: string
   private readonly _expirationDate: Date | undefined
@@ -51,12 +52,14 @@ export class SHL {
    * @param core - Core SHL properties
    */
   private constructor(core: {
+    id?: string
     manifestURL: string
     key: string
     expirationDate?: Date
     flag?: SHLFlag
     label?: string
   }) {
+    this._id = core.id
     this._manifestURL = core.manifestURL
     this._key = core.key
     this._expirationDate = core.expirationDate
@@ -72,6 +75,7 @@ export class SHL {
    * 32-byte base64url string (43 chars). The encryption key is a separate 32-byte base64url string (43 chars)
    * placed in the SHLink payload `key`.
    *
+   * @param params.id - Optional server-generated ID for database.
    * @param params.baseManifestURL - Base URL for constructing manifest URLs (e.g., 'https://shl.example.org/manifests/')
    * @param params.manifestPath - Optional manifestPath for constructing manifest URLs (e.g., '/manifest.json')
    * @param params.expirationDate - Optional expiration date for the SHLink. When set, fills the `exp` field in the SHLink payload with Unix timestamp.
@@ -82,8 +86,9 @@ export class SHL {
    *
    * @example
    * ```typescript
-   * // SHL with expiration and passcode protection
+   * // SHL with server-generated ID and passcode protection
    * const shl = SHL.generate({
+   *   id: 'server-generated-uuid',
    *   baseManifestURL: 'https://shl.example.org',
    *   manifestPath: '/manifest.json',
    *   expirationDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000), // 30 days
@@ -93,6 +98,7 @@ export class SHL {
    * ```
    */
   static generate(params: {
+    id?: string
     baseManifestURL: string
     manifestPath?: string
     expirationDate?: Date
@@ -121,6 +127,7 @@ export class SHL {
     const key = base64url.encode(keyEntropy)
 
     const args: {
+      id?: string
       manifestURL: string
       key: string
       expirationDate?: Date
@@ -130,6 +137,7 @@ export class SHL {
       manifestURL,
       key,
     }
+    if (params.id !== undefined) args.id = params.id
     if (expirationDate !== undefined) args.expirationDate = expirationDate
     if (flag !== undefined) args.flag = flag
     if (label !== undefined) args.label = label
@@ -164,6 +172,18 @@ export class SHL {
     const payloadJson = JSON.stringify(payload)
     const payloadB64u = base64url.encode(new TextEncoder().encode(payloadJson))
     return `shlink:/${payloadB64u}`
+  }
+
+  /**
+   * Get the server-generated ID for database if set.
+   *
+   * Returns the optional ID that can be used by server implementations to identify
+   * this SHL in the DB.
+   *
+   * @returns Server-generated ID string, or undefined if no ID was provided
+   */
+  get id(): string | undefined {
+    return this._id
   }
 
   /**
@@ -362,12 +382,14 @@ export class SHL {
    * the provided values from an existing payload.
    *
    * @param payload - Validated SHLink payload from a parsed URI
+   * @param id - Optional server-generated ID for database
    * @returns SHL instance reconstructed from the payload
    *
    * @internal
    */
-  static fromPayload(payload: SHLinkPayloadV1): SHL {
+  static fromPayload(payload: SHLinkPayloadV1, id?: string): SHL {
     const args: {
+      id?: string
       manifestURL: string
       key: string
       expirationDate?: Date
@@ -377,6 +399,7 @@ export class SHL {
       manifestURL: payload.url,
       key: payload.key,
     }
+    if (id !== undefined) args.id = id
     if (payload.exp !== undefined) args.expirationDate = new Date(payload.exp * 1000)
     if (payload.flag !== undefined) args.flag = payload.flag
     if (payload.label !== undefined) args.label = payload.label

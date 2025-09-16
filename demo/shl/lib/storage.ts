@@ -1,4 +1,4 @@
-import { SerializedSHLManifestBuilder } from 'kill-the-clipboard';
+import { SerializedSHLManifestBuilder, SHLinkPayloadV1 } from 'kill-the-clipboard';
 import { PrismaClient } from '@prisma/client';
 import { JsonObject } from '@prisma/client/runtime/library';
 
@@ -6,25 +6,36 @@ import { JsonObject } from '@prisma/client/runtime/library';
 
 const prisma = new PrismaClient();
 
+export async function createSHL(payload: SHLinkPayloadV1, entropy: string): Promise<string> {
+  const shl = await prisma.shl.create({
+    data: {
+      entropy,
+      payload: payload as unknown as JsonObject,
+    },
+  });
+
+  return shl.id;
+}
+
 export async function storeManifestBuilder(
-  entropy: string,
+  shlId: string,
   builderState: SerializedSHLManifestBuilder,
 ): Promise<void> {
   await prisma.manifest.upsert({
-    where: { entropy },
+    where: { shlId },
     update: {
       builderState: builderState as unknown as JsonObject,
     },
     create: {
-      entropy,
+      shlId,
       builderState: builderState as unknown as JsonObject,
     },
   });
 }
 
-export async function getManifestBuilder(entropy: string): Promise<SerializedSHLManifestBuilder | null> {
+export async function getManifestBuilder(shlId: string): Promise<SerializedSHLManifestBuilder | null> {
   const manifest = await prisma.manifest.findUnique({
-    where: { entropy },
+    where: { shlId },
   });
 
   if (!manifest) {
@@ -34,38 +45,38 @@ export async function getManifestBuilder(entropy: string): Promise<SerializedSHL
   return manifest.builderState as unknown as SerializedSHLManifestBuilder;
 }
 
-export async function storePasscode(entropy: string, hashedPasscode: string): Promise<void> {
+export async function storePasscode(shlId: string, hashedPasscode: string): Promise<void> {
   await prisma.passcode.upsert({
-    where: { entropy },
+    where: { shlId },
     update: {
       hashedPasscode,
     },
     create: {
-      entropy,
+      shlId,
       hashedPasscode,
     },
   });
 }
 
-export async function getStoredPasscode(entropy: string): Promise<string | null> {
+export async function getStoredPasscode(shlId: string): Promise<string | null> {
   const passcode = await prisma.passcode.findUnique({
-    where: { entropy },
+    where: { shlId },
   });
 
   return passcode?.hashedPasscode || null;
 }
 
-export async function isSHLInvalidated(entropy: string): Promise<boolean> {
+export async function isSHLInvalidated(shlId: string): Promise<boolean> {
   const passcode = await prisma.passcode.findUnique({
-    where: { entropy },
+    where: { shlId },
   });
 
   return passcode?.isInvalidated || false;
 }
 
-export async function incrementFailedAttempts(entropy: string, maxAttempts: number): Promise<{ invalidated: boolean; attempts: number }> {
+export async function incrementFailedAttempts(shlId: string, maxAttempts: number): Promise<{ invalidated: boolean; attempts: number }> {
   const updated = await prisma.passcode.update({
-    where: { entropy },
+    where: { shlId },
     data: {
       failedAttempts: {
         increment: 1,
@@ -77,7 +88,7 @@ export async function incrementFailedAttempts(entropy: string, maxAttempts: numb
 
   if (shouldInvalidate && !updated.isInvalidated) {
     await prisma.passcode.update({
-      where: { entropy },
+      where: { shlId },
       data: {
         isInvalidated: true,
       },
@@ -88,4 +99,19 @@ export async function incrementFailedAttempts(entropy: string, maxAttempts: numb
     invalidated: shouldInvalidate,
     attempts: updated.failedAttempts,
   };
+}
+
+export function extractEntropyFromURL(url: string): string | null {
+  // URL format: https://shl.example.org/manifests/{entropy}/manifest.json
+  const match = url.match(/\/manifests\/([^/]+)\/?.*/);
+  return match ? match[1] : null;
+}
+
+export async function findSHLIdByEntropy(entropy: string): Promise<string | null> {
+  const shl = await prisma.shl.findUnique({
+    where: { entropy },
+    select: { id: true },
+  });
+
+  return shl?.id || null;
 }

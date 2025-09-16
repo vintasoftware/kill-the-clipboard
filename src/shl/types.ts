@@ -362,21 +362,6 @@ export interface SerializedSHLManifestBuilderFile {
  * Servers should store this structure in their database and use it to
  * recreate builders when handling manifest requests.
  *
- * @example
- * ```typescript
- * // Save builder state
- * const builderState = builder.serialize();
- * await database.saveSHL(shlId, builderState);
- *
- * // Load and reconstruct later
- * const savedState = await database.loadSHL(shlId);
- * const builder = SHLManifestBuilder.deserialize({
- *   data: savedState,
- *   uploadFile: myUploadFn,
- *   getFileURL: myGetURLFn
- * });
- * ```
- *
  * @public
  * @group SHL
  * @category Types

@@ -10,22 +10,41 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+model Shl {
+  id        String   @id @default(cuid(2))
+  entropy   String   @unique // Extracted from manifest URL for efficient lookups
+  payload   Json     // JSON serialized SHLink payload
+  createdAt DateTime @default(now())
+
+  // Relations
+  manifest Manifest?
+  passcode Passcode?
+
+  @@map("shls")
+}
+
 model Manifest {
   id           Int      @id @default(autoincrement())
-  entropy      String   @unique
+  shlId        String   @unique
   builderState Json     // JSON serialized SHLManifestBuilder
   createdAt    DateTime @default(now())
+
+  // Relations
+  shl Shl @relation(fields: [shlId], references: [id], onDelete: Cascade)
 
   @@map("manifests")
 }
 
 model Passcode {
   id             Int      @id @default(autoincrement())
-  entropy        String   @unique
+  shlId          String   @unique
   hashedPasscode String
   failedAttempts Int      @default(0)
   isInvalidated  Boolean  @default(false)
   createdAt      DateTime @default(now())
+
+  // Relations
+  shl Shl @relation(fields: [shlId], references: [id], onDelete: Cascade)
 
   @@map("passcodes")
 }

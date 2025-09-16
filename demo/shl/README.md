@@ -6,10 +6,11 @@ This is a Next.js demo application that demonstrates Smart Health Links (SHL) fu
 
 ## What this demo implements
 
-- **International Patient Summary (IPS) Integration**: Uses real IPS-formatted FHIR Bundle data as defined by the [HL7 IPS Implementation Guide](https://hl7.org/fhir/uv/ips/) for demonstrating comprehensive patient health information display
+- **International Patient Summary (IPS) Integration**: Uses IPS-formatted FHIR Bundle data as defined by the [HL7 IPS Implementation Guide](https://hl7.org/fhir/uv/ips/) for demonstrating comprehensive patient health information display
 - **Smart Health Link Generator**: Creates Smart Health Links that point to a manifest; `U` flag unsupported
+    - **ID-based Database Design**: Uses server-generated CUID 2 IDs for identifying SHLs in the database
     - **Passcode protection (`P` flag)**: Server-enforced passcode prompted on the viewer; passcodes are stored as Argon2id hashes in SQLite database using OWASP recommended security parameters
-    - **Persistent Manifest storage**: Serialized `SHLManifestBuilder` state and passcode hashes stored in SQLite database using Prisma ORM.
+    - **Persistent SHL Storage**: Complete SHL payloads, `SHLManifestBuilder` state, and passcode hashes stored in SQLite database using Prisma ORM with proper relational structure
     - **File storage**: Encrypted JWE files persisted to local filesystem (not suitable for production deployment)
     - **QR code rendering**: Rendering of SHL QR codes using `qr` library
 - **Smart Health Link Viewer**: Resolves `shlink:/...`, prompts for passcode if needed, fetches manifest, decrypts files, and displays FHIR resources
@@ -27,7 +28,7 @@ This is a Next.js demo application that demonstrates Smart Health Links (SHL) fu
 ## Important limitations
 
 - Uses filesystem storage for SHL files, making it unsuitable for serverless deployment platforms like Vercel
-- Static IPS data only - no real patient data integration
+- Static International Patient Summary (IPS) data only - no real patient data integration
 - No polling for SHLs with `L` flag
 - No rate limiting for manifest requests
 - No authentication or user management (uses static demo data)
@@ -73,9 +74,10 @@ This is a Next.js demo application that demonstrates Smart Health Links (SHL) fu
 3. Click "Create Smart Health Link" to generate a SHL from this IPS data
 4. Set a passcode (minimum 6 characters); optionally set label and `L` flag
 5. Submit the form; the server will:
+   - Generate a server-managed CUID 2-based ID for the SHL
    - Use the static IPS Bundle data and create a Smart Health Card 
    - Encrypt and save the bundle as JWE files to the local filesystem
-   - Persist builder state and passcode hash in SQLite database using Prisma
+   - Persist SHL payload, manifest builder state, and passcode hash in SQLite database using Prisma
 6. You'll get a `shlink:/...` URI and a button to open the viewer
 
 ### Viewing a Smart Health Link
@@ -125,9 +127,17 @@ demo/shl/
 
 ### API Endpoints
 
-- **`POST /api/shl`**: Create a new Smart Health Link using static IPS data
+- **`POST /api/shl`**: Create a new SMART Health Link
 - **`POST /api/shl/manifests/[entropy]/manifest.json`**: Serve SHL manifests (passcode enforced)
 - **`GET /api/shl/files/[fileId]`**: Serve encrypted JWE files from filesystem storage
+
+### Database Schema
+
+The demo uses a relational database schema with three main tables:
+
+- **`shls`**: Stores complete SHL payloads with server-generated CUID 2 IDs
+- **`manifests`**: Stores serialized `SHLManifestBuilder` state linked to SHL IDs
+- **`passcodes`**: Stores Argon2id-hashed passcodes and failure tracking linked to SHL IDs
 
 ### Database Management
 
@@ -138,4 +148,4 @@ For development purposes, you can inspect and manage the database using Prisma S
 npx prisma studio
 ```
 
-This will open a web interface at [http://localhost:5555](http://localhost:5555) where you can view and edit the stored manifests and passcodes.
+This will open a web interface at [http://localhost:5555](http://localhost:5555) where you can view and edit the stored SHLs, manifests, and passcodes.

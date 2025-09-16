@@ -5,6 +5,26 @@ import crypto from 'crypto';
 // Directory to store SHL files
 const SHL_FILES_DIR = path.join(process.cwd(), 'shl-files');
 
+/**
+ * Read SHL file content from filesystem (used by the file serving route)
+ * @param fileId The file identifier
+ * @returns Promise<string> The file content
+ */
+export async function readSHLFile(fileId: string): Promise<string> {
+  const fileName = `${fileId}.jwe`;
+  const filePath = path.join(SHL_FILES_DIR, fileName);
+
+  try {
+    const content = await fs.readFile(filePath, 'utf8');
+    return content;
+  } catch (error) {
+    if ((error as NodeJS.ErrnoException).code === 'ENOENT') {
+      throw new Error(`File not found: ${fileId}`);
+    }
+    throw error;
+  }
+}
+
 // Ensure the SHL files directory exists
 async function ensureDirectoryExists(): Promise<void> {
   try {
@@ -31,7 +51,7 @@ export async function uploadSHLFile(
 
   // Generate a unique filename using crypto
   const fileId = crypto.randomBytes(16).toString('hex');
-  const fileName = `${fileId}.json`;
+  const fileName = `${fileId}.jwe`;
   const filePath = path.join(SHL_FILES_DIR, fileName);
 
   // Write content to file
@@ -53,26 +73,6 @@ export async function getSHLFileURL(fileId: string): Promise<string> {
 
   // Return a full URL to the file endpoint
   return `${process.env.SHL_SERVER_BASE_URL}/files/${fileId}`;
-}
-
-/**
- * Read SHL file content from filesystem (used by the file serving route)
- * @param fileId The file identifier
- * @returns Promise<string> The file content
- */
-export async function readSHLFile(fileId: string): Promise<string> {
-  const fileName = `${fileId}.json`;
-  const filePath = path.join(SHL_FILES_DIR, fileName);
-
-  try {
-    const content = await fs.readFile(filePath, 'utf8');
-    return content;
-  } catch (error) {
-    if ((error as NodeJS.ErrnoException).code === 'ENOENT') {
-      throw new Error(`File not found: ${fileId}`);
-    }
-    throw error;
-  }
 }
 
 /**

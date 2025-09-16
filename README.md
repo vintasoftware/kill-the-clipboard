@@ -147,13 +147,14 @@ console.log('Bundle from QR:', await healthCardFromQR.asBundle());
 
 SHLinks enable encrypted, link-based sharing of health information. The flow involves:
 
-- Server issues an SHLink (creates state, persists SHL builder data, hosts a manifest endpoint, and stores encrypted files)
+- Server issues an SHLink (creates state, attributes an ID to the SHL, persists SHL builder data, hosts a manifest endpoint, and stores encrypted files)
 - Client resolves the SHLink using `SHLViewer`, providing the recipient identifier and (if applicable) a passcode
 
 Server responsibilities are required for a functional SHL implementation. Refer to the demo code in `demo/shl/` for a full working example (manifest endpoint, storage handlers, and passcode handling). In summary, the SHL generation and resolution flow involves:
 
 - On the server side, during SHLink creation:
     1. Create an `SHL` instance with `SHL.generate({ baseManifestURL, manifestPath, expirationDate?, label?, flag? })`
+    2. Attribute a server-generated ID to the SHL (useful to identify the SHL and related models in the database)
     2. Use `SHLManifestBuilder` with implementations for `uploadFile`, `getFileURL`, and `loadFile` that persist encrypted files and return retrievable URLs
     3. Add content: `addFHIRResource({ content, enableCompression? })`, `addHealthCard({ shc, enableCompression? })`
     4. Persist the builder state via `serialize()`
@@ -163,7 +164,7 @@ Server responsibilities are required for a functional SHL implementation. Refer 
     2. Resolve the SHLink using `resolveSHLink({ recipient, passcode?, embeddedLengthMax?, shcReaderConfig? })`
 - On the server side, after client resolves the SHLink:
     1. Implement a POST manifest endpoint at `baseManifestURL + manifestPath`
-    2. On each manifest request, `deserialize()` the builder, call `buildManifest({ embeddedLengthMax? })`, and return the manifest JSON
+    2. On each manifest request, load the builder state from the database, `deserialize()` the builder, call `buildManifest({ embeddedLengthMax? })`, and return the manifest JSON
 
 #### Complete SHL End-to-End Example
 
@@ -188,6 +189,7 @@ const loadFile = async (path: string) => uploadedFiles.get(path);
 
 // 1. [Server side] Generate an SHL
 const shl = SHL.generate({
+  id: 'server-generated-uuid', // Optional: server-generated ID for database
   baseManifestURL: 'https://shl.example.org/manifests/',
   manifestPath: '/manifest.json',
   label: 'Complete Test Card',
@@ -230,6 +232,10 @@ console.log('Share this SHLink:', `https://viewer.example/#${shlinkURI}`);
 const fetchImpl = async (url: string, init?: RequestInit) => {
   // Handle manifest requests
   if (init?.method === 'POST' && url === shl.url) {
+    // Load the builder state from the database
+    const serializedBuilder = await loadBuilder('server-generated-uuid');
+
+    // Reconstruct the builder
     const builder = SHLManifestBuilder.deserialize({
       data: serializedBuilder,
       uploadFile: uploadFile,
@@ -237,6 +243,7 @@ const fetchImpl = async (url: string, init?: RequestInit) => {
       loadFile: loadFile,
     });
 
+    // Build the manifest
     const body = JSON.parse(init.body);
     const manifest = await builder.buildManifest({
       embeddedLengthMax: body.embeddedLengthMax,
@@ -249,7 +256,7 @@ const fetchImpl = async (url: string, init?: RequestInit) => {
     };
   }
 
-  // Handle file requests
+  // Handle file requests (could be an S3-like storage instead)
   const fileId = url.split('/').pop();
   if (init?.method === 'GET' && fileId && uploadedFiles.has(fileId)) {
     return {
@@ -268,7 +275,6 @@ const viewer = new SHLViewer({
   // Note: No need to pass fetch implementation if you have a real server-side implementation:
   fetch: fetchImpl
 });
-
 const resolved = await viewer.resolveSHLink({
   recipient: 'alice@example.org',
   embeddedLengthMax: 4096 // Files smaller than this will be embedded

@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import type { Bundle } from '@medplum/fhirtypes';
 import { SHL, SHLManifestBuilder, SmartHealthCardIssuer } from 'kill-the-clipboard';
-import { storeManifestBuilder, storePasscode } from '@/lib/storage';
+import { createSHL, extractEntropyFromURL, storeManifestBuilder, storePasscode } from '@/lib/storage';
 import { hashPasscode } from '@/lib/auth';
 import { createManifestFileHandlers } from '@/lib/filesystem-file-handlers';
 import ipsBundleData from '@/data/Bundle-bundle-ips-all-sections.json';
@@ -107,6 +107,15 @@ export async function POST(request: NextRequest) {
       label,
     });
 
+    // Extract entropy from the manifest URL for database storage
+    const entropy = extractEntropyFromURL(shl.url);
+    if (!entropy) {
+      return NextResponse.json({ error: 'Invalid manifest URL' }, { status: 500 });
+    }
+
+    // Store the SHL payload in database and get the generated ID
+    const shlId = await createSHL(shl.payload, entropy);
+
     // Create manifest builder with filesystem file storage
     const manifestBuilder = new SHLManifestBuilder({
       shl,
@@ -130,17 +139,12 @@ export async function POST(request: NextRequest) {
     const shc = await shcIssuer.issue(fhirBundle);
     await manifestBuilder.addHealthCard({ shc });
 
-    // Extract manifestID from the manifest URL for database key
-    const manifestUrl = shl.url;
-    const urlParts = manifestUrl.split('/');
-    const manifestID = urlParts[urlParts.length - 2]; // Get the manifestID part before manifest.json
+    // Store the manifest builder state in database using the SHL ID
+    await storeManifestBuilder(shlId, manifestBuilder.serialize());
 
-    // Store the manifest builder state in database
-    await storeManifestBuilder(manifestID, manifestBuilder.serialize());
-
-    // Hash and store the passcode
+    // Hash and store the passcode using the SHL ID
     const { hash } = await hashPasscode(passcode);
-    await storePasscode(manifestID, hash);
+    await storePasscode(shlId, hash);
 
     // Return the SHL URI
     const shlUri = shl.toURI();
