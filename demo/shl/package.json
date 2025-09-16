@@ -20,10 +20,12 @@
     ]
   },
   "dependencies": {
+    "@libsql/client": "^0.15.15",
     "@mantine/core": "7.17.8",
     "@mantine/form": "^8.2.7",
     "@mantine/hooks": "7.17.8",
     "@mantine/notifications": "7.17.8",
+    "@prisma/adapter-libsql": "^6.16.2",
     "@tabler/icons-react": "^3.34.1",
     "argon2": "^0.44.0",
     "kill-the-clipboard": "workspace:../..",

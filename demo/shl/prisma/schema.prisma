@@ -3,11 +3,12 @@
 
 generator client {
   provider = "prisma-client-js"
+  // See: https://docs.turso.tech/sdk/ts/orm/prisma
 }
 
 datasource db {
   provider = "sqlite"
-  url      = env("DATABASE_URL")
+  url      = "file:./shl.db"
 }
 
 model Shl {

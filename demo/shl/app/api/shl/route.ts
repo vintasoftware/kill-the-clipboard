@@ -1,10 +1,17 @@
 import { NextRequest, NextResponse } from 'next/server';
 import type { Bundle } from '@medplum/fhirtypes';
 import { SHL, SHLManifestBuilder, SmartHealthCardIssuer } from 'kill-the-clipboard';
-import { createSHL, extractEntropyFromURL, storeManifestBuilder, storePasscode } from '@/lib/storage';
+import { createSHL, storeManifestBuilder, storePasscode } from '@/lib/storage';
 import { hashPasscode } from '@/lib/auth';
 import { createManifestFileHandlers } from '@/lib/filesystem-file-handlers';
 import ipsBundleData from '@/data/Bundle-bundle-ips-all-sections.json';
+
+// Function to extract entropy from URL
+const extractEntropyFromURL = (url: string): string | null => {
+  // URL format: https://shl.example.org/manifests/{entropy}/manifest.json
+  const match = url.match(/\/manifests\/([^/]+)\/?.*/);
+  return match ? match[1] : null;
+}
 
 // Function to filter bundle based on selected sections
 const filterBundleBySelections = (bundle: Bundle, selectedSections: Record<string, boolean>): Bundle => {

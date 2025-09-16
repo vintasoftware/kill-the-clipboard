@@ -37,6 +37,15 @@ CREATE TABLE "passcodes" (
     CONSTRAINT "passcodes_shlId_fkey" FOREIGN KEY ("shlId") REFERENCES "shls" ("id") ON DELETE CASCADE ON UPDATE CASCADE
 );
 
+-- CreateTable
+CREATE TABLE "recipients" (
+    "id" INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+    "shlId" TEXT NOT NULL,
+    "recipient" TEXT NOT NULL,
+    "accessTime" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT "recipients_shlId_fkey" FOREIGN KEY ("shlId") REFERENCES "shls" ("id") ON DELETE CASCADE ON UPDATE CASCADE
+);
+
 -- CreateIndex
 CREATE UNIQUE INDEX "shls_entropy_key" ON "shls"("entropy");
 
@@ -48,3 +57,6 @@ CREATE INDEX "manifest_files_manifestId_idx" ON "manifest_files"("manifestId");
 
 -- CreateIndex
 CREATE UNIQUE INDEX "passcodes_shlId_key" ON "passcodes"("shlId");
+
+-- CreateIndex
+CREATE INDEX "recipients_shlId_idx" ON "recipients"("shlId");

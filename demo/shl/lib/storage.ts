@@ -1,10 +1,16 @@
+"use server";
+
 import { SHLManifestBuilderDBAttrs, SHLManifestFileDBAttrs, SHLinkPayloadV1 } from 'kill-the-clipboard';
 import { PrismaClient } from '@prisma/client';
 import { JsonObject } from '@prisma/client/runtime/library';
+import { PrismaLibSQL } from '@prisma/adapter-libsql';
 
 // Prisma-based storage for demo purposes
-
-const prisma = new PrismaClient();
+const adapter = new PrismaLibSQL({
+  url: process.env.TURSO_DATABASE_URL || 'file:./prisma/shl.db',
+  authToken: process.env.TURSO_AUTH_TOKEN,
+})
+const prisma = new PrismaClient({ adapter });
 
 export async function createSHL(payload: SHLinkPayloadV1, entropy: string): Promise<string> {
   const shl = await prisma.shl.create({
@@ -143,12 +149,6 @@ export async function incrementFailedAttempts(shlId: string, maxAttempts: number
     invalidated: shouldInvalidate,
     attempts: updated.failedAttempts,
   };
-}
-
-export function extractEntropyFromURL(url: string): string | null {
-  // URL format: https://shl.example.org/manifests/{entropy}/manifest.json
-  const match = url.match(/\/manifests\/([^/]+)\/?.*/);
-  return match ? match[1] : null;
 }
 
 export async function findSHLIdByEntropy(entropy: string): Promise<string | null> {
