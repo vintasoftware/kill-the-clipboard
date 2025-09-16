@@ -4,7 +4,8 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "build": "prisma generate && next build",
+    "postinstall": "prisma generate",
+    "build": "next build",
     "dev": "next dev",
     "lint": "next lint",
     "start": "next start"
