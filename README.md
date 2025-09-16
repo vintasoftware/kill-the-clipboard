@@ -157,14 +157,14 @@ Server responsibilities are required for a functional SHL implementation. Refer 
     2. Attribute a server-generated ID to the SHL (useful to identify the SHL and related models in the database)
     2. Use `SHLManifestBuilder` with implementations for `uploadFile`, `getFileURL`, and `loadFile` that persist encrypted files and return retrievable URLs
     3. Add content: `addFHIRResource({ content, enableCompression? })`, `addHealthCard({ shc, enableCompression? })`
-    4. Persist the builder state via `serialize()`
+    4. Persist the builder state via `toDBAttrs()`
     5. Return the SHLink URI to clients via `shl.toURI()`
 - On the client side, during SHLink resolution:
     1. Create a `SHLViewer` instance with the SHLink URI
     2. Resolve the SHLink using `resolveSHLink({ recipient, passcode?, embeddedLengthMax?, shcReaderConfig? })`
 - On the server side, after client resolves the SHLink:
     1. Implement a POST manifest endpoint at `baseManifestURL + manifestPath`
-    2. On each manifest request, load the builder state from the database, `deserialize()` the builder, call `buildManifest({ embeddedLengthMax? })`, and return the manifest JSON
+    2. On each manifest request, load the builder state from the database, reconstruct the builder with `fromDBAttrs()`, call `buildManifest({ embeddedLengthMax? })`, and return the manifest JSON
 
 #### Complete SHL End-to-End Example
 
@@ -189,7 +189,7 @@ const loadFile = async (path: string) => uploadedFiles.get(path);
 
 // 1. [Server side] Generate an SHL
 const shl = SHL.generate({
-  id: 'server-generated-uuid', // Optional: server-generated ID for database
+  id: 'some-uuid', // Optional: server-generated ID for database
   baseManifestURL: 'https://shl.example.org/manifests/',
   manifestPath: '/manifest.json',
   label: 'Complete Test Card',
@@ -221,8 +221,9 @@ const fhirBundle = {
 };
 await builder.addFHIRResource({ content: fhirBundle });
 
-// 4. [Server side] Serialize builder state for server-side persistence
-const serializedBuilder = builder.serialize();
+// 4. [Server side] Persist the manifest builder state in the database
+const builderAttrs = builder.toDBAttrs();
+await storeBuilderAttrs('some-uuid', builderAttrs); // Implement your own function
 
 // 5. [Server side] Generate the SHLink URI for sharing
 const shlinkURI = shl.toURI();
@@ -233,11 +234,11 @@ const fetchImpl = async (url: string, init?: RequestInit) => {
   // Handle manifest requests
   if (init?.method === 'POST' && url === shl.url) {
     // Load the builder state from the database
-    const serializedBuilder = await loadBuilder('server-generated-uuid');
+    const builderAttrs = await loadBuilderAttrs('some-uuid');  // Implement your own function
 
     // Reconstruct the builder
-    const builder = SHLManifestBuilder.deserialize({
-      data: serializedBuilder,
+    const builder = SHLManifestBuilder.fromDBAttrs({
+      attrs: builderAttrs,
       uploadFile: uploadFile,
       getFileURL: getFileURL,
       loadFile: loadFile,
@@ -284,7 +285,7 @@ const resolved = await viewer.resolveSHLink({
 console.log('Resolved FHIR resources:', resolved.fhirResources);
 ```
 
-This example above demonstrates the complete lifecycle: SHL generation, content addition, serialization for server storage, manifest serving, and client-side resolution. In a real application, you would implement persistent storage for the serialized builder state and serve the manifest endpoint from your backend server.
+This example above demonstrates the complete lifecycle: SHL generation, content addition, manifest builder persistence in server-side database, manifest serving, and client-side resolution. In a real application, you would implement persistence for the manifest builder state and serve the manifest endpoint from your backend server.
 
 ### Error Handling
 
@@ -495,12 +496,12 @@ const config = {
 
 ### Production Deployment Requirements
 
-- **Proper Database**: Use a production database (PostgreSQL, MySQL, etc.) for builder state persistence.
+- **Proper Database**: Use a production database (PostgreSQL, MySQL, etc.) for manifest builder persistence.
 - **Secure Passcode Storage**: Implement proper password hashing with salt and pepper (Argon2 recommended).
 - **Access Control**: Implement proper authentication and authorization for manifest endpoints.
 - **Rate Limiting**: Add rate limiting and abuse protection for manifest and file endpoints.
 - **Monitoring**: Implement logging and monitoring while avoiding sensitive data exposure.
-- **Backup Strategy**: Ensure encrypted files and builder state are properly backed up.
+- **Backup Strategy**: Ensure encrypted files and DB records are properly backed up.
 - **Key Rotation**: Plan for encryption key rotation and migration strategies.
 
 ## Future Work

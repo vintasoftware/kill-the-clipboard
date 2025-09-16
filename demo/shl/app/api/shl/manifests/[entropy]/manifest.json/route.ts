@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { SHLExpiredError, SHLManifestBuilder } from 'kill-the-clipboard';
-import { getManifestBuilder, getStoredPasscode, isSHLInvalidated, incrementFailedAttempts, findSHLIdByEntropy } from '@/lib/storage';
+import { getManifestBuilder, getSHL, getStoredPasscode, isSHLInvalidated, incrementFailedAttempts, findSHLIdByEntropy } from '@/lib/storage';
 import { verifyPasscode } from '@/lib/auth';
 import { createManifestFileHandlers } from '@/lib/filesystem-file-handlers';
 
@@ -46,9 +46,10 @@ export async function POST(
     );
   }
 
-  // Retrieve the stored manifest builder state
-  const builderState = await getManifestBuilder(shlId);
-  if (!builderState) {
+  // Retrieve the DB stored manifest builder attributes
+  const shlPayload = await getSHL(shlId);
+  const builderAttrs = await getManifestBuilder(shlId);
+  if (!shlPayload || !builderAttrs) {
     return NextResponse.json(
       { error: 'Smart Health Link not found' },
       { status: 404 }
@@ -85,8 +86,9 @@ export async function POST(
   }
 
   // Reconstruct the manifest builder
-  const manifestBuilder = SHLManifestBuilder.deserialize({
-    data: builderState,
+  const manifestBuilder = SHLManifestBuilder.fromDBAttrs({
+    shl: shlPayload,
+    attrs: builderAttrs,
     ...createManifestFileHandlers(),
   });
 

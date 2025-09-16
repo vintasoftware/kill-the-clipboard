@@ -238,7 +238,7 @@ describe('SHLManifestBuilder', () => {
     ).rejects.toThrow('File not found at URL: https://files.example.org/id')
   })
 
-  it('should serialize and deserialize builder state correctly', async () => {
+  it('should persist and reconstruct builder state correctly', async () => {
     const issuer = new SmartHealthCardIssuer({
       issuer: 'https://example.com',
       privateKey: testPrivateKeyPKCS8,
@@ -250,14 +250,15 @@ describe('SHLManifestBuilder', () => {
     await manifestBuilder.addHealthCard({ shc: healthCard })
     await manifestBuilder.addFHIRResource({ content: fhirResource })
 
-    const serialized = manifestBuilder.serialize()
-    expect(serialized.shl).toBeDefined()
-    expect(serialized.files).toHaveLength(2)
-    expect(serialized.files[0]?.type).toBe('application/smart-health-card')
-    expect(serialized.files[1]?.type).toBe('application/fhir+json')
+    const builderAttrs = manifestBuilder.toDBAttrs()
+    expect(builderAttrs.files).toHaveLength(2)
+    expect(builderAttrs.files[0]?.type).toBe('application/smart-health-card')
+    expect(builderAttrs.files[1]?.type).toBe('application/fhir+json')
 
-    const deserializedBuilder = SHLManifestBuilder.deserialize({
-      data: serialized,
+    const shlPayload = shl.payload
+    const reconstructedBuilder = SHLManifestBuilder.fromDBAttrs({
+      shl: shlPayload,
+      attrs: builderAttrs,
       uploadFile: async (content: string) => {
         const fileId = `file-${uploadedFiles.size + 1}`
         uploadedFiles.set(fileId, content)
@@ -271,11 +272,11 @@ describe('SHLManifestBuilder', () => {
       },
     })
 
-    expect(deserializedBuilder.files).toHaveLength(2)
-    expect(deserializedBuilder.shl.url).toBe(shl.url)
-    expect(deserializedBuilder.shl.key).toBe(shl.key)
-    expect(deserializedBuilder.files[0]?.type).toBe('application/smart-health-card')
-    expect(deserializedBuilder.files[1]?.type).toBe('application/fhir+json')
+    expect(reconstructedBuilder.files).toHaveLength(2)
+    expect(reconstructedBuilder.shl.url).toBe(shl.url)
+    expect(reconstructedBuilder.shl.key).toBe(shl.key)
+    expect(reconstructedBuilder.files[0]?.type).toBe('application/smart-health-card')
+    expect(reconstructedBuilder.files[1]?.type).toBe('application/fhir+json')
   })
 
   it('should build fresh manifests with short-lived URLs on each request', async () => {
@@ -460,7 +461,7 @@ describe('SHLManifestBuilder', () => {
     expect(manifestId).toBe(expectedEntropySegment)
   })
 
-  it('should handle builder deserialization without optional parameters', async () => {
+  it('should handle builder reconstruction without optional parameters', async () => {
     const issuer = new SmartHealthCardIssuer({
       issuer: 'https://example.com',
       privateKey: testPrivateKeyPKCS8,
@@ -469,7 +470,7 @@ describe('SHLManifestBuilder', () => {
     const healthCard = await issuer.issue(createValidFHIRBundle())
     await manifestBuilder.addHealthCard({ shc: healthCard })
 
-    const serialized = manifestBuilder.serialize()
+    const builderAttrs = manifestBuilder.toDBAttrs()
     const mockFetch = vi.fn(async (url: string) => {
       const fileId = url.split('/').pop()
       if (!fileId)
@@ -480,19 +481,19 @@ describe('SHLManifestBuilder', () => {
       return { ok: true, status: 200, statusText: 'OK', text: async () => content } as Response
     })
 
-    const deserializedBuilder = SHLManifestBuilder.deserialize({
-      data: serialized,
+    const reconstructedBuilder = SHLManifestBuilder.fromDBAttrs({
+      shl: shl.payload,
+      attrs: builderAttrs,
       uploadFile: async () => 'new-file',
       getFileURL: async (path: string) => `https://example.org/${path}`,
       fetch: mockFetch,
     })
 
-    expect(deserializedBuilder.files).toHaveLength(1)
-    expect(deserializedBuilder.shl.url).toBe(shl.url)
+    expect(reconstructedBuilder.files).toHaveLength(1)
+    expect(reconstructedBuilder.shl.url).toBe(shl.url)
   })
 
   it('manifestId throws on malformed manifest URL', () => {
-    // Construct SHL then force an invalid internal URL via serialize/deserialize hack
     const good = SHL.generate({
       baseManifestURL: 'https://shl.example.org',
       manifestPath: '/manifest.json',
@@ -509,11 +510,12 @@ describe('SHLManifestBuilder', () => {
       loadFile: async (p: string) => uploaded.get(p) as string,
     })
 
-    const serialized = builder.serialize()
+    const builderAttrs = builder.toDBAttrs()
     // Corrupt the url path: remove entropy segment
-    serialized.shl.url = 'https://shl.example.org/manifest.json'
-    const corrupted = SHLManifestBuilder.deserialize({
-      data: serialized,
+    const corruptedShlPayload = { ...good.payload, url: 'https://shl.example.org/manifest.json' }
+    const corrupted = SHLManifestBuilder.fromDBAttrs({
+      shl: corruptedShlPayload,
+      attrs: builderAttrs,
       uploadFile: async (_c: string) => 'x',
       getFileURL: async (p: string) => p,
     })
@@ -578,11 +580,15 @@ describe('SHLManifestBuilder', () => {
   })
 
   it('manifestId throws when entropy segment is empty between slashes', () => {
-    const serialized = manifestBuilder.serialize()
+    const builderAttrs = manifestBuilder.toDBAttrs()
     // Create a URL with an empty segment between slashes
-    serialized.shl.url = 'https://shl.example.org/abc//manifest.json'
-    const corrupted = SHLManifestBuilder.deserialize({
-      data: serialized,
+    const corruptedShlPayload = {
+      ...shl.payload,
+      url: 'https://shl.example.org/abc//manifest.json',
+    }
+    const corrupted = SHLManifestBuilder.fromDBAttrs({
+      shl: corruptedShlPayload,
+      attrs: builderAttrs,
       uploadFile: async (_c: string) => 'id',
       getFileURL: async (p: string) => p,
     })
@@ -594,10 +600,14 @@ describe('SHLManifestBuilder', () => {
 
   it('manifestId throws on invalid entropy length', () => {
     // Build a valid builder, then corrupt URL to have a short entropy segment
-    const serialized = manifestBuilder.serialize()
-    serialized.shl.url = 'https://shl.example.org/short/manifest.json'
-    const corrupted = SHLManifestBuilder.deserialize({
-      data: serialized,
+    const builderAttrs = manifestBuilder.toDBAttrs()
+    const corruptedShlPayload = {
+      ...shl.payload,
+      url: 'https://shl.example.org/short/manifest.json',
+    }
+    const corrupted = SHLManifestBuilder.fromDBAttrs({
+      shl: corruptedShlPayload,
+      attrs: builderAttrs,
       uploadFile: async (_c: string) => 'id',
       getFileURL: async (p: string) => p,
     })
@@ -607,10 +617,14 @@ describe('SHLManifestBuilder', () => {
 
   it('manifestId throws on invalid entropy format characters', () => {
     const invalid = '!'.repeat(43)
-    const serialized = manifestBuilder.serialize()
-    serialized.shl.url = `https://shl.example.org/${invalid}/manifest.json`
-    const corrupted = SHLManifestBuilder.deserialize({
-      data: serialized,
+    const builderAttrs = manifestBuilder.toDBAttrs()
+    const corruptedShlPayload = {
+      ...shl.payload,
+      url: `https://shl.example.org/${invalid}/manifest.json`,
+    }
+    const corrupted = SHLManifestBuilder.fromDBAttrs({
+      shl: corruptedShlPayload,
+      attrs: builderAttrs,
       uploadFile: async (_c: string) => 'id',
       getFileURL: async (p: string) => p,
     })
@@ -1027,8 +1041,8 @@ describe('SHLManifestBuilder', () => {
     })
   })
 
-  describe('Serialization with File Management Functions', () => {
-    it('should deserialize builder with file management functions', async () => {
+  describe('Persistence and Reconstruction with File Management Functions', () => {
+    it('should handle persistence with file management functions', async () => {
       const issuer = new SmartHealthCardIssuer({
         issuer: 'https://example.com',
         privateKey: testPrivateKeyPKCS8,
@@ -1038,13 +1052,14 @@ describe('SHLManifestBuilder', () => {
       await manifestBuilder.addHealthCard({ shc: healthCard })
       await manifestBuilder.addFHIRResource({ content: createValidFHIRBundle() })
 
-      const serialized = manifestBuilder.serialize()
+      const builderAttrs = manifestBuilder.toDBAttrs()
 
       const newUploadedFiles = new Map<string, string>()
       const newRemovedFiles = new Set<string>()
 
-      const deserializedBuilder = SHLManifestBuilder.deserialize({
-        data: serialized,
+      const reconstructedBuilder = SHLManifestBuilder.fromDBAttrs({
+        shl: shl.payload,
+        attrs: builderAttrs,
         uploadFile: async (content: string) => {
           const fileId = `new-file-${newUploadedFiles.size + 1}`
           newUploadedFiles.set(fileId, content)
@@ -1069,36 +1084,39 @@ describe('SHLManifestBuilder', () => {
         },
       })
 
-      expect(deserializedBuilder.files).toHaveLength(2)
+      expect(reconstructedBuilder.files).toHaveLength(2)
 
-      // Test that file operations work on deserialized builder
-      const fhirFile = deserializedBuilder.files.find(f => f.type === 'application/fhir+json')
+      // Test that file operations work on reconstructed builder
+      const fhirFile = reconstructedBuilder.files.find(f => f.type === 'application/fhir+json')
       expect(fhirFile).toBeDefined()
       const fhirStoragePath = fhirFile?.storagePath as string
-      await deserializedBuilder.removeFile(fhirStoragePath)
-      expect(deserializedBuilder.files).toHaveLength(1)
+      await reconstructedBuilder.removeFile(fhirStoragePath)
+      expect(reconstructedBuilder.files).toHaveLength(1)
       expect(newRemovedFiles.has(fhirStoragePath)).toBe(true)
     })
 
-    it('should handle deserialization without optional file management functions', async () => {
-      const serialized = manifestBuilder.serialize()
+    it('should handle persistence without file management functions', async () => {
+      const builderAttrs = manifestBuilder.toDBAttrs()
 
-      const deserializedBuilder = SHLManifestBuilder.deserialize({
-        data: serialized,
+      const reconstructedBuilder = SHLManifestBuilder.fromDBAttrs({
+        shl: shl.payload,
+        attrs: builderAttrs,
         uploadFile: async () => 'new-file',
         getFileURL: async (path: string) => `https://example.org/${path}`,
       })
 
-      expect(deserializedBuilder.files).toHaveLength(0)
+      expect(reconstructedBuilder.files).toHaveLength(0)
 
       // Operations requiring file management functions should throw
-      await expect(deserializedBuilder.removeFile('any-path')).rejects.toThrow(
+      await expect(reconstructedBuilder.removeFile('any-path')).rejects.toThrow(
         'File removal is not supported'
       )
 
-      const result = await deserializedBuilder.addFHIRResource({ content: createValidFHIRBundle() })
+      const result = await reconstructedBuilder.addFHIRResource({
+        content: createValidFHIRBundle(),
+      })
       await expect(
-        deserializedBuilder.updateFHIRResource(result.storagePath, createValidFHIRBundle())
+        reconstructedBuilder.updateFHIRResource(result.storagePath, createValidFHIRBundle())
       ).rejects.toThrow('File updates are not supported')
     })
   })

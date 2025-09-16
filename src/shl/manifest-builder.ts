@@ -4,10 +4,11 @@ import { encryptSHLFile } from './crypto.js'
 import { SHLError, SHLExpiredError, SHLManifestError, SHLNetworkError } from './errors.js'
 import { SHL } from './shl.js'
 import type {
-  SerializedSHLManifestBuilder,
-  SerializedSHLManifestBuilderFile,
   SHLFileContentType,
   SHLFileJWE,
+  SHLinkPayloadV1,
+  SHLManifestBuilderDBAttrs,
+  SHLManifestFileDBAttrs,
   SHLManifestFileDescriptor,
   SHLManifestV1,
 } from './types.js'
@@ -20,16 +21,18 @@ import type {
  * upload/retrieval functions, and generates manifests with embedded or location-based
  * file descriptors based on size thresholds.
  *
- * Per the SHL specification, servers SHALL persist the builder state (not the manifest)
- * and generate fresh manifests with short-lived URLs on each request. This ensures
- * URLs remain secure and can be rotated frequently.
+ * Per the SHL specification, servers SHALL generate manifests with short-lived URLs
+ * on each request. This ensures URLs remain secure and can be rotated frequently.
+ * For this to work, the `SHLManifestBuilder` must be reconstructed on each request.
+ * Use the `toDBAttrs` to persist the builder state after the SHL is created,
+ * and the `fromDBAttrs` to reconstruct the builder when handling each manifest request.
  *
  * The builder supports:
- * - Smart Health Card files (JWS format)
  * - FHIR JSON resources
+ * - Smart Health Card files (JWS format)
  * - Optional compression with raw DEFLATE
  * - Embedded vs location-based file serving
- * - Serialization/deserialization for persistence
+ * - toDBAttrs/fromDBAttrs for persistence
  *
  * @example
  * ```typescript
@@ -76,7 +79,7 @@ export class SHLManifestBuilder {
   private readonly updateFile?:
     | ((path: string, content: string, contentType?: SHLFileContentType) => Promise<void>)
     | undefined
-  private readonly _files: SerializedSHLManifestBuilderFile[] = []
+  private readonly _files: SHLManifestFileDBAttrs[] = []
   private readonly maxParallelism: number
 
   /**
@@ -561,7 +564,7 @@ export class SHLManifestBuilder {
    * }
    * ```
    */
-  findFile(storagePath: string): SerializedSHLManifestBuilderFile | null {
+  findFile(storagePath: string): SHLManifestFileDBAttrs | null {
     return this._files.find(file => file.storagePath === storagePath) ?? null
   }
 
@@ -646,7 +649,7 @@ export class SHLManifestBuilder {
    *
    * @returns Array of file metadata objects (copies, safe to modify)
    */
-  get files(): SerializedSHLManifestBuilderFile[] {
+  get files(): SHLManifestFileDBAttrs[] {
     return [...this._files]
   }
 
@@ -750,41 +753,44 @@ export class SHLManifestBuilder {
   }
 
   /**
-   * Return serialized builder state for persistence.
-   * Use the {@link deserialize} method to reconstruct the builder later.
+   * Return database attributes for DB persistence.
+   * Use the {@link fromDBAttrs} method to reconstruct the builder later.
    *
-   * Returns a JSON-serializable object containing the SHL payload and file metadata.
+   * Returns an object containing only the files metadata.
    * This is NOT the same as an SHLManifestV1 - it's the builder's internal state
    * that can be stored in a database and used to reconstruct the builder later.
+   * The SHL payload should be stored separately in the database.
    *
-   * The serialized state includes:
-   * - SHL payload (url, key, expiration, flags, label)
+   * The database attributes include:
    * - File metadata (content types, storage paths, ciphertext lengths)
    *
    * Does NOT include:
+   * - SHL payload (stored separately in database)
    * - Actual file content (stored separately via uploadFile)
    * - Short-lived URLs (generated fresh via getFileURL)
    *
-   * @returns Serialized builder state suitable for database storage ({@link SerializedSHLManifestBuilder})
+   * @returns Database attributes suitable for storage ({@link SHLManifestBuilderDBAttrs})
    *
    * @example
    * ```typescript
-   * // Serialize for storage (when creating the SHL)
-   * const builderState = builder.serialize();
-   * await database.storeManifestBuilder(shlId, builderState);
+   * // Store for persistence (when creating the SHL)
+   * await database.storeSHL(shlId, shl.payload);
+   * const builderAttrs = builder.toDBAttrs();
+   * await database.storeManifestBuilder(shlId, builderAttrs);
    *
    * // Later, reconstruct the builder (when serving the manifest)
-   * const savedState = await database.getManifestBuilder(shlId);
-   * const reconstructedBuilder = SHLManifestBuilder.deserialize({
-   *   data: savedState,
+   * const shlPayload = await database.getSHL(shlId);
+   * const savedAttrs = await database.getManifestBuilder(shlId);
+   * const reconstructedBuilder = SHLManifestBuilder.fromDBAttrs({
+   *   attrs: savedAttrs,
+   *   shl: shlPayload,
    *   uploadFile: myUploadFunction,
    *   getFileURL: myGetURLFunction
    * });
    * ```
    */
-  serialize(): SerializedSHLManifestBuilder {
+  toDBAttrs(): SHLManifestBuilderDBAttrs {
     return {
-      shl: this._shl.payload,
       files: [...this._files],
     }
   }
@@ -810,16 +816,18 @@ export class SHLManifestBuilder {
   }
 
   /**
-   * Reconstruct a builder from serialized state returned by {@link serialize} method.
+   * Reconstruct a builder from database attributes returned by {@link toDBAttrs} method.
    *
-   * Creates a new SHLManifestBuilder instance from previously serialized state.
-   * The SHL instance is reconstructed from the saved payload, and the file
-   * metadata is restored. The provided functions are used for future file operations.
+   * Creates a new SHLManifestBuilder instance from previously stored database attributes.
+   * The provided functions are used for subsequent file operations.
    *
-   * @param params.data - Serialized builder state from a previous `serialize()` call
+   * @param params.shl - SHL payload stored separately in database
+   * @param params.attrs - Database attributes from a previous `toDBAttrs()` call
    * @param params.uploadFile - Function to upload encrypted files (same signature as constructor)
    * @param params.getFileURL - Function to generate file URLs (same signature as constructor)
    * @param params.loadFile - Optional function to load file content (same signature as constructor)
+   * @param params.removeFile - Optional function to remove files (same signature as constructor)
+   * @param params.updateFile - Optional function to update files (same signature as constructor)
    * @param params.fetch - Optional fetch implementation for default loadFile (same signature as constructor)
    * @param params.maxParallelism - Optional maximum number of concurrent file operations (same signature as constructor)
    * @returns New `SHLManifestBuilder` instance with restored state
@@ -827,11 +835,13 @@ export class SHLManifestBuilder {
    * @example
    * ```typescript
    * // Load from database (when serving the manifest)
-   * const savedState = await database.getManifestBuilder(shlId);
+   * const savedAttrs = await database.getManifestBuilder(shlId);
+   * const shlPayload = await database.getSHL(shlId);
    *
-   * // Reconstruct builder (implement the same functions as the constructor)
-   * const builder = SHLManifestBuilder.deserialize({
-   *   data: savedState,
+   * // Reconstruct builder (pass the same functions passed to the constructor)
+   * const builder = SHLManifestBuilder.fromDBAttrs({
+   *   shl: shlPayload,
+   *   attrs: savedAttrs,
    *   uploadFile: async (content) => await storage.upload(content),
    *   getFileURL: async (path) => await storage.getSignedURL(path),
    *   loadFile: async (path) => await storage.download(path),
@@ -843,8 +853,9 @@ export class SHLManifestBuilder {
    * const manifest = await builder.buildManifest();
    * ```
    */
-  static deserialize(params: {
-    data: SerializedSHLManifestBuilder
+  static fromDBAttrs(params: {
+    shl: SHLinkPayloadV1
+    attrs: SHLManifestBuilderDBAttrs
     uploadFile: (content: string, contentType?: SHLFileContentType) => Promise<string>
     getFileURL: (path: string) => Promise<string>
     loadFile?: (path: string) => Promise<string>
@@ -854,7 +865,7 @@ export class SHLManifestBuilder {
     maxParallelism?: number
   }): SHLManifestBuilder {
     // Reconstruct the SHL instance
-    const shl = SHL.fromPayload(params.data.shl)
+    const shl = SHL.fromPayload(params.shl)
 
     // Create the builder
     const builder = new SHLManifestBuilder({
@@ -869,7 +880,7 @@ export class SHLManifestBuilder {
     })
 
     // Restore the file metadata
-    builder._files.push(...params.data.files)
+    builder._files.push(...params.attrs.files)
 
     return builder
   }

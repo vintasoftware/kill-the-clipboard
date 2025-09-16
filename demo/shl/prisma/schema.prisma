@@ -24,15 +24,31 @@ model Shl {
 }
 
 model Manifest {
-  id           Int      @id @default(autoincrement())
-  shlId        String   @unique
-  builderState Json     // JSON serialized SHLManifestBuilder
-  createdAt    DateTime @default(now())
+  id        Int      @id @default(autoincrement())
+  shlId     String   @unique
+  createdAt DateTime @default(now())
 
   // Relations
-  shl Shl @relation(fields: [shlId], references: [id], onDelete: Cascade)
+  shl   Shl            @relation(fields: [shlId], references: [id], onDelete: Cascade)
+  files ManifestFile[]
 
   @@map("manifests")
+}
+
+model ManifestFile {
+  id               Int      @id @default(autoincrement())
+  manifestId       Int
+  type             String   // SHLFileContentType: 'application/smart-health-card' | 'application/fhir+json'
+  storagePath      String
+  ciphertextLength Int
+  lastUpdated      String?  // ISO 8601 datetime string
+  createdAt        DateTime @default(now())
+
+  // Relations
+  manifest Manifest @relation(fields: [manifestId], references: [id], onDelete: Cascade)
+
+  @@index([manifestId])
+  @@map("manifest_files")
 }
 
 model Passcode {

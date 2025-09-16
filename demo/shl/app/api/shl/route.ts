@@ -140,7 +140,7 @@ export async function POST(request: NextRequest) {
     await manifestBuilder.addHealthCard({ shc });
 
     // Store the manifest builder state in database using the SHL ID
-    await storeManifestBuilder(shlId, manifestBuilder.serialize());
+    await storeManifestBuilder(shlId, manifestBuilder.toDBAttrs());
 
     // Hash and store the passcode using the SHL ID
     const { hash } = await hashPasscode(passcode);

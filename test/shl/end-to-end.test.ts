@@ -47,8 +47,11 @@ describe('End-to-End SHL Workflow', () => {
     await manifestBuilder.addHealthCard({ shc: healthCard, enableCompression: true })
 
     // Persist the builder state
-    const serialized = manifestBuilder.serialize()
-    expect(serialized.files).toHaveLength(2)
+    const builderAttrs = manifestBuilder.toDBAttrs()
+    expect(builderAttrs.files).toHaveLength(2)
+
+    // Store the SHL payload separately
+    const shlPayload = shl.payload
 
     // Generate the SHLink URI
     const shlinkURI = shl.toURI()
@@ -60,8 +63,9 @@ describe('End-to-End SHL Workflow', () => {
       // Manifest fetch
       if (init?.method === 'POST' && url === shl.url) {
         // Reconstruct builder on each request and build a fresh manifest
-        const reconstructed = SHLManifestBuilder.deserialize({
-          data: serialized,
+        const reconstructed = SHLManifestBuilder.fromDBAttrs({
+          shl: shlPayload,
+          attrs: builderAttrs,
           uploadFile: async (content: string) => {
             const fileId = `file-${uploadedFiles.size + 1}`
             uploadedFiles.set(fileId, content)
@@ -114,6 +118,9 @@ describe('End-to-End SHL Workflow', () => {
       },
     })
 
+    if (!resolved.manifest) {
+      throw new Error('Manifest is undefined')
+    }
     expect(resolved.manifest.files).toHaveLength(2)
     // Check that one file is embedded and the other is a location
     const embeddedFile = resolved.manifest.files.find(f => 'embedded' in f)

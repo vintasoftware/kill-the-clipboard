@@ -1,4 +1,4 @@
-import { SerializedSHLManifestBuilder, SHLinkPayloadV1 } from 'kill-the-clipboard';
+import { SHLManifestBuilderDBAttrs, SHLManifestFileDBAttrs, SHLinkPayloadV1 } from 'kill-the-clipboard';
 import { PrismaClient } from '@prisma/client';
 import { JsonObject } from '@prisma/client/runtime/library';
 
@@ -17,32 +17,76 @@ export async function createSHL(payload: SHLinkPayloadV1, entropy: string): Prom
   return shl.id;
 }
 
+export async function getSHL(shlId: string): Promise<SHLinkPayloadV1 | null> {
+  const shl = await prisma.shl.findUnique({
+    where: { id: shlId },
+  });
+
+  if (!shl) {
+    return null;
+  }
+
+  return shl.payload as unknown as SHLinkPayloadV1;
+}
+
+
 export async function storeManifestBuilder(
   shlId: string,
-  builderState: SerializedSHLManifestBuilder,
+  builderAttrs: SHLManifestBuilderDBAttrs,
 ): Promise<void> {
-  await prisma.manifest.upsert({
-    where: { shlId },
-    update: {
-      builderState: builderState as unknown as JsonObject,
-    },
-    create: {
-      shlId,
-      builderState: builderState as unknown as JsonObject,
-    },
+  // Start a transaction to ensure consistency
+  await prisma.$transaction(async (tx) => {
+    // Upsert the manifest record
+    const manifest = await tx.manifest.upsert({
+      where: { shlId },
+      update: {},
+      create: {
+        shlId,
+      },
+    });
+
+    // Delete existing files for this manifest
+    await tx.manifestFile.deleteMany({
+      where: { manifestId: manifest.id },
+    });
+
+    // Insert new files
+    if (builderAttrs.files.length > 0) {
+      await tx.manifestFile.createMany({
+        data: builderAttrs.files.map(file => ({
+          manifestId: manifest.id,
+          type: file.type,
+          storagePath: file.storagePath,
+          ciphertextLength: file.ciphertextLength,
+          lastUpdated: file.lastUpdated,
+        })),
+      });
+    }
   });
 }
 
-export async function getManifestBuilder(shlId: string): Promise<SerializedSHLManifestBuilder | null> {
+export async function getManifestBuilder(shlId: string): Promise<SHLManifestBuilderDBAttrs | null> {
   const manifest = await prisma.manifest.findUnique({
     where: { shlId },
+    include: {
+      files: true,
+    },
   });
 
   if (!manifest) {
     return null;
   }
 
-  return manifest.builderState as unknown as SerializedSHLManifestBuilder;
+  const files: SHLManifestFileDBAttrs[] = manifest.files.map(file => ({
+    type: file.type as SHLManifestFileDBAttrs['type'],
+    storagePath: file.storagePath,
+    ciphertextLength: file.ciphertextLength,
+    lastUpdated: file.lastUpdated || undefined,
+  }));
+
+  return {
+    files,
+  };
 }
 
 export async function storePasscode(shlId: string, hashedPasscode: string): Promise<void> {

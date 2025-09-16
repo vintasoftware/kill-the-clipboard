@@ -77,7 +77,7 @@ This is a Next.js demo application that demonstrates Smart Health Links (SHL) fu
    - Generate a server-managed CUID 2-based ID for the SHL
    - Use the static IPS Bundle data and create a Smart Health Card 
    - Encrypt and save the bundle as JWE files to the local filesystem
-   - Persist SHL payload, manifest builder state, and passcode hash in SQLite database using Prisma
+   - Persist SHL payload, manifest builder attributes, and passcode hash in SQLite database using Prisma
 6. You'll get a `shlink:/...` URI and a button to open the viewer
 
 ### Viewing a Smart Health Link
@@ -136,7 +136,7 @@ demo/shl/
 The demo uses a relational database schema with three main tables:
 
 - **`shls`**: Stores complete SHL payloads with server-generated CUID 2 IDs
-- **`manifests`**: Stores serialized `SHLManifestBuilder` state linked to SHL IDs
+- **`manifests`**: Stores `SHLManifestBuilder` attributes linked to SHL IDs
 - **`passcodes`**: Stores Argon2id-hashed passcodes and failure tracking linked to SHL IDs
 
 ### Database Management

@@ -314,7 +314,7 @@ export interface SHLFileJWE {
 }
 
 /**
- * Serialized file metadata persisted in database.
+ * File metadata for persisting the files of the {@link SHLManifestBuilder}.
  *
  * Contains metadata about encrypted files without the actual JWE content.
  * Used to reconstruct manifest responses with fresh short-lived URLs.
@@ -328,7 +328,7 @@ export interface SHLFileJWE {
  * @group SHL
  * @category Types
  */
-export interface SerializedSHLManifestBuilderFile {
+export interface SHLManifestFileDBAttrs {
   /**
    * Content type of the encrypted file.
    * Used to generate appropriate file descriptors in manifests.
@@ -353,22 +353,23 @@ export interface SerializedSHLManifestBuilderFile {
 }
 
 /**
- * Serialized builder state persisted in database.
+ * Database attributes for persisting the {@link SHLManifestBuilder} state.
  *
- * This is the complete state needed to reconstruct an SHLManifestBuilder.
- * Contains the SHL payload and file metadata, but NOT the manifest response
- * itself. Manifests are generated fresh on each request with up-to-date URLs.
+ * This holds the files metadata needed to reconstruct an SHLManifestBuilder.
+ * This does NOT contain the SHL payload (stored separately),
+ * nor the manifest response itself. Manifests are generated fresh on each
+ * request with up-to-date URLs (generated with getFileURL from file paths).
  *
  * Servers should store this structure in their database and use it to
- * recreate builders when handling manifest requests.
+ * reconstruct builders when handling manifest requests. The SHL payload
+ * should be stored separately and passed to the fromDBAttrs method.
  *
  * @public
  * @group SHL
  * @category Types
  */
-export interface SerializedSHLManifestBuilder {
-  shl: SHLinkPayloadV1
-  files: SerializedSHLManifestBuilderFile[]
+export interface SHLManifestBuilderDBAttrs {
+  files: SHLManifestFileDBAttrs[]
 }
 
 /**
