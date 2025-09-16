@@ -21,6 +21,8 @@
     ]
   },
   "dependencies": {
+    "@aws-sdk/client-s3": "^3.890.0",
+    "@aws-sdk/s3-request-presigner": "^3.890.0",
     "@libsql/client": "^0.15.15",
     "@mantine/core": "7.17.8",
     "@mantine/form": "^8.2.7",

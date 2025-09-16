@@ -1,11 +1,18 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { readSHLFile } from '@/lib/filesystem-file-handlers';
+import { isProduction, readSHLFile } from '@/lib/storage-factory';
 
 export async function GET(
   _request: NextRequest,
   { params }: { params: Promise<{ fileId: string }> }
 ) {
   try {
+    if (isProduction()) {
+      return NextResponse.json(
+        { error: 'Route not available in production' },
+        { status: 404 }
+      );
+    }
+
     const { fileId } = await params;
 
     // Validate fileId to prevent path traversal

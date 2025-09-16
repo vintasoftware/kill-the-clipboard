@@ -3,7 +3,7 @@ import type { Bundle } from '@medplum/fhirtypes';
 import { SHL, SHLManifestBuilder, SmartHealthCardIssuer } from 'kill-the-clipboard';
 import { createSHL, storeManifestBuilder, storePasscode } from '@/lib/storage';
 import { hashPasscode } from '@/lib/auth';
-import { createManifestFileHandlers } from '@/lib/filesystem-file-handlers';
+import { createManifestFileHandlers } from '@/lib/storage-factory';
 import ipsBundleData from '@/data/Bundle-bundle-ips-all-sections.json';
 
 // Function to extract entropy from URL

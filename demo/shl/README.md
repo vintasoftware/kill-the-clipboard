@@ -2,8 +2,6 @@
 
 This is a Next.js demo application that demonstrates SMART Health Links (SHL) functionality using International Patient Summary (IPS) data and the `kill-the-clipboard` library.
 
-**⚠️ Warning: This is a demo project using filesystem storage for SHL files. Not suitable for production or deployment to serverless platforms like Vercel. For production use, implement proper cloud storage and security measures.**
-
 ## What this demo implements
 
 - **International Patient Summary (IPS) Integration**: Uses IPS-formatted FHIR Bundle data as defined by the [HL7 IPS Implementation Guide](https://hl7.org/fhir/uv/ips/) for demonstrating comprehensive patient health information display
@@ -11,7 +9,7 @@ This is a Next.js demo application that demonstrates SMART Health Links (SHL) fu
     - **ID-based Database Design**: Uses server-generated CUID 2 IDs for identifying SHLs in the database
     - **Passcode protection (`P` flag)**: Server-enforced passcode prompted on the viewer; passcodes are stored as Argon2id hashes in SQLite database using OWASP recommended security parameters
     - **Persistent SHL Storage**: Complete SHL payloads, `SHLManifestBuilder` state, and passcode hashes stored in SQLite database using Prisma ORM with proper relational structure
-    - **File storage**: Encrypted JWE files persisted to local filesystem (not suitable for production deployment)
+    - **File storage**: Encrypted JWE files persisted to local filesystem (development) or Cloudflare R2 (production)
     - **QR code rendering**: Rendering of SHL QR codes using `qr` library
 - **SMART Health Link Viewer**: Resolves `shlink:/...`, prompts for passcode if needed, fetches manifest, decrypts files, and displays FHIR resources
     - **Manifest serving**: POST manifest endpoint; embeds JWEs ≤ 4 KiB, otherwise returns JWE file URLs
@@ -28,7 +26,6 @@ This is a Next.js demo application that demonstrates SMART Health Links (SHL) fu
 
 ## Important limitations
 
-- Uses filesystem storage for SHL files, making it unsuitable for serverless deployment platforms like Vercel
 - Static International Patient Summary (IPS) data only - no real patient data integration
 - No polling for SHLs with `L` flag
 - No rate limiting for manifest requests
@@ -117,11 +114,12 @@ demo/shl/
 ├── lib/
 │   ├── auth.ts                         # Passcode hashing and verification
 │   ├── filesystem-file-handlers.ts     # JWE file upload/storage for SHL files (filesystem)
+│   ├── r2-file-handlers.ts             # JWE file upload/storage for SHL files (Cloudflare R2)
+│   ├── storage-factory.ts              # Environment-aware storage backend selector
 │   └── storage.ts                      # Prisma database storage CRUD functions
 ├── prisma/
 │   ├── migrations/                     # Database migration files
 │   └── schema.prisma                   # Prisma schema definition
-├── shl.db                              # SQLite database file (created at runtime)
 ├── package.json
 └── README.md
 ```
@@ -130,7 +128,7 @@ demo/shl/
 
 - **`POST /api/shl`**: Create a new SMART Health Link
 - **`POST /api/shl/manifests/[entropy]/manifest.json`**: Serve SHL manifests (passcode enforced)
-- **`GET /api/shl/files/[fileId]`**: Serve encrypted JWE files from filesystem storage
+- **`GET /api/shl/files/[fileId]`**: Serve encrypted JWE files (development/filesystem storage only)
 
 ### Database Schema
 

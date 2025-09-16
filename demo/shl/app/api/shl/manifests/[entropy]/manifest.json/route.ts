@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { SHLExpiredError, SHLManifestBuilder } from 'kill-the-clipboard';
 import { getManifestBuilder, getSHL, getStoredPasscode, isSHLInvalidated, incrementFailedAttempts, findSHLIdByEntropy, trackRecipientAccess } from '@/lib/storage';
 import { verifyPasscode } from '@/lib/auth';
-import { createManifestFileHandlers } from '@/lib/filesystem-file-handlers';
+import { createManifestFileHandlers } from '@/lib/storage-factory';
 
 interface ManifestRequest {
   recipient: string;
