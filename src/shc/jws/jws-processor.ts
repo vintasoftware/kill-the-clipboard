@@ -6,6 +6,7 @@ import {
   compactVerify,
   decodeProtectedHeader,
   exportJWK,
+  importJWK,
   importPKCS8,
   importSPKI,
 } from 'jose'
@@ -31,8 +32,8 @@ export class JWSProcessor {
    * Signs a JWT payload using ES256 algorithm.
    *
    * @param payload - JWT payload to sign
-   * @param privateKey - ES256 private key
-   * @param publicKey - ES256 public key (for key ID derivation)
+   * @param privateKey - ES256 private key (CryptoKey, Uint8Array, PEM string, or JsonWebKey)
+   * @param publicKey - ES256 public key for key ID derivation (CryptoKey, Uint8Array, PEM string, or JsonWebKey)
    * @param config.enableCompression - Whether to compress payload with raw DEFLATE (default: true).
    *  When `enableCompression` is true, compresses payload before signing and sets `zip: "DEF"`.
    * @returns Promise resolving to JWS string
@@ -41,8 +42,8 @@ export class JWSProcessor {
    */
   async sign(
     payload: SmartHealthCardJWT,
-    privateKey: CryptoKey | Uint8Array | string,
-    publicKey: CryptoKey | Uint8Array | string,
+    privateKey: CryptoKey | Uint8Array | string | JsonWebKey,
+    publicKey: CryptoKey | Uint8Array | string | JsonWebKey,
     config: { enableCompression?: boolean } = {}
   ): Promise<string> {
     try {
@@ -74,8 +75,11 @@ export class JWSProcessor {
       let key: CryptoKey | Uint8Array
       if (typeof privateKey === 'string') {
         key = await importPKCS8(privateKey, 'ES256')
+      } else if (privateKey && typeof privateKey === 'object' && 'kty' in privateKey) {
+        // JsonWebKey object
+        key = await importJWK(privateKey, 'ES256')
       } else {
-        key = privateKey
+        key = privateKey as CryptoKey | Uint8Array
       }
 
       // Build compact JWS (base64url(header) + '.' + base64url(payloadBytes))
@@ -94,13 +98,16 @@ export class JWSProcessor {
    * Derives RFC7638 JWK Thumbprint (base64url-encoded SHA-256) from a public key to use as kid
    */
   private async deriveKidFromPublicKey(
-    publicKey: CryptoKey | Uint8Array | string
+    publicKey: CryptoKey | Uint8Array | string | JsonWebKey
   ): Promise<string> {
     let keyObj: CryptoKey | Uint8Array
     if (typeof publicKey === 'string') {
       keyObj = await importSPKI(publicKey, 'ES256')
+    } else if (publicKey && typeof publicKey === 'object' && 'kty' in publicKey) {
+      // JsonWebKey object
+      keyObj = await importJWK(publicKey, 'ES256')
     } else {
-      keyObj = publicKey
+      keyObj = publicKey as CryptoKey | Uint8Array
     }
 
     const jwk = await exportJWK(keyObj)
@@ -113,7 +120,7 @@ export class JWSProcessor {
    * Verifies a JWS and returns the decoded payload.
    *
    * @param jws - JWS string to verify
-   * @param publicKey - ES256 public key for verification
+   * @param publicKey - ES256 public key for verification (CryptoKey, Uint8Array, PEM string, or JsonWebKey)
    * @param config.verifyExpiration - Whether to verify the JWT `exp` claim during verification.
    *  When true (default), expired health cards will be rejected.
    *  Set to false to allow expired cards to be accepted.
@@ -127,7 +134,7 @@ export class JWSProcessor {
    */
   async verify(
     jws: string,
-    publicKey: CryptoKey | Uint8Array | string,
+    publicKey: CryptoKey | Uint8Array | string | JsonWebKey,
     config?: { verifyExpiration?: boolean }
   ): Promise<SmartHealthCardJWT> {
     try {
@@ -139,8 +146,11 @@ export class JWSProcessor {
       let key: CryptoKey | Uint8Array
       if (typeof publicKey === 'string') {
         key = await importSPKI(publicKey, 'ES256')
+      } else if (publicKey && typeof publicKey === 'object' && 'kty' in publicKey) {
+        // JsonWebKey object
+        key = await importJWK(publicKey, 'ES256')
       } else {
-        key = publicKey
+        key = publicKey as CryptoKey | Uint8Array
       }
 
       // Verify signature over original compact JWS

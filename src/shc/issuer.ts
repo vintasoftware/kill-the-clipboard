@@ -34,10 +34,18 @@ export class SmartHealthCardIssuer {
    *
    * @example
    * ```typescript
+   * // Using PEM format keys
    * const issuer = new SmartHealthCardIssuer({
    *   issuer: 'https://your-healthcare-org.com',
    *   privateKey: privateKeyPKCS8String, // ES256 private key in PKCS#8 format
    *   publicKey: publicKeySPKIString, // ES256 public key in SPKI format
+   * });
+   *
+   * // Using JsonWebKey format
+   * const issuerJWK = new SmartHealthCardIssuer({
+   *   issuer: 'https://your-healthcare-org.com',
+   *   privateKey: { kty: 'EC', crv: 'P-256', x: '...', y: '...', d: '...' },
+   *   publicKey: { kty: 'EC', crv: 'P-256', x: '...', y: '...' },
    * });
    * ```
    */

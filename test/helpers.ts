@@ -15,6 +15,22 @@ MFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAEnK1jOUDttU3YQmaWYUcJQ/C84E2J
 EQqQipjEJazEpNXKUbJ4GV0zYi4qZqIOC5tBTyAYas7JJ9RW6mFuNysgJA==
 -----END PUBLIC KEY-----`
 
+// JsonWebKey equivalents of the test keys
+export const testPrivateKeyJWK: JsonWebKey = {
+  kty: 'EC',
+  crv: 'P-256',
+  x: 'nK1jOUDttU3YQmaWYUcJQ_C84E2JEQqQipjEJazEpNU',
+  y: 'ylGyeBldM2IuKmaiDgubQU8gGGrOySfUVuphbjcrICQ',
+  d: 'F-y5n2Nu3g2hwBj-uVYulsHxb7VQg-0yIHMBgD0dLww',
+}
+
+export const testPublicKeyJWK: JsonWebKey = {
+  kty: 'EC',
+  crv: 'P-256',
+  x: 'nK1jOUDttU3YQmaWYUcJQ_C84E2JEQqQipjEJazEpNU',
+  y: 'ylGyeBldM2IuKmaiDgubQU8gGGrOySfUVuphbjcrICQ',
+}
+
 export const createValidFHIRBundle = (): FHIRBundle => ({
   resourceType: 'Bundle',
   type: 'collection',

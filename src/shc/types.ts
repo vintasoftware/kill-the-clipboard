@@ -66,15 +66,15 @@ export interface SmartHealthCardConfigParams {
 
   /**
    * ES256 private key for signing health cards.
-   * Can be a WebCrypto CryptoKey, raw bytes as Uint8Array, or PEM-formatted string.
+   * Can be a WebCrypto CryptoKey, raw bytes as Uint8Array, PEM-formatted string, or JsonWebKey object.
    */
-  privateKey: CryptoKey | Uint8Array | string
+  privateKey: CryptoKey | Uint8Array | string | JsonWebKey
 
   /**
    * ES256 public key corresponding to the private key.
    * Used for key ID (`kid`) derivation per SMART Health Cards specification.
    */
-  publicKey: CryptoKey | Uint8Array | string
+  publicKey: CryptoKey | Uint8Array | string | JsonWebKey
 
   /**
    * Optional expiration time in seconds from now.
@@ -116,9 +116,9 @@ export type SmartHealthCardConfig = Required<SmartHealthCardConfigParams>
 export interface SmartHealthCardReaderConfigParams {
   /**
    * ES256 public key for verifying health card signatures.
-   * Can be a WebCrypto CryptoKey, raw bytes as Uint8Array, or PEM-formatted string.
+   * Can be a WebCrypto CryptoKey, raw bytes as Uint8Array, PEM-formatted string, or JsonWebKey object.
    */
-  publicKey?: CryptoKey | Uint8Array | string | null
+  publicKey?: CryptoKey | Uint8Array | string | JsonWebKey | null
 
   /**
    * Whether to optimize FHIR Bundle for QR codes when reading health cards.
@@ -150,10 +150,10 @@ export interface SmartHealthCardReaderConfigParams {
 export type SmartHealthCardReaderConfig = {
   /**
    * ES256 public key for verifying health card signatures.
-   * Can be a WebCrypto CryptoKey, raw bytes as Uint8Array, or PEM-formatted string.
+   * Can be a WebCrypto CryptoKey, raw bytes as Uint8Array, PEM-formatted string, or JsonWebKey object.
    * If `null`, the reader will attempt to resolve the public key from the issuer's JWKS endpoint.
    */
-  publicKey?: CryptoKey | Uint8Array | string | null
+  publicKey?: CryptoKey | Uint8Array | string | JsonWebKey | null
 } & Required<Omit<SmartHealthCardReaderConfigParams, 'publicKey'>>
 
 /**

@@ -15,7 +15,9 @@ import {
   createInvalidBundle,
   createValidFHIRBundle,
   decodeQRFromDataURL,
+  testPrivateKeyJWK,
   testPrivateKeyPKCS8,
+  testPublicKeyJWK,
   testPublicKeySPKI,
 } from '../helpers'
 
@@ -407,6 +409,79 @@ describe('SmartHealthCard', () => {
       await expect(reader.fromQRNumeric('invalid-qr-data')).rejects.toThrow(
         "Invalid QR code format. Expected 'shc:/' prefix."
       )
+    })
+  })
+
+  describe('JsonWebKey support', () => {
+    let issuerJWK: SmartHealthCardIssuer
+    let readerJWK: SmartHealthCardReader
+    let issuerConfigJWK: SmartHealthCardConfig
+    let readerConfigJWK: SmartHealthCardReaderConfigParams
+
+    beforeEach(() => {
+      issuerConfigJWK = {
+        issuer: 'https://example.com/issuer',
+        privateKey: testPrivateKeyJWK,
+        publicKey: testPublicKeyJWK,
+        expirationTime: null,
+        enableQROptimization: false,
+        strictReferences: true,
+      }
+      readerConfigJWK = {
+        publicKey: testPublicKeyJWK,
+        enableQROptimization: false,
+        strictReferences: true,
+      }
+      issuerJWK = new SmartHealthCardIssuer(issuerConfigJWK)
+      readerJWK = new SmartHealthCardReader(readerConfigJWK)
+    })
+
+    it('should issue and verify SMART Health Card with JsonWebKey', async () => {
+      const healthCard = await issuerJWK.issue(validBundle)
+
+      // Verify the health card
+      const verifiedHealthCard = await readerJWK.fromJWS(healthCard.asJWS())
+      expect(verifiedHealthCard.getOriginalBundle()).toEqual(validBundle)
+    })
+
+    it('should generate and decode QR codes with JsonWebKey', async () => {
+      const healthCard = await issuerJWK.issue(validBundle)
+
+      // Generate QR code
+      const qrDataUrls = await healthCard.asQR()
+      expect(qrDataUrls).toBeDefined()
+      expect(qrDataUrls.length).toBeGreaterThan(0)
+      expect(qrDataUrls[0]).toContain('data:image/png;base64')
+
+      // Decode QR code back to numeric string
+      // biome-ignore lint/style/noNonNullAssertion: checked above
+      const qrNumeric = decodeQRFromDataURL(qrDataUrls[0]!)
+      expect(qrNumeric).toBeDefined()
+      expect(qrNumeric).toContain('shc:/')
+
+      if (qrNumeric) {
+        // Read health card from QR
+        const readHealthCard = await readerJWK.fromQRNumeric(qrNumeric)
+        expect(readHealthCard.getOriginalBundle()).toEqual(validBundle)
+      }
+    })
+
+    it('should support cross-key-format verification (PEM to JWK)', async () => {
+      // Issue with PEM keys
+      const healthCardPEM = await issuer.issue(validBundle)
+
+      // Verify with JsonWebKey
+      const verifiedHealthCard = await readerJWK.fromJWS(healthCardPEM.asJWS())
+      expect(verifiedHealthCard.getOriginalBundle()).toEqual(validBundle)
+    })
+
+    it('should support cross-key-format verification (JWK to PEM)', async () => {
+      // Issue with JsonWebKey
+      const healthCardJWK = await issuerJWK.issue(validBundle)
+
+      // Verify with PEM keys
+      const verifiedHealthCard = await reader.fromJWS(healthCardJWK.asJWS())
+      expect(verifiedHealthCard.getOriginalBundle()).toEqual(validBundle)
     })
   })
 

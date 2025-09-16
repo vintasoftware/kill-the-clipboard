@@ -32,8 +32,19 @@ export class SmartHealthCardReader {
    *
    * @example
    * ```typescript
+   * // Using PEM format keys
    * const reader = new SmartHealthCardReader({
    *   publicKey: publicKeySPKIString, // ES256 public key in SPKI format
+   * });
+   *
+   * // Using JsonWebKey format
+   * const readerJWK = new SmartHealthCardReader({
+   *   publicKey: { kty: 'EC', crv: 'P-256', x: '...', y: '...' },
+   * });
+   *
+   * // Using automatic key resolution from issuer JWKS
+   * const readerAuto = new SmartHealthCardReader({
+   *   publicKey: null, // Will resolve from issuer's /.well-known/jwks.json
    * });
    * ```
    */

@@ -11,7 +11,13 @@ import {
   type VerifiableCredential,
   VerifiableCredentialProcessor,
 } from '@/index'
-import { createValidFHIRBundle, testPrivateKeyPKCS8, testPublicKeySPKI } from '../helpers'
+import {
+  createValidFHIRBundle,
+  testPrivateKeyJWK,
+  testPrivateKeyPKCS8,
+  testPublicKeyJWK,
+  testPublicKeySPKI,
+} from '../helpers'
 
 describe('JWSProcessor', () => {
   let processor: JWSProcessor
@@ -75,6 +81,28 @@ describe('JWSProcessor', () => {
       expect(parts).toHaveLength(3)
 
       const verified = await processor.verify(jws, publicKeyCrypto)
+      expect(verified.iss).toBe(validJWTPayload.iss)
+      expect(verified.nbf).toBe(validJWTPayload.nbf)
+    })
+
+    it('should sign with JsonWebKey objects', async () => {
+      const jws = await processor.sign(validJWTPayload, testPrivateKeyJWK, testPublicKeyJWK)
+
+      expect(jws).toBeDefined()
+      expect(typeof jws).toBe('string')
+
+      const parts = jws.split('.')
+      expect(parts).toHaveLength(3)
+
+      const { decodeProtectedHeader, calculateJwkThumbprint } = await import('jose')
+      const header = decodeProtectedHeader(jws)
+      expect(header.alg).toBe('ES256')
+
+      // Verify the kid matches the JWK thumbprint
+      const expectedKid = await calculateJwkThumbprint(testPublicKeyJWK)
+      expect(header.kid).toBe(expectedKid)
+
+      const verified = await processor.verify(jws, testPublicKeyJWK)
       expect(verified.iss).toBe(validJWTPayload.iss)
       expect(verified.nbf).toBe(validJWTPayload.nbf)
     })
@@ -175,6 +203,30 @@ describe('JWSProcessor', () => {
       const jws = await processor.sign(validJWTPayload, testPrivateKeyPKCS8, testPublicKeySPKI)
       const publicKeyCrypto = await importSPKI(testPublicKeySPKI, 'ES256')
       const verifiedPayload = await processor.verify(jws, publicKeyCrypto)
+
+      expect(verifiedPayload).toBeDefined()
+      expect(verifiedPayload.iss).toBe(validJWTPayload.iss)
+      expect(verifiedPayload.nbf).toBe(validJWTPayload.nbf)
+      expect(verifiedPayload.exp).toBe(validJWTPayload.exp)
+      expect(verifiedPayload.vc).toEqual(validJWTPayload.vc)
+    })
+
+    it('should verify JWS with JsonWebKey public key', async () => {
+      const jws = await processor.sign(validJWTPayload, testPrivateKeyJWK, testPublicKeyJWK)
+      const verifiedPayload = await processor.verify(jws, testPublicKeyJWK)
+
+      expect(verifiedPayload).toBeDefined()
+      expect(verifiedPayload.iss).toBe(validJWTPayload.iss)
+      expect(verifiedPayload.nbf).toBe(validJWTPayload.nbf)
+      expect(verifiedPayload.exp).toBe(validJWTPayload.exp)
+      expect(verifiedPayload.vc).toEqual(validJWTPayload.vc)
+    })
+
+    it('should verify JWS created with PEM keys using JsonWebKey', async () => {
+      // Create JWS with PEM keys
+      const jws = await processor.sign(validJWTPayload, testPrivateKeyPKCS8, testPublicKeySPKI)
+      // Verify with JsonWebKey equivalent
+      const verifiedPayload = await processor.verify(jws, testPublicKeyJWK)
 
       expect(verifiedPayload).toBeDefined()
       expect(verifiedPayload.iss).toBe(validJWTPayload.iss)
