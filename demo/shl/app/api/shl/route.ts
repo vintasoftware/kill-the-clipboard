@@ -134,7 +134,7 @@ export async function POST(request: NextRequest) {
     const fhirBundle: Bundle = filterBundleBySelections(originalBundle, selectedSections);
 
     // Add the FHIR bundle to the manifest
-    await manifestBuilder.addFHIRResource({ content: fhirBundle });
+    await manifestBuilder.addFHIRResource({ content: fhirBundle, enableCompression: false });
 
     // Add the FHIR bundle as a Smart Health Card to the manifest
     const shcIssuer = new SmartHealthCardIssuer({
@@ -144,7 +144,7 @@ export async function POST(request: NextRequest) {
       strictReferences: false,
     });
     const shc = await shcIssuer.issue(fhirBundle);
-    await manifestBuilder.addHealthCard({ shc });
+    await manifestBuilder.addHealthCard({ shc, enableCompression: false });
 
     // Store the manifest builder state in database using the SHL ID
     await storeManifestBuilder(shlId, manifestBuilder.toDBAttrs());
