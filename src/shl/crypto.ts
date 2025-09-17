@@ -20,7 +20,6 @@ import type { SHLFileContentType } from './types.js'
  *   Used by decryption to identify file format. Typically 'application/smart-health-card' or 'application/fhir+json'.
  * @param params.enableCompression - Whether to compress content with raw DEFLATE before encryption.
  *   Recommended for verbose content like FHIR JSON. Not recommended for already-compressed content like SMART Health Cards.
- *   Uses the same compression approach as jose 4.x.x for maximum compatibility.
  * @returns JWE Compact serialization string (5 base64url parts separated by dots)
  * @throws {@link SHLError} When encryption fails due to invalid key, content, or crypto operations
  *
@@ -60,28 +59,26 @@ export async function encryptSHLFile(params: {
     const encoder = new TextEncoder()
     let contentBytes = encoder.encode(params.content)
 
+    // Compress if enabled
+    if (params.enableCompression) {
+      contentBytes = await compressDeflateRaw(contentBytes)
+    }
+
     // Decode the base64url key to raw bytes
     const keyBytes = base64url.decode(params.key)
 
-    // Compress plaintext if enabled (matches jose 4.x.x: compress BEFORE encryption)
-    if (params.enableCompression) {
-      const compressedBytes = await compressDeflateRaw(contentBytes)
-      contentBytes = new Uint8Array(compressedBytes)
-    }
-
-    // Build protected header WITHOUT zip (current jose doesn't support it)
+    // Encrypt using jose CompactEncrypt
+    // Note: jose library doesn't support zip header, so we handle compression manually
     const protectedHeader = {
       alg: 'dir',
       enc: 'A256GCM',
       cty: params.contentType,
     }
-
-    // Encrypt the (potentially compressed) content
     const jwe = await new CompactEncrypt(contentBytes)
       .setProtectedHeader(protectedHeader)
       .encrypt(keyBytes)
 
-    // If compression was used, manually add the zip header
+    // If compression was used, we need to manually add the zip header to the JWE
     if (params.enableCompression) {
       // Parse the JWE to add the zip header
       const parts = jwe.split('.')
@@ -123,7 +120,7 @@ export async function encryptSHLFile(params: {
  *
  * @example
  * ```typescript
- * // Decrypt a file (automatically handles both compressed and uncompressed JWEs)
+ * // Decrypt a file
  * const { content, contentType } = await decryptSHLFile({
  *   jwe: 'eyJhbGciOiJkaXIiLCJlbmMiOiJBMjU2R0NNIiwiY3R5IjoiYXBwbGljYXRpb24vZmhpcitqc29uIn0...',
  *   key: 'abc123...' // same key used for encryption
@@ -147,11 +144,8 @@ export async function decryptSHLFile(params: {
   key: string
 }): Promise<{ content: string; contentType: string | undefined }> {
   try {
-    // Decode the base64url key to raw bytes
-    const keyBytes = base64url.decode(params.key)
-
     // Check if the JWE has a zip header and handle it manually
-    // since newer jose versions don't support zip headers
+    // since jose library doesn't support zip headers
     let jweToDecrypt = params.jwe
     let hasZipHeader = false
 
@@ -176,6 +170,9 @@ export async function decryptSHLFile(params: {
       // If we can't parse the header, continue with original JWE
       // jose will handle the error appropriately
     }
+
+    // Decode the base64url key to raw bytes
+    const keyBytes = base64url.decode(params.key)
 
     // Decrypt using jose compactDecrypt
     const { plaintext, protectedHeader } = await compactDecrypt(jweToDecrypt, keyBytes)
