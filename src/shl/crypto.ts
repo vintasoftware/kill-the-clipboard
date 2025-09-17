@@ -5,6 +5,114 @@ import { SHLDecryptionError, SHLError } from './errors.js'
 import type { SHLFileContentType } from './types.js'
 
 /**
+ * Manual JWE encryption using A256GCM to bypass jose's zip header validation
+ */
+async function encryptA256GCM(
+  plaintext: Uint8Array,
+  key: Uint8Array,
+  iv: Uint8Array,
+  additionalData: Uint8Array
+): Promise<{ ciphertext: Uint8Array; tag: Uint8Array }> {
+  // Convert Uint8Array to proper ArrayBuffer for Web Crypto API
+  const keyBuffer = new ArrayBuffer(key.length)
+  new Uint8Array(keyBuffer).set(key)
+
+  const ivBuffer = new ArrayBuffer(iv.length)
+  new Uint8Array(ivBuffer).set(iv)
+
+  const plaintextBuffer = new ArrayBuffer(plaintext.length)
+  new Uint8Array(plaintextBuffer).set(plaintext)
+
+  const aadBuffer = new ArrayBuffer(additionalData.length)
+  new Uint8Array(aadBuffer).set(additionalData)
+
+  // Import key for AES-256-GCM
+  const cryptoKey = await globalThis.crypto.subtle.importKey(
+    'raw',
+    keyBuffer,
+    { name: 'AES-GCM' },
+    false,
+    ['encrypt']
+  )
+
+  // Encrypt with AES-256-GCM
+  const encrypted = await globalThis.crypto.subtle.encrypt(
+    {
+      name: 'AES-GCM',
+      iv: ivBuffer,
+      additionalData: aadBuffer,
+    },
+    cryptoKey,
+    plaintextBuffer
+  )
+
+  // Split result into ciphertext + tag (GCM tag is last 16 bytes)
+  const encryptedArray = new Uint8Array(encrypted)
+  const ciphertext = encryptedArray.slice(0, -16)
+  const tag = encryptedArray.slice(-16)
+
+  return { ciphertext, tag }
+}
+
+/**
+ * Generate random IV for AES-256-GCM (96 bits / 12 bytes)
+ */
+function generateIV(): Uint8Array {
+  return globalThis.crypto.getRandomValues(new Uint8Array(12))
+}
+
+/**
+ * Manual JWE decryption using A256GCM to handle zip headers that newer jose can't process
+ */
+async function decryptA256GCM(
+  ciphertext: Uint8Array,
+  key: Uint8Array,
+  iv: Uint8Array,
+  tag: Uint8Array,
+  additionalData: Uint8Array
+): Promise<Uint8Array> {
+  // Convert Uint8Array to proper ArrayBuffer for Web Crypto API
+  const keyBuffer = new ArrayBuffer(key.length)
+  new Uint8Array(keyBuffer).set(key)
+
+  const ivBuffer = new ArrayBuffer(iv.length)
+  new Uint8Array(ivBuffer).set(iv)
+
+  const aadBuffer = new ArrayBuffer(additionalData.length)
+  new Uint8Array(aadBuffer).set(additionalData)
+
+  // Combine ciphertext + tag for GCM decryption
+  const encryptedData = new Uint8Array(ciphertext.length + tag.length)
+  encryptedData.set(ciphertext, 0)
+  encryptedData.set(tag, ciphertext.length)
+
+  const encryptedBuffer = new ArrayBuffer(encryptedData.length)
+  new Uint8Array(encryptedBuffer).set(encryptedData)
+
+  // Import key for AES-256-GCM
+  const cryptoKey = await globalThis.crypto.subtle.importKey(
+    'raw',
+    keyBuffer,
+    { name: 'AES-GCM' },
+    false,
+    ['decrypt']
+  )
+
+  // Decrypt with AES-256-GCM
+  const decrypted = await globalThis.crypto.subtle.decrypt(
+    {
+      name: 'AES-GCM',
+      iv: ivBuffer,
+      additionalData: aadBuffer,
+    },
+    cryptoKey,
+    encryptedBuffer
+  )
+
+  return new Uint8Array(decrypted)
+}
+
+/**
  * Encrypts content as JWE Compact using A256GCM direct encryption.
  *
  * Follows the SMART Health Links specification for file encryption using:
@@ -69,35 +177,52 @@ export async function encryptSHLFile(params: {
       contentBytes = new Uint8Array(compressedBytes)
     }
 
-    // Build protected header WITHOUT zip (current jose doesn't support it)
-    const protectedHeader = {
-      alg: 'dir',
-      enc: 'A256GCM',
-      cty: params.contentType,
-    }
-
-    // Encrypt the (potentially compressed) content
-    const jwe = await new CompactEncrypt(contentBytes)
-      .setProtectedHeader(protectedHeader)
-      .encrypt(keyBytes)
-
-    // If compression was used, manually add the zip header
     if (params.enableCompression) {
-      // Parse the JWE to add the zip header
-      const parts = jwe.split('.')
-      const partsTuple = parts as [string, string, string, string, string]
+      // Manual JWE construction for compression compatibility with jose 4.13.1
+      const protectedHeader = {
+        alg: 'dir' as const,
+        enc: 'A256GCM' as const,
+        cty: params.contentType,
+        zip: 'DEF' as const,
+      }
 
-      // Decode, modify, and re-encode the protected header
-      const originalHeader = JSON.parse(new TextDecoder().decode(base64url.decode(partsTuple[0])))
-      const modifiedHeader = { ...originalHeader, zip: 'DEF' }
-      const newHeaderB64u = base64url.encode(
-        new TextEncoder().encode(JSON.stringify(modifiedHeader))
-      )
+      // Encode protected header
+      const protectedHeaderJson = JSON.stringify(protectedHeader)
+      const protectedHeaderBytes = encoder.encode(protectedHeaderJson)
+      const protectedHeaderB64u = base64url.encode(protectedHeaderBytes)
 
-      return `${newHeaderB64u}.${partsTuple[1]}.${partsTuple[2]}.${partsTuple[3]}.${partsTuple[4]}`
+      // Generate IV
+      const iv = generateIV()
+
+      // Prepare AAD (Additional Authenticated Data) = base64url(protectedHeader)
+      const aad = encoder.encode(protectedHeaderB64u)
+
+      // Encrypt using manual A256GCM
+      const { ciphertext, tag } = await encryptA256GCM(contentBytes, keyBytes, iv, aad)
+
+      // Build JWE Compact: protected.encryptedKey.iv.ciphertext.tag
+      // For direct encryption (alg: 'dir'), encrypted key is empty
+      return [
+        protectedHeaderB64u,
+        '', // empty encrypted key for 'dir' algorithm
+        base64url.encode(iv),
+        base64url.encode(ciphertext),
+        base64url.encode(tag),
+      ].join('.')
+    } else {
+      // Use standard jose for non-compressed content
+      const protectedHeader = {
+        alg: 'dir' as const,
+        enc: 'A256GCM' as const,
+        cty: params.contentType,
+      }
+
+      const jwe = await new CompactEncrypt(contentBytes)
+        .setProtectedHeader(protectedHeader)
+        .encrypt(keyBytes)
+
+      return jwe
     }
-
-    return jwe
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : String(error)
     throw new SHLError(`JWE encryption failed: ${errorMessage}`, 'SHL_ENCRYPTION_ERROR')
@@ -150,48 +275,63 @@ export async function decryptSHLFile(params: {
     // Decode the base64url key to raw bytes
     const keyBytes = base64url.decode(params.key)
 
-    // Check if the JWE has a zip header and handle it manually
-    // since newer jose versions don't support zip headers
-    let jweToDecrypt = params.jwe
+    // Parse the JWE header to check for compression
     let hasZipHeader = false
-
+    let originalHeader: { alg: string; enc: string; cty?: string; zip?: string } | null = null
     try {
-      const parts = jweToDecrypt.split('.')
-      if (parts.length === 5) {
-        const headerPart = parts[0]
-        if (headerPart) {
-          const header = JSON.parse(new TextDecoder().decode(base64url.decode(headerPart)))
-          if (header.zip === 'DEF') {
-            hasZipHeader = true
-            // Remove the zip header before passing to jose
-            const { zip: _zip, ...headerWithoutZip } = header
-            const newHeaderB64u = base64url.encode(
-              new TextEncoder().encode(JSON.stringify(headerWithoutZip))
-            )
-            jweToDecrypt = `${newHeaderB64u}.${parts[1]}.${parts[2]}.${parts[3]}.${parts[4]}`
-          }
-        }
+      const parts = params.jwe.split('.')
+      if (parts.length === 5 && parts[0]) {
+        originalHeader = JSON.parse(new TextDecoder().decode(base64url.decode(parts[0])))
+        hasZipHeader = originalHeader?.zip === 'DEF'
       }
     } catch (_headerError) {
-      // If we can't parse the header, continue with original JWE
+      // If we can't parse the header, continue without compression info
       // jose will handle the error appropriately
     }
 
-    // Decrypt using jose compactDecrypt
-    const { plaintext, protectedHeader } = await compactDecrypt(jweToDecrypt, keyBytes)
+    let plaintext: Uint8Array
+    let contentType: string | undefined
 
-    // Extract content type from protected header
-    const contentType = protectedHeader.cty
-
-    // Decompress if zip header was present in original JWE
-    let contentBytes = plaintext
     if (hasZipHeader) {
-      contentBytes = await decompressDeflateRaw(plaintext)
+      // Use manual decryption for JWEs with zip headers (compatible with both our JWEs and jose 4.13.1 JWEs)
+      const parts = params.jwe.split('.')
+      if (parts.length === 5 && parts[0] && parts[2] && parts[3] && parts[4]) {
+        // Parse JWE components
+        const protectedHeaderB64u = parts[0]
+        // parts[1] is encrypted_key (empty for 'dir' algorithm)
+        const ivBytes = base64url.decode(parts[2])
+        const ciphertextBytes = base64url.decode(parts[3])
+        const tagBytes = base64url.decode(parts[4])
+
+        // Prepare AAD (Additional Authenticated Data) = base64url(protectedHeader)
+        const encoder = new TextEncoder()
+        const aad = encoder.encode(protectedHeaderB64u)
+
+        // Manual decryption with original protected header (preserves AAD integrity)
+        const compressedPlaintext = await decryptA256GCM(
+          ciphertextBytes,
+          keyBytes,
+          ivBytes,
+          tagBytes,
+          aad
+        )
+
+        // Decompress the plaintext
+        plaintext = await decompressDeflateRaw(compressedPlaintext)
+        contentType = originalHeader?.cty
+      } else {
+        throw new SHLDecryptionError('Invalid JWE format')
+      }
+    } else {
+      // No compression, use standard jose decryption
+      const result = await compactDecrypt(params.jwe, keyBytes)
+      plaintext = result.plaintext
+      contentType = result.protectedHeader.cty
     }
 
     // Convert bytes back to string
     const decoder = new TextDecoder()
-    const content = decoder.decode(contentBytes)
+    const content = decoder.decode(plaintext)
 
     return { content, contentType }
   } catch (error) {
