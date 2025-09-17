@@ -139,8 +139,8 @@ export async function POST(request: NextRequest) {
     // Add the FHIR bundle as a SMART Health Card to the manifest
     const shcIssuer = new SmartHealthCardIssuer({
       issuer: process.env.SHC_ISSUER!,
-      privateKey: process.env.SHC_PRIVATE_KEY!,
-      publicKey: process.env.NEXT_PUBLIC_SHC_PUBLIC_KEY!,
+      privateKey: JSON.parse(process.env.SHC_PRIVATE_KEY!),
+      publicKey: JSON.parse(process.env.SHC_PUBLIC_KEY!),
       strictReferences: false,
     });
     const shc = await shcIssuer.issue(fhirBundle);

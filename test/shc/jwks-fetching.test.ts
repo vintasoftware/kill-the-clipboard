@@ -6,7 +6,7 @@ import { createValidFHIRBundle, testPrivateKeyPKCS8, testPublicKeySPKI } from '.
 describe('JWKS fetching for SmartHealthCardReader', () => {
   it('fetches issuer JWKS and verifies using matching kid when publicKey is omitted', async () => {
     const issuer = new SmartHealthCardIssuer({
-      issuer: 'https://example.com/issuer',
+      issuer: 'https://spec.smarthealth.cards/examples/issuer',
       privateKey: testPrivateKeyPKCS8,
       publicKey: testPublicKeySPKI,
       expirationTime: null,
@@ -46,14 +46,14 @@ describe('JWKS fetching for SmartHealthCardReader', () => {
 
     expect(fetchMock).toHaveBeenCalled()
     const calledUrl = (fetchMock.mock.calls[0] as unknown[])[0] as string
-    expect(calledUrl).toBe('https://example.com/.well-known/jwks.json')
+    expect(calledUrl).toBe('https://spec.smarthealth.cards/examples/issuer/.well-known/jwks.json')
 
     ;(globalThis as any).fetch = originalFetch
   })
 
   it('throws VerificationError when JWKS fetch fails', async () => {
     const issuer = new SmartHealthCardIssuer({
-      issuer: 'https://example.com/issuer',
+      issuer: 'https://spec.smarthealth.cards/examples/issuer',
       privateKey: testPrivateKeyPKCS8,
       publicKey: testPublicKeySPKI,
       expirationTime: null,

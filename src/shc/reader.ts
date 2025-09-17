@@ -178,8 +178,7 @@ export class SmartHealthCardReader {
       }
 
       // Build JWKS URL from issuer origin
-      const issuerUrl = new URL(payload.iss)
-      const jwksUrl = `${issuerUrl.origin}/.well-known/jwks.json`
+      const jwksUrl = `${payload.iss.replace(/\/$/, '')}/.well-known/jwks.json`
 
       // Fetch JWKS
       const response = await fetch(jwksUrl)

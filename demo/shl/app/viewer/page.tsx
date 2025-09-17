@@ -114,9 +114,6 @@ export default function ViewerPage() {
         recipient: values.recipient.trim(),
         passcode: shlViewer.shl.requiresPasscode ? values.passcode : undefined,
         embeddedLengthMax: 4096,
-        shcReaderConfig: {
-          publicKey: process.env.NEXT_PUBLIC_SHC_PUBLIC_KEY!,
-        },
       });
 
       setResolvedContent(content);
