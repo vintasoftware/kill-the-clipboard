@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SMART Health Cards QR Code Example - TESTING ONLY</title>
+  <script type="module" crossorigin src="./assets/main-Cqlr9R5n.js"></script>
+  <link rel="stylesheet" crossorigin href="./assets/main-P3OyIMlQ.css">
+</head>
+<body>
+  <div class="container">
+    <header>
+      <h1>SMART Health Cards QR Code Demo</h1>
+      <div class="warning-banner">
+        <strong>⚠️ WARNING: FOR TESTING PURPOSES ONLY</strong>
+        <p>
+          This is a demonstration application built with the
+          <a href="https://github.com/vintasoftware/kill-the-clipboard" target="_blank">kill-the-clipboard</a>
+          library.
+        </p>
+        <p>DO NOT use this for generating real QR codes with actual patient health data.</p>
+        <p>The private key used in this demo is for testing purposes only and it's exposed in the browser.</p>
+      </div>
+    </header>
+
+    <main>
+      <section class="section">
+        <h2>📋 Generate QR Code from FHIR Bundle</h2>
+        <p>This section demonstrates generating a SMART Health Card QR code from a sample FHIR bundle.</p>
+
+        <div class="controls">
+          <button id="generateBtn" class="btn btn-primary">Generate Sample QR Code</button>
+          <button id="clearBtn" class="btn btn-secondary">Clear</button>
+        </div>
+
+        <div id="generationStatus" class="status-message" style="display: none;"></div>
+
+        <div class="result-grid">
+          <div class="result-panel">
+            <h3>FHIR Bundle (Sample Data)</h3>
+            <div id="bundleContainer" class="code-container">
+              <pre id="bundleDisplay"></pre>
+            </div>
+          </div>
+          <div class="result-panel">
+            <h3>Generated QR Code</h3>
+            <div id="qrCodeContainer" class="qr-container">
+              <p class="placeholder">Click "Generate Sample QR Code" to create a QR code</p>
+            </div>
+            <div id="copyButtonContainer" class="copy-button-container" style="display: none;">
+              <button id="copyNumericBtn" class="btn btn-copy">Copy Numeric Data</button>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="section">
+        <h2>📷 Scan QR Code with Camera</h2>
+        <p>This section demonstrates scanning SMART Health Card QR codes using your device's camera.</p>
+
+        <div class="camera-selector-container">
+          <label for="cameraSelect">Select Camera:</label>
+          <select id="cameraSelect" class="camera-select">
+            <option value="">Loading cameras...</option>
+          </select>
+        </div>
+
+        <div class="controls">
+          <button id="scanBtn" class="btn btn-primary">Start Camera Scan</button>
+          <button id="stopScanBtn" class="btn btn-secondary" disabled>Stop Scan</button>
+        </div>
+
+        <div id="scanStatus" class="status-message" style="display: none;"></div>
+
+        <div class="result-grid">
+          <div class="result-panel">
+            <h3>Camera View</h3>
+            <div id="scannerContainer" class="scanner-container">
+              <video id="video" width="300" height="200" style="display: none;"></video>
+              <canvas id="canvas" width="300" height="200" style="display: none;"></canvas>
+              <p id="scannerPlaceholder" class="placeholder">Click "Start Camera Scan" to begin scanning</p>
+            </div>
+          </div>
+
+          <div class="result-panel">
+            <h3>Scanned Health Card Data</h3>
+            <div id="scanResultContainer" class="code-container">
+              <pre id="scanResult">No QR code scanned yet</pre>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="section">
+        <h2>📝 Technical Details</h2>
+        <div class="info-panel">
+          <h3>What this demo shows:</h3>
+          <ul>
+            <li><strong>QR Generation:</strong> Creates a SMART Health Card from a sample FHIR bundle containing fake patient and immunization data</li>
+            <li><strong>Camera Scanning:</strong> Uses your device camera to scan and decode SMART Health Card QR codes</li>
+            <li><strong>Data Verification:</strong> Validates the cryptographic signature and displays the decoded health data</li>
+          </ul>
+
+          <div class="warning-box">
+            <h3>🔒 Important Security Notes:</h3>
+            <ul>
+              <li>This demo uses <strong>SMART Health Cards example test keys</strong> - never use these for real health cards</li>
+              <li>Sample data is completely fictional and for demonstration purposes only</li>
+              <li>In production, proper key management and security practices are essential. Check the <a href="https://spec.smarthealth.cards/" target="_blank">SMART Health Card specification</a> for more information.</li>
+            </ul>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <footer>
+      <p>Built with <a href="https://github.com/vintasoftware/kill-the-clipboard" target="_blank">kill-the-clipboard</a> library</p>
+      <p>⚠️ This is a test application - not for production use with real health data</p>
+    </footer>
+  </div>
+
+</body>
+</html>
