@@ -61,21 +61,21 @@ jobs:
             exit 1
           fi
 
-      # Build demo only for main branch
-      - name: Build library (for demo)
+      # Build demo/shc only for main branch
+      - name: Build library (for demo/shc)
         if: github.ref == 'refs/heads/main'
         run: pnpm run build
 
-      - name: Install demo dependencies
+      - name: Install demo/shc dependencies
         if: github.ref == 'refs/heads/main'
         run: |
-          cd demo
+          cd demo/shc
           pnpm install --frozen-lockfile
 
-      - name: Build demo (Vite)
+      - name: Build demo/shc (Vite)
         if: github.ref == 'refs/heads/main'
         run: |
-          cd demo
+          cd demo/shc
           pnpm build
 
       - name: Deploy to gh-pages (root redirect)
