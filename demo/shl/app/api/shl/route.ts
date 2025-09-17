@@ -143,6 +143,7 @@ export async function POST(request: NextRequest) {
       publicKey: JSON.parse(process.env.SHC_PUBLIC_KEY!),
       strictReferences: false,
     });
+    fhirBundle.type = 'collection';  // Required by SMART Health Cards spec
     const shc = await shcIssuer.issue(fhirBundle);
     await manifestBuilder.addHealthCard({ shc, enableCompression: false });
 
