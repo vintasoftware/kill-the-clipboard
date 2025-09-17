@@ -19,7 +19,7 @@ import {
 import { useForm } from '@mantine/form';
 import { SHLViewer, SHLResolvedContent } from 'kill-the-clipboard';
 import { useState, useEffect, useCallback } from 'react';
-import { IconAlertCircle, IconCheck, IconX } from '@tabler/icons-react';
+import { IconAlertCircle, IconCheck, IconX, IconExternalLink } from '@tabler/icons-react';
 import { PatientDataBundleDisplay } from '@/components/PatientIPSControl';
 import type { Bundle } from '@medplum/fhirtypes';
 
@@ -340,6 +340,13 @@ export default function ViewerPage() {
                 <Group>
                   <Button variant="outline" onClick={handleReset}>
                     View Another Link
+                  </Button>
+                  <Button
+                    variant="outline"
+                    leftSection={<IconExternalLink size="1rem" />}
+                    onClick={() => window.open(`https://viewer.tcpdev.org/#${shlUri}`, '_blank')}
+                  >
+                    View on TCP web reader
                   </Button>
                 </Group>
               </Stack>
