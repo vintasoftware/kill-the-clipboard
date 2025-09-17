@@ -29,7 +29,7 @@ import type {
  *
  * The builder supports:
  * - FHIR JSON resources
- * - Smart Health Card files (JWS format)
+ * - SMART Health Card files (JWS format)
  * - Optional compression with raw DEFLATE
  * - Embedded vs location-based file serving
  * - toDBAttrs/fromDBAttrs for persistence
@@ -215,11 +215,11 @@ export class SHLManifestBuilder {
   /**
    * Add a SMART Health Card file to the manifest.
    *
-   * Encrypts the Smart Health Card as a JWE file and uploads it to storage.
+   * Encrypts the SMART Health Card as a JWE file and uploads it to storage.
    * The SHC is wrapped in a `verifiableCredential` array as per SMART Health Cards specification.
    *
    * @param params - Configuration for adding the health card. The object should contain:
-   *   - `shc`: Smart Health Card to add (JWS string or SmartHealthCard object)
+   *   - `shc`: SMART Health Card to add (JWS string or SmartHealthCard object)
    *   - `enableCompression`: Optional. Whether to compress the file content before encryption (defaults to false, as SHCs are typically already compressed)
    * @returns Promise resolving to object with encrypted file metadata and storage path
    * @returns returns.encryptedFile - Encrypted file object with type and JWE string
@@ -458,19 +458,19 @@ export class SHLManifestBuilder {
   }
 
   /**
-   * Update a Smart Health Card file in the manifest and storage.
+   * Update a SMART Health Card file in the manifest and storage.
    *
-   * Replaces an existing Smart Health Card file with new content. The file is identified
+   * Replaces an existing SMART Health Card file with new content. The file is identified
    * by its storage path. The updated content is encrypted and stored using the same
    * storage path, and the manifest metadata is updated accordingly.
    *
    * @param storagePath - Storage path of the file to update (as returned by uploadFile)
-   * @param shc - New Smart Health Card to store (JWS string or SmartHealthCard object)
+   * @param shc - New SMART Health Card to store (JWS string or SmartHealthCard object)
    * @param enableCompression - Whether to compress the file content before encryption (defaults to false for SHCs)
    * @param lastUpdated - Optional custom timestamp for the update. If not provided,
    *   the current time will be used.
    * @returns Promise that resolves when the file is updated in both manifest and storage
-   * @throws {@link SHLManifestError} When updateFile function is not provided, file not found, or file is not a Smart Health Card
+   * @throws {@link SHLManifestError} When updateFile function is not provided, file not found, or file is not a SMART Health Card
    * @throws {@link SHLNetworkError} When storage update fails
    *
    * @example
@@ -508,7 +508,7 @@ export class SHLManifestBuilder {
 
     if (existingFile.type !== 'application/smart-health-card') {
       throw new SHLManifestError(
-        `File at storage path '${storagePath}' is not a Smart Health Card (type: ${existingFile.type})`
+        `File at storage path '${storagePath}' is not a SMART Health Card (type: ${existingFile.type})`
       )
     }
 
@@ -539,7 +539,7 @@ export class SHLManifestBuilder {
         throw error
       }
       const errorMessage = error instanceof Error ? error.message : String(error)
-      throw new SHLNetworkError(`Failed to update Smart Health Card in storage: ${errorMessage}`)
+      throw new SHLNetworkError(`Failed to update SMART Health Card in storage: ${errorMessage}`)
     }
   }
 

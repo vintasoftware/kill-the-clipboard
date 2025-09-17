@@ -6,7 +6,7 @@ JavaScript/TypeScript universal (browser and node) library to generate QR codes 
 
 This aligns with the [CMS Interoperability Framework](https://www.cms.gov/health-technology-ecosystem/interoperability-framework) call to action for Patient Facing Apps to "Kill the Clipboard":
 
-> We pledge to empower patients to retrieve their health records from CMS Aligned Networks or personal health record apps and share them with providers via **QR codes or Smart Health Cards/Links using FHIR bundles**. When possible, we will return visit records to patients in the same format. We commit to seamless, secure data exchange—eliminating the need for patients to repeatedly recall and write out their medical history. We are committed to "kill the clipboard," one encounter at a time.
+> We pledge to empower patients to retrieve their health records from CMS Aligned Networks or personal health record apps and share them with providers via **QR codes or SMART Health Cards/Links using FHIR bundles**. When possible, we will return visit records to patients in the same format. We commit to seamless, secure data exchange—eliminating the need for patients to repeatedly recall and write out their medical history. We are committed to "kill the clipboard," one encounter at a time.
 
 **This is a recently released library. While it's well tested, verify the functionality before using in production. Please report any issues or suggestions to the [GitHub Issues](https://github.com/vintasoftware/kill-the-clipboard/issues) page. For sensitive security reports, please contact us at contact at vinta.com.br**
 
@@ -32,9 +32,9 @@ This aligns with the [CMS Interoperability Framework](https://www.cms.gov/health
 - Proper error handling hierarchy  
 - Built both for Node.js and browser environments
 
-## Smart Health Cards Demo
+## SMART Health Cards Demo
 
-<a href="https://vintasoftware.github.io/kill-the-clipboard/demo/shc/"><img height="200" alt="Kill the Clipboard JavaScript / TypeScript library - Smart Health Cards demo" src="https://github.com/user-attachments/assets/5e820583-9a23-4ff4-aa37-112254c8bfa5" /></a>
+<a href="https://vintasoftware.github.io/kill-the-clipboard/demo/shc/"><img height="200" alt="Kill the Clipboard JavaScript / TypeScript library - SMART Health Cards demo" src="https://github.com/user-attachments/assets/5e820583-9a23-4ff4-aa37-112254c8bfa5" /></a>
 
 Interactive browser demo that showcases QR code generation and camera-based scanning: https://vintasoftware.github.io/kill-the-clipboard/demo/shc/
 
@@ -54,7 +54,7 @@ yarn add kill-the-clipboard
 
 ## Usage
 
-### Smart Health Cards Quick Start
+### SMART Health Cards Quick Start
 
 **Security warning**: Issue/sign on a secure backend only; never expose the ES256 private key in browsers.
 
@@ -309,7 +309,7 @@ pnpm docs:build
 
 ## Advanced Usage
 
-### Smart Health Cards Advanced Usage
+### SMART Health Cards Advanced Usage
 
 ```typescript
 import { 
@@ -406,7 +406,7 @@ const numericData = qrGenerator.encodeJWSToNumeric(jws);
 const decodedJWS = qrGenerator.decodeNumericToJWS(numericData);
 ```
 
-### Smart Health Cards File Operations
+### SMART Health Cards File Operations
 
 ```typescript
 import { SmartHealthCardIssuer, SmartHealthCardReader } from 'kill-the-clipboard';
@@ -458,7 +458,7 @@ fileInput.addEventListener('change', async (event) => {
 });
 ```
 
-### Generating ES256 Key Pairs for Smart Health Cards
+### Generating ES256 Key Pairs for SMART Health Cards
 
 ```typescript
 // Generate ES256 key pair for testing (Node.js 18+)

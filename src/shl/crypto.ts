@@ -19,7 +19,7 @@ import type { SHLFileContentType } from './types.js'
  * @param params.contentType - MIME content type for the cty header.
  *   Used by decryption to identify file format. Typically 'application/smart-health-card' or 'application/fhir+json'.
  * @param params.enableCompression - Whether to compress content with raw DEFLATE before encryption.
- *   Recommended for verbose content like FHIR JSON. Not recommended for already-compressed content like Smart Health Cards.
+ *   Recommended for verbose content like FHIR JSON. Not recommended for already-compressed content like SMART Health Cards.
  * @returns JWE Compact serialization string (5 base64url parts separated by dots)
  * @throws {@link SHLError} When encryption fails due to invalid key, content, or crypto operations
  *
@@ -34,7 +34,7 @@ import type { SHLFileContentType } from './types.js'
  *   enableCompression: true
  * });
  *
- * // Encrypt Smart Health Card without compression
+ * // Encrypt SMART Health Card without compression
  * const shcJson = JSON.stringify({ verifiableCredential: [jwsString] });
  * const jwe = await encryptSHLFile({
  *   content: shcJson,

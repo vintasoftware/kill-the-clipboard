@@ -34,7 +34,7 @@ import type {
  * - SHLink URI parsing and payload validation
  * - Manifest fetching with POST requests
  * - File decryption using JWE with A256GCM
- * - Smart Health Card and FHIR resource extraction
+ * - SMART Health Card and FHIR resource extraction
  *
  * @example
  * ```typescript
@@ -138,7 +138,7 @@ export class SHLViewer {
    * 2. Fetches the manifest via POST request with recipient info
    * 3. Processes each file descriptor (embedded or location-based)
    * 4. Decrypts files using the SHL's encryption key
-   * 5. Parses content based on type (Smart Health Cards or FHIR resources)
+   * 5. Parses content based on type (SMART Health Cards or FHIR resources)
    * 6. Returns structured data ready for application use
    *
    * @param params.recipient - Required recipient identifier sent in manifest request.
@@ -149,7 +149,7 @@ export class SHLViewer {
    *   Files smaller than this size (in bytes) will be embedded in manifest response.
    *   Servers may honor or cap this value per request. Typical values: 4096-16384.
    *
-   * @param params.shcReaderConfig - Optional configuration for Smart Health Card verification (e.g. public key)
+   * @param params.shcReaderConfig - Optional configuration for SMART Health Card verification (e.g. public key)
    *
    * @returns Promise resolving to structured content with manifest and decrypted files ({@link SHLResolvedContent})
    * @throws {@link SHLViewerError} When recipient is not a non-empty string
@@ -173,7 +173,7 @@ export class SHLViewer {
    *     embeddedLengthMax: 8192 // Prefer embedding files under 8KB
    *   });
    *
-   *   // Process Smart Health Cards
+   *   // Process SMART Health Cards
    *   for (const shc of resolved.smartHealthCards) {
    *     console.log('SHC issuer:', shc.issuer);
    *     console.log('SHC data:', shc.fhirBundle);
@@ -549,7 +549,7 @@ export class SHLViewer {
    * Inspect the content of a parsed JSON to determine its type when contentType is undefined.
    *
    * This method analyzes the JSON structure to detect whether it's a
-   * Smart Health Card (has verifiableCredential at root) or FHIR JSON (has resourceType).
+   * SMART Health Card (has verifiableCredential at root) or FHIR JSON (has resourceType).
    *
    * @param content - The parsed JSON
    * @returns The detected content type (application/smart-health-card or application/fhir+json)
@@ -559,7 +559,7 @@ export class SHLViewer {
    */
   private inspectContentType(content: Record<string, unknown>): SHLFileContentType {
     try {
-      // Check if it's a Smart Health Card (has verifiableCredential at root)
+      // Check if it's a SMART Health Card (has verifiableCredential at root)
       if (content && typeof content === 'object' && Array.isArray(content.verifiableCredential)) {
         return 'application/smart-health-card'
       }
@@ -575,14 +575,14 @@ export class SHLViewer {
   }
 
   /**
-   * Parse decrypted files into structured Smart Health Cards and FHIR resources.
+   * Parse decrypted files into structured SMART Health Cards and FHIR resources.
    *
    * This method processes the decrypted file content based on their content types,
    * creating SmartHealthCard objects from application/smart-health-card files
    * and parsing FHIR resources from application/fhir+json files.
    *
    * @param files - Array of decrypted files with metadata
-   * @param shcReaderConfig - Optional configuration for Smart Health Card verification
+   * @param shcReaderConfig - Optional configuration for SMART Health Card verification
    * @returns Promise resolving to structured content organized by type (`smartHealthCards`, `fhirResources`)
    * @throws {@link SHLInvalidContentError} When file content is not valid JSON or invalid SHC/FHIR resource
    *

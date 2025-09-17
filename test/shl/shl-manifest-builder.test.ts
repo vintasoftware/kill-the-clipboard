@@ -670,7 +670,7 @@ describe('SHLManifestBuilder', () => {
       expect(removedFiles.has(storagePath)).toBe(true)
     })
 
-    it('should remove Smart Health Card files successfully', async () => {
+    it('should remove SMART Health Card files successfully', async () => {
       const issuer = new SmartHealthCardIssuer({
         issuer: 'https://example.com',
         privateKey: testPrivateKeyPKCS8,
@@ -882,8 +882,8 @@ describe('SHLManifestBuilder', () => {
     })
   })
 
-  describe('Smart Health Card Updates', () => {
-    it('should update Smart Health Card files successfully', async () => {
+  describe('SMART Health Card Updates', () => {
+    it('should update SMART Health Card files successfully', async () => {
       const issuer = new SmartHealthCardIssuer({
         issuer: 'https://example.com',
         privateKey: testPrivateKeyPKCS8,
@@ -928,7 +928,7 @@ describe('SHLManifestBuilder', () => {
       expect(decryptedFile.verifiableCredential).toEqual([updatedHealthCard.asJWS()])
     })
 
-    it('should update Smart Health Card files with JWS string', async () => {
+    it('should update SMART Health Card files with JWS string', async () => {
       const issuer = new SmartHealthCardIssuer({
         issuer: 'https://example.com',
         privateKey: testPrivateKeyPKCS8,
@@ -955,7 +955,7 @@ describe('SHLManifestBuilder', () => {
       expect(decryptedFile.verifiableCredential).toEqual([updatedJWS])
     })
 
-    it('should throw error when trying to update non-Smart Health Card file', async () => {
+    it('should throw error when trying to update non-SMART Health Card file', async () => {
       const result = await manifestBuilder.addFHIRResource({ content: createValidFHIRBundle() })
 
       const issuer = new SmartHealthCardIssuer({
@@ -968,11 +968,11 @@ describe('SHLManifestBuilder', () => {
       await expect(
         manifestBuilder.updateHealthCard(result.storagePath, healthCard)
       ).rejects.toThrow(
-        `File at storage path '${result.storagePath}' is not a Smart Health Card (type: application/fhir+json)`
+        `File at storage path '${result.storagePath}' is not a SMART Health Card (type: application/fhir+json)`
       )
     })
 
-    it('should handle storage errors during Smart Health Card update', async () => {
+    it('should handle storage errors during SMART Health Card update', async () => {
       const builderWithFailingUpdate = new SHLManifestBuilder({
         shl,
         uploadFile: async (content: string) => {
@@ -998,7 +998,7 @@ describe('SHLManifestBuilder', () => {
 
       await expect(
         builderWithFailingUpdate.updateHealthCard(result.storagePath, updatedHealthCard)
-      ).rejects.toThrow('Failed to update Smart Health Card in storage: Storage update failed')
+      ).rejects.toThrow('Failed to update SMART Health Card in storage: Storage update failed')
     })
   })
 

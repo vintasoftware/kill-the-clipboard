@@ -73,7 +73,7 @@ This is a Next.js demo application that demonstrates SMART Health Links (SHL) fu
 4. Set a passcode (minimum 6 characters); optionally set label and `L` flag
 5. Submit the form; the server will:
    - Generate a server-managed CUID 2-based ID for the SHL
-   - Use the static IPS Bundle data and create a Smart Health Card 
+   - Use the static IPS Bundle data and create a SMART Health Card 
    - Encrypt and save the bundle as JWE files to the local filesystem
    - Persist SHL payload, manifest builder attributes, and passcode hash in SQLite database using Prisma
 6. You'll get a `shlink:/...` URI and a button to open the viewer

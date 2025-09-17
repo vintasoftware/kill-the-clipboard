@@ -380,14 +380,14 @@ export interface SHLManifestBuilderDBAttrs {
  * this structured data without needing to handle JWE decryption or content
  * type parsing themselves.
  *
- * The Smart Health Cards are fully parsed and ready for verification/display,
+ * The SMART Health Cards are fully parsed and ready for verification/display,
  * while FHIR resources are parsed JSON objects ready for processing.
  *
  * @example
  * ```typescript
  * const resolved = await viewer.resolveSHLink({ recipient: 'Dr. Smith' });
  *
- * // Process Smart Health Cards
+ * // Process SMART Health Cards
  * for (const shc of resolved.smartHealthCards) {
  *   console.log('Issuer:', shc.issuer);
  *   console.log('Patient:', shc.fhirBundle.entry[0].resource);
@@ -413,7 +413,7 @@ export interface SHLResolvedContent {
    */
   manifest: SHLManifestV1 | undefined
   /**
-   * Smart Health Cards extracted from application/smart-health-card files.
+   * SMART Health Cards extracted from application/smart-health-card files.
    * Each card is fully parsed and ready for verification or display.
    */
   smartHealthCards: SmartHealthCard[]

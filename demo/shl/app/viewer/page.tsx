@@ -122,7 +122,7 @@ export default function ViewerPage() {
       setResolvedContent(content);
       setStep('content');
 
-      // Generate QR codes for any Smart Health Cards present
+      // Generate QR codes for any SMART Health Cards present
       if (content.smartHealthCards?.length) {
         try {
           const allQrCodes = await Promise.all(
@@ -337,7 +337,7 @@ export default function ViewerPage() {
                 <Text c="dimmed">
                   Successfully retrieved {resolvedContent.fhirResources.length} FHIR resource(s)
                   {resolvedContent.smartHealthCards.length > 0 &&
-                    ` and ${resolvedContent.smartHealthCards.length} Smart Health Card(s)`}
+                    ` and ${resolvedContent.smartHealthCards.length} SMART Health Card(s)`}
                 </Text>
 
                 <Group>
@@ -364,12 +364,12 @@ export default function ViewerPage() {
             {resolvedContent.smartHealthCards.length > 0 && (
               <Card withBorder p="xl">
                 <Stack gap="md">
-                  <Title order={3}>Smart Health Cards</Title>
+                  <Title order={3}>SMART Health Cards</Title>
                   <Stack gap="md">
                     {resolvedContent.smartHealthCards.map((card, index) => (
                       <Card key={index} withBorder p="md">
                         <Text fw={500} mb="xs">
-                          Smart Health Card #{index + 1}
+                          SMART Health Card #{index + 1}
                         </Text>
                         {qrCodesByCard[index]?.length ? (
                           <Stack gap="xs" mb="sm">
