@@ -11,6 +11,9 @@ importers:
       jose:
         specifier: ^6.0.12
         version: 6.0.12
+      jose-v4:
+        specifier: npm:jose@^4.15.4
+        version: jose@4.15.9
       qrcode:
         specifier: ^1.5.4
         version: 1.5.4
@@ -3421,6 +3424,9 @@ packages:
   jiti@2.5.1:
     resolution: {integrity: sha512-twQoecYPiVA5K/h6SxtORw/Bs3ar+mLUtoPSc7iMXzQzK8d7eJ/R09wmTwAjiamETn1cXYPGfNnu7DMoHgu12w==}
     hasBin: true
+
+  jose@4.15.9:
+    resolution: {integrity: sha512-1vUQX+IdDMVPj4k8kOxgUqlcK518yluMuGZwqlr44FS1ppZB/5GWh4rZG89erpOBOJjU/OBsnCVFfapsRz6nEA==}
 
   jose@6.0.12:
     resolution: {integrity: sha512-T8xypXs8CpmiIi78k0E+Lk7T2zlK4zDyg+o1CZ4AkOHgDg98ogdP2BeZ61lTFKFyoEwJ9RgAgN+SdM3iPgNonQ==}
@@ -8790,6 +8796,8 @@ snapshots:
   java-properties@1.0.2: {}
 
   jiti@2.5.1: {}
+
+  jose@4.15.9: {}
 
   jose@6.0.12: {}
 

@@ -226,7 +226,7 @@ export class SHLManifestBuilder {
    * @returns returns.storagePath - Storage key/path returned by the upload function
    * @returns returns.ciphertextLength - Length of the JWE ciphertext string
    *
-   * @throws {@link SHLError} When encryption fails
+   * @throws {@link SHLEncryptionError} When encryption fails due to invalid key, content, or crypto operations
    *
    * @example
    * ```typescript
@@ -283,7 +283,7 @@ export class SHLManifestBuilder {
    * @returns returns.storagePath - Storage key/path returned by the upload function
    * @returns returns.ciphertextLength - Length of the JWE ciphertext string
    *
-   * @throws {@link SHLError} When encryption fails
+   * @throws {@link SHLEncryptionError} When encryption fails due to invalid key, content, or crypto operations
    *
    * @example
    * ```typescript
@@ -387,6 +387,7 @@ export class SHLManifestBuilder {
    * @returns Promise that resolves when the file is updated in both manifest and storage
    * @throws {@link SHLManifestError} When updateFile function is not provided, file not found, or file is not a FHIR resource
    * @throws {@link SHLNetworkError} When storage update fails
+   * @throws {@link SHLEncryptionError} When encryption fails due to invalid key, content, or crypto operations
    *
    * @example
    * ```typescript
@@ -472,6 +473,7 @@ export class SHLManifestBuilder {
    * @returns Promise that resolves when the file is updated in both manifest and storage
    * @throws {@link SHLManifestError} When updateFile function is not provided, file not found, or file is not a SMART Health Card
    * @throws {@link SHLNetworkError} When storage update fails
+   * @throws {@link SHLEncryptionError} When encryption fails due to invalid key, content, or crypto operations
    *
    * @example
    * ```typescript
@@ -897,6 +899,7 @@ export class SHLManifestBuilder {
    * @param params.type - Content type for the cty header
    * @param params.enableCompression - Whether to compress before encryption
    * @returns Promise resolving to encrypted file object with JWE and metadata ({@link SHLFileJWE})
+   * @throws {@link SHLEncryptionError} When encryption fails due to invalid key, content, or crypto operations
    *
    * @private
    */

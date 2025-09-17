@@ -192,3 +192,17 @@ export class SHLViewerError extends SHLError {
     this.name = 'SHLViewerError'
   }
 }
+
+/**
+ * Error thrown when SHL file encryption fails.
+ *
+ * @public
+ * @group SHL
+ * @category Errors
+ */
+export class SHLEncryptionError extends SHLError {
+  constructor(message: string) {
+    super(message, 'SHL_ENCRYPTION_ERROR')
+    this.name = 'SHLEncryptionError'
+  }
+}

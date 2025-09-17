@@ -1,7 +1,8 @@
 // Encryption and decryption functions for SMART Health Links
 import { base64url, CompactEncrypt, compactDecrypt } from 'jose'
-import { compressDeflateRaw, decompressDeflateRaw } from '../common/compression.js'
-import { SHLDecryptionError, SHLError } from './errors.js'
+// Import jose 4.x.x for compression support (jose dropped zip support at 5.0.0)
+import { CompactEncrypt as CompactEncryptV4, compactDecrypt as compactDecryptV4 } from 'jose-v4'
+import { SHLDecryptionError, SHLEncryptionError } from './errors.js'
 import type { SHLFileContentType } from './types.js'
 
 /**
@@ -21,7 +22,7 @@ import type { SHLFileContentType } from './types.js'
  * @param params.enableCompression - Whether to compress content with raw DEFLATE before encryption.
  *   Recommended for verbose content like FHIR JSON. Not recommended for already-compressed content like SMART Health Cards.
  * @returns JWE Compact serialization string (5 base64url parts separated by dots)
- * @throws {@link SHLError} When encryption fails due to invalid key, content, or crypto operations
+ * @throws {@link SHLEncryptionError} When encryption fails due to invalid key, content, or crypto operations
  *
  * @example
  * ```typescript
@@ -57,18 +58,33 @@ export async function encryptSHLFile(params: {
   try {
     // Convert content to bytes
     const encoder = new TextEncoder()
-    let contentBytes = encoder.encode(params.content)
-
-    // Compress if enabled
-    if (params.enableCompression) {
-      contentBytes = await compressDeflateRaw(contentBytes)
-    }
+    const contentBytes = encoder.encode(params.content)
 
     // Decode the base64url key to raw bytes
     const keyBytes = base64url.decode(params.key)
 
-    // Encrypt using jose CompactEncrypt
-    // Note: jose library doesn't support zip header, so we handle compression manually
+    // Use jose 4.x.x CompactEncrypt when compression is enabled (jose since 5.0.0 dropped zip support)
+    if (params.enableCompression) {
+      // Decode the base64url key to raw bytes using jose 4.x.x base64url
+      const keyBytes = base64url.decode(params.key)
+
+      // Use jose 4.x.x CompactEncrypt with built-in compression support
+      const protectedHeader = {
+        alg: 'dir',
+        enc: 'A256GCM',
+        cty: params.contentType,
+        zip: 'DEF', // Enable DEFLATE compression
+      }
+      const jwe = await new CompactEncryptV4(contentBytes)
+        .setProtectedHeader(protectedHeader)
+        .encrypt(keyBytes)
+
+      return jwe
+    }
+
+    // Use current jose 6.x.x CompactEncrypt for non-compressed content
+
+    // Encrypt using jose CompactEncrypt without compression
     const protectedHeader = {
       alg: 'dir',
       enc: 'A256GCM',
@@ -78,26 +94,10 @@ export async function encryptSHLFile(params: {
       .setProtectedHeader(protectedHeader)
       .encrypt(keyBytes)
 
-    // If compression was used, we need to manually add the zip header to the JWE
-    if (params.enableCompression) {
-      // Parse the JWE to add the zip header
-      const parts = jwe.split('.')
-      const partsTuple = parts as [string, string, string, string, string]
-
-      // Decode, modify, and re-encode the protected header
-      const originalHeader = JSON.parse(new TextDecoder().decode(base64url.decode(partsTuple[0])))
-      const modifiedHeader = { ...originalHeader, zip: 'DEF' }
-      const newHeaderB64u = base64url.encode(
-        new TextEncoder().encode(JSON.stringify(modifiedHeader))
-      )
-
-      return `${newHeaderB64u}.${partsTuple[1]}.${partsTuple[2]}.${partsTuple[3]}.${partsTuple[4]}`
-    }
-
     return jwe
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : String(error)
-    throw new SHLError(`JWE encryption failed: ${errorMessage}`, 'SHL_ENCRYPTION_ERROR')
+    throw new SHLEncryptionError(`JWE encryption failed: ${errorMessage}`)
   }
 }
 
@@ -144,57 +144,59 @@ export async function decryptSHLFile(params: {
   key: string
 }): Promise<{ content: string; contentType: string | undefined }> {
   try {
-    // Check if the JWE has a zip header and handle it manually
-    // since jose library doesn't support zip headers
-    let jweToDecrypt = params.jwe
+    // Decode the base64url key to raw bytes
+    const keyBytes = base64url.decode(params.key)
+
+    // Check if the JWE has a zip header to determine which jose version to use
     let hasZipHeader = false
 
     try {
-      const parts = jweToDecrypt.split('.')
+      const parts = params.jwe.split('.')
       if (parts.length === 5) {
         const headerPart = parts[0]
         if (headerPart) {
           const header = JSON.parse(new TextDecoder().decode(base64url.decode(headerPart)))
           if (header.zip === 'DEF') {
             hasZipHeader = true
-            // Remove the zip header before passing to jose
-            const { zip: _zip, ...headerWithoutZip } = header
-            const newHeaderB64u = base64url.encode(
-              new TextEncoder().encode(JSON.stringify(headerWithoutZip))
-            )
-            jweToDecrypt = `${newHeaderB64u}.${parts[1]}.${parts[2]}.${parts[3]}.${parts[4]}`
           }
         }
       }
     } catch (_headerError) {
-      // If we can't parse the header, continue with original JWE
-      // jose will handle the error appropriately
+      // If we can't parse the header, continue with jose 6.x.x
     }
 
-    // Decode the base64url key to raw bytes
-    const keyBytes = base64url.decode(params.key)
+    // Use jose 4.x.x for compressed content (has built-in zip support)
+    if (hasZipHeader) {
+      // Decode the base64url key to raw bytes using jose 4.x.x base64url
+      const keyBytes = base64url.decode(params.key)
+
+      // Decrypt using jose 4.x.x compactDecrypt (supports zip=DEF)
+      const { plaintext, protectedHeader } = await compactDecryptV4(params.jwe, keyBytes)
+
+      // Extract content type from protected header
+      const contentType = protectedHeader.cty
+
+      // Convert bytes back to string (jose 4.x.x handles decompression automatically)
+      const decoder = new TextDecoder()
+      const content = decoder.decode(plaintext)
+
+      return { content, contentType }
+    }
+
+    // Use jose 6.x.x for non-compressed content
 
     // Decrypt using jose compactDecrypt
-    const { plaintext, protectedHeader } = await compactDecrypt(jweToDecrypt, keyBytes)
+    const { plaintext, protectedHeader } = await compactDecrypt(params.jwe, keyBytes)
 
     // Extract content type from protected header
     const contentType = protectedHeader.cty
 
-    // Decompress if zip header was present in original JWE
-    let contentBytes = plaintext
-    if (hasZipHeader) {
-      contentBytes = await decompressDeflateRaw(plaintext)
-    }
-
     // Convert bytes back to string
     const decoder = new TextDecoder()
-    const content = decoder.decode(contentBytes)
+    const content = decoder.decode(plaintext)
 
     return { content, contentType }
   } catch (error) {
-    if (error instanceof SHLError) {
-      throw error
-    }
     const errorMessage = error instanceof Error ? error.message : String(error)
     throw new SHLDecryptionError(`JWE decryption failed: ${errorMessage}`)
   }

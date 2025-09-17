@@ -92,6 +92,7 @@
   "packageManager": "pnpm@10.8.0",
   "dependencies": {
     "jose": "^6.0.12",
+    "jose-v4": "npm:jose@^4.15.4",
     "qrcode": "^1.5.4"
   },
   "devDependencies": {
