@@ -32,15 +32,17 @@ This aligns with the [CMS Interoperability Framework](https://www.cms.gov/health
 - Proper error handling hierarchy  
 - Built both for Node.js and browser environments
 
-## SMART Health Cards Demo
-
-<a href="https://vintasoftware.github.io/kill-the-clipboard/demo/shc/"><img height="200" alt="Kill the Clipboard JavaScript / TypeScript library - SMART Health Cards demo" src="https://github.com/user-attachments/assets/5e820583-9a23-4ff4-aa37-112254c8bfa5" /></a>
-
-Interactive browser demo that showcases QR code generation and camera-based scanning: https://vintasoftware.github.io/kill-the-clipboard/demo/shc/
-
 ## SMART Health Links Demo
 
-For SMART Health Links (SHL), see the Next.js demo application under `demo/shl/` and follow its README to run locally.
+<a href="https://kill-the-clipboard.vercel.app/"><img height="200" alt="Kill the Clipboard JavaScript / TypeScript library - SMART Health Links demo screenshot" src="https://github.com/user-attachments/assets/c3f6e30c-c932-4c81-879c-cd0bb0cba922" /></a>
+
+Demo for SMART Health Link generation and view. Supports sharing International Patient Summary (IPS) FHIR data: allergies, medications, vitals, etc. via a passcode-protected SMART Health Link: https://kill-the-clipboard.vercel.app/
+
+## SMART Health Cards Demo
+
+<a href="https://vintasoftware.github.io/kill-the-clipboard/demo/shc/"><img height="200" alt="Kill the Clipboard JavaScript / TypeScript library - SMART Health Cards demo screenshot" src="https://github.com/user-attachments/assets/5e820583-9a23-4ff4-aa37-112254c8bfa5" /></a>
+
+Interactive browser demo that showcases QR code generation and camera-based scanning: https://vintasoftware.github.io/kill-the-clipboard/demo/shc/
 
 ## Installation
 
