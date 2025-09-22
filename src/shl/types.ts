@@ -60,7 +60,7 @@ export type SHLFileContentType = 'application/smart-health-card' | 'application/
  *
  * @example
  * ```typescript
- * const payload: SHLinkPayloadV1 = {
+ * const payload: SHLPayloadV1 = {
  *   url: 'https://shl.example.org/manifests/abc123.../manifest.json',
  *   key: 'GawgguITVNvYokrepxQx_A663dZs3Q8a5_H2lBpxdUo', // 43 chars
  *   exp: 1640995200, // Unix timestamp
@@ -74,7 +74,7 @@ export type SHLFileContentType = 'application/smart-health-card' | 'application/
  * @group SHL
  * @category Types
  */
-export interface SHLinkPayloadV1 {
+export interface SHLPayloadV1 {
   /**
    * Manifest URL for this SHLink.
    * HTTPS URL where the manifest can be fetched via POST request.

@@ -1,7 +1,7 @@
 import { base64url } from 'jose'
 import QRCode from 'qrcode'
 import { SHLError, SHLFormatError } from './errors.js'
-import type { SHLFlag, SHLinkPayloadV1, SHLQREncodeParams } from './types.js'
+import type { SHLFlag, SHLPayloadV1, SHLQREncodeParams } from './types.js'
 
 /**
  * Immutable SHL class representing a SMART Health Link payload and URI.
@@ -307,8 +307,8 @@ export class SHL {
    *
    * @returns SHLink payload object conforming to v1 specification
    */
-  get payload(): SHLinkPayloadV1 {
-    const payload: SHLinkPayloadV1 = {
+  get payload(): SHLPayloadV1 {
+    const payload: SHLPayloadV1 = {
       url: this.url,
       key: this.key,
       v: this.v,
@@ -385,7 +385,7 @@ export class SHL {
    * @param id - Optional server-generated ID for database
    * @returns SHL instance reconstructed from the payload
    */
-  static fromPayload(payload: SHLinkPayloadV1, id?: string): SHL {
+  static fromPayload(payload: SHLPayloadV1, id?: string): SHL {
     const args: {
       id?: string
       manifestURL: string
@@ -416,7 +416,7 @@ export class SHL {
    *
    * @internal
    */
-  static validatePayload(payload: unknown): asserts payload is SHLinkPayloadV1 {
+  static validatePayload(payload: unknown): asserts payload is SHLPayloadV1 {
     if (!payload || typeof payload !== 'object') {
       throw new SHLFormatError('Invalid SHLink payload: must be an object')
     }
@@ -515,9 +515,9 @@ export class SHL {
 
       // Parse JSON payload
       const payloadJson = new TextDecoder().decode(payloadBytes)
-      let payload: SHLinkPayloadV1
+      let payload: SHLPayloadV1
       try {
-        payload = JSON.parse(payloadJson) as SHLinkPayloadV1
+        payload = JSON.parse(payloadJson) as SHLPayloadV1
       } catch {
         throw new SHLFormatError('Invalid SHLink URI: payload is not valid JSON')
       }

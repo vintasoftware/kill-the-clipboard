@@ -1,6 +1,6 @@
 "use server";
 
-import { SHLManifestBuilderDBAttrs, SHLManifestFileDBAttrs, SHLinkPayloadV1 } from 'kill-the-clipboard';
+import { SHLManifestBuilderDBAttrs, SHLManifestFileDBAttrs, SHLPayloadV1 } from 'kill-the-clipboard';
 import { PrismaClient } from '@prisma/client';
 import { JsonObject } from '@prisma/client/runtime/library';
 import { PrismaLibSQL } from '@prisma/adapter-libsql';
@@ -12,7 +12,7 @@ const adapter = new PrismaLibSQL({
 })
 const prisma = new PrismaClient({ adapter });
 
-export async function createSHL(payload: SHLinkPayloadV1, entropy: string): Promise<string> {
+export async function createSHL(payload: SHLPayloadV1, entropy: string): Promise<string> {
   const shl = await prisma.shl.create({
     data: {
       entropy,
@@ -23,7 +23,7 @@ export async function createSHL(payload: SHLinkPayloadV1, entropy: string): Prom
   return shl.id;
 }
 
-export async function getSHL(shlId: string): Promise<SHLinkPayloadV1 | null> {
+export async function getSHL(shlId: string): Promise<SHLPayloadV1 | null> {
   const shl = await prisma.shl.findUnique({
     where: { id: shlId },
   });
@@ -32,7 +32,7 @@ export async function getSHL(shlId: string): Promise<SHLinkPayloadV1 | null> {
     return null;
   }
 
-  return shl.payload as unknown as SHLinkPayloadV1;
+  return shl.payload as unknown as SHLPayloadV1;
 }
 
 

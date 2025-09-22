@@ -6,11 +6,11 @@ import { SHL } from './shl.js'
 import type {
   SHLFileContentType,
   SHLFileJWE,
-  SHLinkPayloadV1,
   SHLManifestBuilderDBAttrs,
   SHLManifestFileDBAttrs,
   SHLManifestFileDescriptor,
   SHLManifestV1,
+  SHLPayloadV1,
 } from './types.js'
 
 /**
@@ -856,7 +856,7 @@ export class SHLManifestBuilder {
    * ```
    */
   static fromDBAttrs(params: {
-    shl: SHLinkPayloadV1
+    shl: SHLPayloadV1
     attrs: SHLManifestBuilderDBAttrs
     uploadFile: (content: string, contentType?: SHLFileContentType) => Promise<string>
     getFileURL: (path: string) => Promise<string>
