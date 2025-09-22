@@ -6,8 +6,8 @@ import type { SHLFlag, SHLPayloadV1, SHLQREncodeParams } from './types.js'
 /**
  * Immutable SHL class representing a SMART Health Link payload and URI.
  *
- * This class handles the SHLink "pointer" - the payload containing url, key, flags, etc.
- * It provides methods to generate SHLink URIs and access payload properties.
+ * This class handles the SHL "pointer" - the payload containing url, key, flags, etc.
+ * It provides methods to generate SHL URIs and access payload properties.
  * Use {@link SHLManifestBuilder} to manage the manifest and files referenced by this SHL.
  *
  * SMART Health Links enable secure sharing of health data through encrypted links.
@@ -25,7 +25,7 @@ import type { SHLFlag, SHLPayloadV1, SHLQREncodeParams } from './types.js'
  *   label: 'COVID-19 Vaccination Record'
  * });
  *
- * // Generate the SHLink URI
+ * // Generate the SHL URI
  * const uri = shl.toURI();
  * console.log(uri); // shlink:/eyJ1cmwiOi...
  * ```
@@ -73,13 +73,13 @@ export class SHL {
    * The SHL payload contains a cryptographically secure manifest URL and encryption key.
    * The manifest URL is constructed as: `${baseManifestURL}/${entropy}/${manifestPath}` where `entropy` is a
    * 32-byte base64url string (43 chars). The encryption key is a separate 32-byte base64url string (43 chars)
-   * placed in the SHLink payload `key`.
+   * placed in the SHL payload `key`.
    *
    * @param params.id - Optional server-generated ID for database.
    * @param params.baseManifestURL - Base URL for constructing manifest URLs (e.g., 'https://shl.example.org/manifests/')
    * @param params.manifestPath - Optional manifestPath for constructing manifest URLs (e.g., '/manifest.json')
-   * @param params.expirationDate - Optional expiration date for the SHLink. When set, fills the `exp` field in the SHLink payload with Unix timestamp.
-   * @param params.flag - Optional flag for the SHLink (see {@link SHLFlag})
+   * @param params.expirationDate - Optional expiration date for the SHL. When set, fills the `exp` field in the SHL payload with Unix timestamp.
+   * @param params.flag - Optional flag for the SHL (see {@link SHLFlag})
    * @param params.label - Optional short description of the shared data. Maximum 80 characters.
    * @returns New SHL instance with generated full manifest URL and encryption key
    * @throws {@link SHLFormatError} When label exceeds 80 characters
@@ -145,12 +145,12 @@ export class SHL {
   }
 
   /**
-   * Generate the SHLink URI following the SMART Health Links specification.
+   * Generate the SHL URI following the SMART Health Links specification.
    *
    * Creates a `shlink:/` URI with base64url-encoded JSON payload containing
    * the manifest URL, encryption key, and optional metadata (expiration, flags, label).
    *
-   * @returns SHLink URI string in format `shlink:/<base64url-encoded-payload>`
+   * @returns SHL URI string in format `shlink:/<base64url-encoded-payload>`
    *
    * @example
    * ```typescript
@@ -162,7 +162,7 @@ export class SHL {
    *   flag: 'P',
    *   label: 'Lab Results - Valid for 30 days'
    * });
-   * // Generate the SHLink URI
+   * // Generate the SHL URI
    * const uri = shl.toURI();
    * // Returns: shlink:/eyJ1cmwiOiJodHRwczovL3NobC5leGFtcGxlLm9yZy9tYW5pZmVzdHMvLi4uXCIsXCJrZXlcIjpcIi4uLlwiLFwidlwiOjF9
    * ```
@@ -214,7 +214,7 @@ export class SHL {
    * Get the expiration date as Unix timestamp if set.
    *
    * Returns the expiration time in seconds since Unix epoch (1970-01-01),
-   * suitable for use in the SHLink payload `exp` field.
+   * suitable for use in the SHL payload `exp` field.
    *
    * @returns Unix timestamp in seconds, or undefined if no expiration set
    */
@@ -302,10 +302,10 @@ export class SHL {
   /**
    * Get the complete SHL payload object for serialization.
    *
-   * Returns the payload structure that gets base64url-encoded in the SHLink URI.
+   * Returns the payload structure that gets base64url-encoded in the SHL URI.
    * Includes all fields: url, key, version, and optional exp, flag, label.
    *
-   * @returns SHLink payload object conforming to v1 specification
+   * @returns SHL payload object conforming to v1 specification
    */
   get payload(): SHLPayloadV1 {
     const payload: SHLPayloadV1 = {
@@ -326,7 +326,7 @@ export class SHL {
   }
 
   /**
-   * Generate a QR code as a Data URL for the SHLink URI.
+   * Generate a QR code as a Data URL for the SHL URI.
    *
    * Creates a QR code image encoded as a base64 Data URL that can be used
    * directly in HTML img tags or displayed in applications.
@@ -378,10 +378,10 @@ export class SHL {
    * Static factory method to create an SHL from a parsed payload.
    *
    * This method is used internally by {@link SHLViewer} to reconstruct SHL objects
-   * from parsed SHLink URIs. It does not generate new keys or paths, but uses
+   * from parsed SHL URIs. It does not generate new keys or paths, but uses
    * the provided values from an existing payload.
    *
-   * @param payload - Validated SHLink payload from a parsed URI
+   * @param payload - Validated SHL payload from a parsed URI
    * @param id - Optional server-generated ID for database
    * @returns SHL instance reconstructed from the payload
    */
@@ -405,7 +405,7 @@ export class SHL {
   }
 
   /**
-   * Static method to validate a SHLink payload structure.
+   * Static method to validate a SHL payload structure.
    *
    * Validates that the payload conforms to the SMART Health Links v1 specification,
    * including required fields (url, key), optional fields (exp, flag, label, v),
@@ -418,70 +418,68 @@ export class SHL {
    */
   static validatePayload(payload: unknown): asserts payload is SHLPayloadV1 {
     if (!payload || typeof payload !== 'object') {
-      throw new SHLFormatError('Invalid SHLink payload: must be an object')
+      throw new SHLFormatError('Invalid SHL payload: must be an object')
     }
 
     const p = payload as Record<string, unknown>
 
     // Required fields
     if (!p.url || typeof p.url !== 'string') {
-      throw new SHLFormatError('Invalid SHLink payload: missing or invalid "url" field')
+      throw new SHLFormatError('Invalid SHL payload: missing or invalid "url" field')
     }
 
     if (!p.key || typeof p.key !== 'string') {
-      throw new SHLFormatError('Invalid SHLink payload: missing or invalid "key" field')
+      throw new SHLFormatError('Invalid SHL payload: missing or invalid "key" field')
     }
 
     // Validate key length (should be 43 characters for base64url-encoded 32 bytes)
     if (p.key.length !== 43) {
-      throw new SHLFormatError('Invalid SHLink payload: "key" field must be 43 characters')
+      throw new SHLFormatError('Invalid SHL payload: "key" field must be 43 characters')
     }
 
     // Optional fields validation
     if (p.exp !== undefined && (typeof p.exp !== 'number' || p.exp <= 0)) {
-      throw new SHLFormatError('Invalid SHLink payload: "exp" field must be a positive number')
+      throw new SHLFormatError('Invalid SHL payload: "exp" field must be a positive number')
     }
 
     if (p.flag !== undefined && typeof p.flag !== 'string') {
-      throw new SHLFormatError('Invalid SHLink payload: "flag" field must be a string')
+      throw new SHLFormatError('Invalid SHL payload: "flag" field must be a string')
     }
 
     if (p.label !== undefined && (typeof p.label !== 'string' || p.label.length > 80)) {
       throw new SHLFormatError(
-        'Invalid SHLink payload: "label" field must be a string of 80 characters or less'
+        'Invalid SHL payload: "label" field must be a string of 80 characters or less'
       )
     }
 
     if (p.v !== undefined && p.v !== 1) {
-      throw new SHLFormatError('Invalid SHLink payload: unsupported version')
+      throw new SHLFormatError('Invalid SHL payload: unsupported version')
     }
 
     // Validate URL format
     try {
       new URL(p.url)
     } catch {
-      throw new SHLFormatError('Invalid SHLink payload: "url" field is not a valid URL')
+      throw new SHLFormatError('Invalid SHL payload: "url" field is not a valid URL')
     }
 
     // Validate flag format if present
     if (p.flag && !['L', 'P', 'LP', 'U', 'LU'].includes(p.flag)) {
-      throw new SHLFormatError(
-        'Invalid SHLink payload: "flag" not one of "L", "P", "LP", "U", "LU"'
-      )
+      throw new SHLFormatError('Invalid SHL payload: "flag" not one of "L", "P", "LP", "U", "LU"')
     }
   }
 
   /**
-   * Static method to parse a SHLink URI into an SHL object.
+   * Static method to parse a SHL URI into an SHL object.
    *
-   * Handles both bare SHLink URIs and viewer-prefixed URIs:
+   * Handles both bare SHL URIs and viewer-prefixed URIs:
    * - `shlink:/eyJ1cmwiOi4uLn0` (bare)
    * - `https://viewer.example/#shlink:/eyJ1cmwiOi4uLn0` (viewer-prefixed)
    *
    * Validates URI format, decodes base64url payload, parses JSON,
    * and validates payload structure according to SHL specification.
    *
-   * @param shlinkURI - SHLink URI to parse
+   * @param shlinkURI - SHL URI to parse
    * @returns SHL instance with parsed payload data
    * @throws {@link SHLFormatError} When URI format is invalid, payload cannot be decoded, or payload structure is invalid
    */
@@ -496,13 +494,13 @@ export class SHL {
 
       // Validate shlink:/ prefix
       if (!uriToParse.startsWith('shlink:/')) {
-        throw new SHLFormatError('Invalid SHLink URI: must start with "shlink:/"')
+        throw new SHLFormatError('Invalid SHL URI: must start with "shlink:/"')
       }
 
       // Extract and decode the payload
       const payloadB64u = uriToParse.substring('shlink:/'.length)
       if (!payloadB64u) {
-        throw new SHLFormatError('Invalid SHLink URI: missing payload')
+        throw new SHLFormatError('Invalid SHL URI: missing payload')
       }
 
       // Decode base64url payload
@@ -510,7 +508,7 @@ export class SHL {
       try {
         payloadBytes = base64url.decode(payloadB64u)
       } catch {
-        throw new SHLFormatError('Invalid SHLink URI: payload is not valid base64url')
+        throw new SHLFormatError('Invalid SHL URI: payload is not valid base64url')
       }
 
       // Parse JSON payload
@@ -519,7 +517,7 @@ export class SHL {
       try {
         payload = JSON.parse(payloadJson) as SHLPayloadV1
       } catch {
-        throw new SHLFormatError('Invalid SHLink URI: payload is not valid JSON')
+        throw new SHLFormatError('Invalid SHL URI: payload is not valid JSON')
       }
 
       // Validate payload structure
@@ -532,7 +530,7 @@ export class SHL {
         throw error
       }
       const errorMessage = error instanceof Error ? error.message : String(error)
-      throw new SHLFormatError(`Failed to parse SHLink URI: ${errorMessage}`)
+      throw new SHLFormatError(`Failed to parse SHL URI: ${errorMessage}`)
     }
   }
 }

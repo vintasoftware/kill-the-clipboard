@@ -34,13 +34,13 @@ describe('SHL Class', () => {
     expect(shl.exp).toBe(Math.floor(expirationDate.getTime() / 1000))
   })
 
-  it('should generate valid SHLink URIs', () => {
+  it('should generate valid SHL URIs', () => {
     const shl = SHL.generate({ baseManifestURL: 'https://shl.example.org', label: 'Test Card' })
     const uri = shl.toURI()
     expect(uri).toMatch(/^shlink:\/[A-Za-z0-9_-]+$/)
   })
 
-  it('should generate a SHLink with valid payload', () => {
+  it('should generate a SHL with valid payload', () => {
     const expirationDate = new Date('2025-12-31T23:59:59Z')
     const shl = SHL.generate({
       baseManifestURL: 'https://shl.example.org',
@@ -163,8 +163,8 @@ describe('SHL Class', () => {
     })
   })
 
-  describe('SHLink URI Parsing', () => {
-    it('should parse valid SHLink URIs correctly', () => {
+  describe('SHL URI Parsing', () => {
+    it('should parse valid SHL URIs correctly', () => {
       const testCases = [
         {
           name: 'bare URI',

@@ -14,7 +14,7 @@ datasource db {
 model Shl {
   id        String   @id @default(cuid(2))
   entropy   String   @unique // Extracted from manifest URL for efficient lookups
-  payload   Json     // JSON serialized SHLink payload
+  payload   Json     // JSON serialized SHL payload
   createdAt DateTime @default(now())
 
   // Relations

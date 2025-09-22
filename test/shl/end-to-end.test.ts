@@ -53,7 +53,7 @@ describe('End-to-End SHL Workflow', () => {
     // Store the SHL payload separately
     const shlPayload = shl.payload
 
-    // Generate the SHLink URI
+    // Generate the SHL URI
     const shlinkURI = shl.toURI()
     expect(shlinkURI).toMatch(/^shlink:\/[A-Za-z0-9_-]+$/)
     const viewerPrefixedURI = `https://viewer.example/#${shlinkURI}`
@@ -106,9 +106,9 @@ describe('End-to-End SHL Workflow', () => {
       return { ok: false, status: 404, statusText: 'Not Found', text: async () => '' } as Response
     }
 
-    // Create the SHL viewer and resolve the SHLink
+    // Create the SHL viewer and resolve the SHL
     const viewer = new SHLViewer({ shlinkURI: viewerPrefixedURI, fetch: fetchImpl })
-    const resolved = await viewer.resolveSHLink({
+    const resolved = await viewer.resolveSHL({
       recipient: 'did:example:alice',
       // Force one embedded, one location with a specific max length
       // biome-ignore lint/style/noNonNullAssertion: file-1 is defined

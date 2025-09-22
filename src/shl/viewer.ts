@@ -25,27 +25,27 @@ import type {
 /**
  * SHL Viewer handles parsing and resolving SMART Health Links.
  *
- * This class processes SHLink URIs and fetches/decrypts the referenced content.
+ * This class processes SHL URIs and fetches/decrypts the referenced content.
  * It supports both embedded and location-based file descriptors, handles
  * passcode authentication, and validates manifest structures according to
  * the SMART Health Links specification.
  *
  * The viewer automatically handles:
- * - SHLink URI parsing and payload validation
+ * - SHL URI parsing and payload validation
  * - Manifest fetching with POST requests
  * - File decryption using JWE with A256GCM
  * - SMART Health Card and FHIR resource extraction
  *
  * @example
  * ```typescript
- * // Create viewer with SHLink URI
+ * // Create viewer with SHL URI
  * const viewer = new SHLViewer({
  *   shlinkURI: 'shlink:/eyJ1cmwiOi4uLn0',
  *   fetch: customFetch // optional custom fetch implementation
  * });
  *
- * // Resolve the SHLink (fetch and decrypt content)
- * const resolved = await viewer.resolveSHLink({
+ * // Resolve the SHL (fetch and decrypt content)
+ * const resolved = await viewer.resolveSHL({
  *   recipient: 'Dr. Smith',
  *   passcode: 'secret123', // if P flag is set
  *   embeddedLengthMax: 16384 // prefer embedding files under 16KB
@@ -66,11 +66,11 @@ export class SHLViewer {
   /**
    * Create an SHL viewer.
    *
-   * The viewer can be created with or without an initial SHLink URI.
+   * The viewer can be created with or without an initial SHL URI.
    * If no URI is provided, you can parse one later using the shl getter
    * after creating a viewer with a URI.
    *
-   * @param params.shlinkURI - SHLink URI to parse.
+   * @param params.shlinkURI - SHL URI to parse.
    *   Supports both bare URIs (`shlink:/...`) and viewer-prefixed URIs (`https://viewer.example/#shlink:/...`)
    * @param params.fetch - Optional fetch implementation for network requests.
    *   Defaults to global fetch. Useful for testing or custom network handling.
@@ -110,9 +110,9 @@ export class SHLViewer {
   }
 
   /**
-   * Get the parsed SHL object from the SHLink URI.
+   * Get the parsed SHL object from the SHL URI.
    *
-   * Returns the SHL instance created from parsing the SHLink URI provided
+   * Returns the SHL instance created from parsing the SHL URI provided
    * to the constructor. Use this to access SHL properties like expiration,
    * flags, and manifest URL.
    *
@@ -131,7 +131,7 @@ export class SHLViewer {
   }
 
   /**
-   * Resolve a SHLink URI by fetching and decrypting all referenced content.
+   * Resolve a SHL URI by fetching and decrypting all referenced content.
    *
    * This method performs the complete SHL resolution workflow:
    * 1. Validates SHL expiration and passcode requirements
@@ -143,7 +143,7 @@ export class SHLViewer {
    *
    * @param params.recipient - Required recipient identifier sent in manifest request.
    *   This should identify the requesting user/system (e.g., "Dr. Smith", "Patient Portal")
-   * @param params.passcode - Optional passcode for P-flagged SHLinks.
+   * @param params.passcode - Optional passcode for P-flagged SHLs.
    *   Required when SHL has 'P' flag, ignored otherwise.
    * @param params.embeddedLengthMax - Optional preference for embedded vs location files.
    *   Files smaller than this size (in bytes) will be embedded in manifest response.
@@ -167,7 +167,7 @@ export class SHLViewer {
    * const viewer = new SHLViewer({ shlinkURI: 'shlink:/...' });
    *
    * try {
-   *   const resolved = await viewer.resolveSHLink({
+   *   const resolved = await viewer.resolveSHL({
    *     recipient: 'Dr. Smith - General Practice',
    *     passcode: viewer.shl.requiresPasscode ? 'user-provided-passcode' : undefined,
    *     embeddedLengthMax: 8192 // Prefer embedding files under 8KB
@@ -193,7 +193,7 @@ export class SHLViewer {
    * }
    * ```
    */
-  async resolveSHLink(params: {
+  async resolveSHL(params: {
     passcode?: string
     recipient: string
     embeddedLengthMax?: number
@@ -267,7 +267,7 @@ export class SHLViewer {
    *
    * @param params.url - Manifest URL from SHL payload
    * @param params.recipient - Recipient identifier for the manifest request
-   * @param params.passcode - Optional passcode for P-flagged SHLinks
+   * @param params.passcode - Optional passcode for P-flagged SHLs
    * @param params.embeddedLengthMax - Optional preference for embedded file size limit
    * @returns Promise resolving to validated manifest object ({@link SHLManifestV1})
    * @throws {@link SHLInvalidPasscodeError} When server returns 401 (invalid/missing passcode)

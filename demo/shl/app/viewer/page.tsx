@@ -110,7 +110,7 @@ export default function ViewerPage() {
     setIsLoading(true);
     setError(null);
     try {
-      const content = await shlViewer.resolveSHLink({
+      const content = await shlViewer.resolveSHL({
         recipient: values.recipient.trim(),
         passcode: shlViewer.shl.requiresPasscode ? values.passcode : undefined,
         embeddedLengthMax: 4096,

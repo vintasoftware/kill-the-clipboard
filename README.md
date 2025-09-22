@@ -20,9 +20,9 @@ This aligns with the [CMS Interoperability Framework](https://www.cms.gov/health
 - Decoding / Verification support
 
 **SMART Health Links (SHL)**
-- SHLink URI generation per SHL specification
+- SHL URI generation per SHL specification
 - `SHLManifestBuilder` for producing manifests with embedded and location file entries
-- `SHLViewer` to resolve SHLinks, fetch manifests, and decrypt content
+- `SHLViewer` to resolve SHLs, fetch manifests, and decrypt content
 - QR code generation
 - Passcode flow supported at the application level (see SHL demo)
 
@@ -147,24 +147,24 @@ console.log('Bundle from QR:', await healthCardFromQR.asBundle());
 
 ### SMART Health Links Quick Start
 
-SHLinks enable encrypted, link-based sharing of health information. The flow involves:
+SHLs enable encrypted, link-based sharing of health information. The flow involves:
 
-- Server issues an SHLink (creates state, attributes an ID to the SHL, persists SHL builder data, hosts a manifest endpoint, and stores encrypted files)
-- Client resolves the SHLink using `SHLViewer`, providing the recipient identifier and (if applicable) a passcode
+- Server issues an SHL (creates state, attributes an ID to the SHL, persists SHL builder data, hosts a manifest endpoint, and stores encrypted files)
+- Client resolves the SHL using `SHLViewer`, providing the recipient identifier and (if applicable) a passcode
 
 Server responsibilities are required for a functional SHL implementation. Refer to the demo code in `demo/shl/` for a full working example (manifest endpoint, storage handlers, and passcode handling). In summary, the SHL generation and resolution flow involves:
 
-- On the server side, during SHLink creation:
+- On the server side, during SHL creation:
     1. Create an `SHL` instance with `SHL.generate({ baseManifestURL, manifestPath, expirationDate?, label?, flag? })`
     2. Attribute a server-generated ID to the SHL (useful to identify the SHL and related models in the database)
     2. Use `SHLManifestBuilder` with implementations for `uploadFile`, `getFileURL`, and `loadFile` that persist encrypted files and return retrievable URLs
     3. Add content: `addFHIRResource({ content, enableCompression? })`, `addHealthCard({ shc, enableCompression? })`
     4. Persist the builder state via `toDBAttrs()`
-    5. Return the SHLink URI to clients via `shl.toURI()`
-- On the client side, during SHLink resolution:
-    1. Create a `SHLViewer` instance with the SHLink URI
-    2. Resolve the SHLink using `resolveSHLink({ recipient, passcode?, embeddedLengthMax?, shcReaderConfig? })`
-- On the server side, after client resolves the SHLink:
+    5. Return the SHL URI to clients via `shl.toURI()`
+- On the client side, during SHL resolution:
+    1. Create a `SHLViewer` instance with the SHL URI
+    2. Resolve the SHL using `resolveSHL({ recipient, passcode?, embeddedLengthMax?, shcReaderConfig? })`
+- On the server side, after client resolves the SHL:
     1. Implement a POST manifest endpoint at `baseManifestURL + manifestPath`
     2. On each manifest request, load the builder state from the database, reconstruct the builder with `fromDBAttrs()`, call `buildManifest({ embeddedLengthMax? })`, and return the manifest JSON
 
@@ -227,9 +227,9 @@ await builder.addFHIRResource({ content: fhirBundle });
 const builderAttrs = builder.toDBAttrs();
 await storeBuilderAttrs('some-uuid', builderAttrs); // Implement your own function
 
-// 5. [Server side] Generate the SHLink URI for sharing
+// 5. [Server side] Generate the SHL URI for sharing
 const shlinkURI = shl.toURI();
-console.log('Share this SHLink:', `https://viewer.example/#${shlinkURI}`);
+console.log('Share this SHL:', `https://viewer.example/#${shlinkURI}`);
 
 // 6. [Server side] Implement manifest and file serving
 const fetchImpl = async (url: string, init?: RequestInit) => {
@@ -272,13 +272,13 @@ const fetchImpl = async (url: string, init?: RequestInit) => {
   return { ok: false, status: 404, text: async () => '' };
 };
 
-// 7. Use SHLViewer to resolve the SHLink (client-side)
+// 7. Use SHLViewer to resolve the SHL (client-side)
 const viewer = new SHLViewer({ 
   shlinkURI: `https://viewer.example/#${shlinkURI}`, 
   // Note: No need to pass fetch implementation if you have a real server-side implementation:
   fetch: fetchImpl
 });
-const resolved = await viewer.resolveSHLink({
+const resolved = await viewer.resolveSHL({
   recipient: 'alice@example.org',
   embeddedLengthMax: 4096 // Files smaller than this will be embedded
 });
@@ -509,7 +509,7 @@ const config = {
 ## Future Work
 
 - **No `application/smart-api-access`**: SMART on FHIR API access tokens are not supported in content types.
-- **No Built-in Automatic Refresh for SHLs with `L` Flag**: Long-term SHLinks (`L` flag) require manual implementation of polling or push notifications for updates.
+- **No Built-in Automatic Refresh for SHLs with `L` Flag**: Long-term SHLs (`L` flag) require manual implementation of polling or push notifications for updates.
 
 ## Contributing
 

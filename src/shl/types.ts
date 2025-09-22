@@ -50,13 +50,13 @@ export type SHLFlag = 'L' | 'P' | 'LP' | 'U' | 'LU'
 export type SHLFileContentType = 'application/smart-health-card' | 'application/fhir+json'
 
 /**
- * SHLink Payload structure (v1).
+ * SHL Payload structure (v1).
  *
- * This is the core data structure that gets base64url-encoded in SHLink URIs.
+ * This is the core data structure that gets base64url-encoded in SHL URIs.
  * Contains all information needed to access and decrypt SHL content.
  *
  * The payload is serialized as minified JSON and encoded as base64url in the
- * SHLink URI: `shlink:/<base64url-encoded-payload>`
+ * SHL URI: `shlink:/<base64url-encoded-payload>`
  *
  * @example
  * ```typescript
@@ -76,7 +76,7 @@ export type SHLFileContentType = 'application/smart-health-card' | 'application/
  */
 export interface SHLPayloadV1 {
   /**
-   * Manifest URL for this SHLink.
+   * Manifest URL for this SHL.
    * HTTPS URL where the manifest can be fetched via POST request.
    */
   url: string
@@ -117,7 +117,7 @@ export type SHLQREncodeParams = {
   /**
    * URL of the SHL viewer to include in the QR code as a prefix.
    * When provided, the QR code will contain: `${viewerURL}#${shlinkURI}`
-   * instead of just the bare SHLink URI.
+   * instead of just the bare SHL URI.
    */
   viewerURL?: string
 } & QREncodeParams
@@ -156,7 +156,7 @@ export interface SHLManifestRequestV1 {
    */
   recipient: string
   /**
-   * Optional passcode for P-flagged SHLinks.
+   * Optional passcode for P-flagged SHLs.
    * Required when SHL has 'P' flag. Server validates against stored hash.
    */
   passcode?: string
@@ -385,7 +385,7 @@ export interface SHLManifestBuilderDBAttrs {
  *
  * @example
  * ```typescript
- * const resolved = await viewer.resolveSHLink({ recipient: 'Dr. Smith' });
+ * const resolved = await viewer.resolveSHL({ recipient: 'Dr. Smith' });
  *
  * // Process SMART Health Cards
  * for (const shc of resolved.smartHealthCards) {
