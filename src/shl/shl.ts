@@ -384,8 +384,6 @@ export class SHL {
    * @param payload - Validated SHLink payload from a parsed URI
    * @param id - Optional server-generated ID for database
    * @returns SHL instance reconstructed from the payload
-   *
-   * @internal
    */
   static fromPayload(payload: SHLinkPayloadV1, id?: string): SHL {
     const args: {
