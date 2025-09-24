@@ -2,6 +2,7 @@
 import { base64url, CompactEncrypt, compactDecrypt } from 'jose'
 // Import jose 4.x.x for compression support (jose dropped zip support at 5.0.0)
 import { CompactEncrypt as CompactEncryptV4, compactDecrypt as compactDecryptV4 } from 'jose-v4'
+import { decompressDeflateRaw } from '../common/compression.js'
 import { SHLDecryptionError, SHLEncryptionError } from './errors.js'
 import type { SHLFileContentType } from './types.js'
 
@@ -171,7 +172,10 @@ export async function decryptSHLFile(params: {
       const keyBytes = base64url.decode(params.key)
 
       // Decrypt using jose 4.x.x compactDecrypt (supports zip=DEF)
-      const { plaintext, protectedHeader } = await compactDecryptV4(params.jwe, keyBytes)
+      // Use our own decompression implementation to avoid requiring pako
+      const { plaintext, protectedHeader } = await compactDecryptV4(params.jwe, keyBytes, {
+        inflateRaw: decompressDeflateRaw,
+      })
 
       // Extract content type from protected header
       const contentType = protectedHeader.cty
