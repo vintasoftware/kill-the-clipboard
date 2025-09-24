@@ -37,16 +37,19 @@ export async function uploadSHLFile(
 }
 
 /**
- * Generate a URL for a Binary resource using Medplum's fhirUrl method.
- * @param medplum - Authenticated Medplum client instance
- * @param path - The Binary path
- * @returns The FHIR URL for the Binary resource
+ * Return the proxied URL for the Binary resource to bypass CORS issues.
+ * `path` param is already a full presigned S3 URL processed by Medplum, but we need to proxy it
+ * to bypass CORS issues on the client side (Medplum's S3 uses strict-origin-when-cross-origin).
+ * See `getBuilderAttrsAndSHL` in medplum-storage.ts for more details.
+ * @param path - The presigned URL from Medplum storage
+ * @returns The proxy URL that routes through our API to fetch the file
  */
-export async function getSHLFileURL(medplum: MedplumClient, path: string): Promise<string> {
-  console.log('getSHLFileURL called for path:', path);
-  const url = medplum.fhirUrl(path).toString();
-  console.log('getSHLFileURL generated FHIR URL:', url);
-  return Promise.resolve(url);
+export async function getSHLFileURL(path: string): Promise<string> {
+  // Construct proxy URL that will fetch the presigned URL server-side
+  const proxyUrl = new URL(`${process.env.SHL_SERVER_BASE_URL!}/files/proxy`);
+  proxyUrl.searchParams.set('url', path);
+
+  return Promise.resolve(proxyUrl.toString());
 }
 
 /**
@@ -64,8 +67,6 @@ export function buildManifestFileHandlers(medplum: MedplumClient, readonly: bool
         return uploadSHLFile(medplum, content, contentType);
       }
     },
-    getFileURL: async (path: string) => {
-      return getSHLFileURL(medplum, path);
-    },
+    getFileURL: getSHLFileURL,
   };
 }

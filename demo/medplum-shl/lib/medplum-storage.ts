@@ -1,5 +1,19 @@
 import { MedplumClient } from '@medplum/core';
-import { DocumentManifest, DocumentReference, AuditEvent, Bundle, Extension } from '@medplum/fhirtypes';
+import { DocumentManifest, DocumentReference, AuditEvent, Extension } from '@medplum/fhirtypes';
+import { SHLManifestBuilderDBAttrs, SHLPayloadV1, SHLFileContentType } from 'kill-the-clipboard';
+
+
+const EXTENSION_URLS = {
+  SHL_PAYLOAD: 'https://kill-the-clipboard.vercel.app/fhir/extension/shl-payload',
+  SHL_LABEL: 'https://kill-the-clipboard.vercel.app/fhir/extension/shl-label',
+  SHL_FLAG: 'https://kill-the-clipboard.vercel.app/fhir/extension/shl-flag',
+  HASHED_PASSCODE: 'https://kill-the-clipboard.vercel.app/fhir/extension/hashed-passcode',
+  EXPIRATION_DATE: 'https://kill-the-clipboard.vercel.app/fhir/extension/expiration-date',
+  FAILED_ATTEMPTS: 'https://kill-the-clipboard.vercel.app/fhir/extension/failed-attempts',
+  IS_INVALIDATED: 'https://kill-the-clipboard.vercel.app/fhir/extension/is-invalidated',
+  CIPHERTEXT_LENGTH: 'https://kill-the-clipboard.vercel.app/fhir/extension/ciphertext-length',
+  LAST_UPDATED: 'https://kill-the-clipboard.vercel.app/fhir/extension/last-updated',
+} as const;
 
 // FHIR-based storage for Medplum backend
 export class MedplumStorage {
@@ -11,7 +25,7 @@ export class MedplumStorage {
    */
   async storeManifestBuilder(
     entropy: string,
-    builderAttrs: any, // From toDBAttrs() method - contains { files: SHLManifestFileDBAttrs[] }
+    builderAttrs: SHLManifestBuilderDBAttrs,
     config: {
       shlPayload: any;
       label?: string;
@@ -38,51 +52,47 @@ export class MedplumStorage {
     // Create extensions array
     const extensions: Extension[] = [
       {
-        url: 'https://kill-the-clipboard.vercel.app/fhir/extension/shl-payload',
+        url: EXTENSION_URLS.SHL_PAYLOAD,
         valueString: JSON.stringify(config.shlPayload)
       },
-      {
-        url: 'https://kill-the-clipboard.vercel.app/fhir/extension/builder-attrs',
-        valueString: JSON.stringify(builderAttrs)
-      }
     ];
 
     if (config.label) {
       extensions.push({
-        url: 'https://kill-the-clipboard.vercel.app/fhir/extension/shl-label',
+        url: EXTENSION_URLS.SHL_LABEL,
         valueString: config.label
       });
     }
 
     if (config.flags) {
       extensions.push({
-        url: 'https://kill-the-clipboard.vercel.app/fhir/extension/shl-flag',
+        url: EXTENSION_URLS.SHL_FLAG,
         valueString: config.flags
       });
     }
 
     if (config.hashedPasscode) {
       extensions.push({
-        url: 'https://kill-the-clipboard.vercel.app/fhir/extension/hashed-passcode',
+        url: EXTENSION_URLS.HASHED_PASSCODE,
         valueString: config.hashedPasscode
       });
     }
 
     if (config.expirationDate) {
       extensions.push({
-        url: 'https://kill-the-clipboard.vercel.app/fhir/extension/expiration-date',
+        url: EXTENSION_URLS.EXPIRATION_DATE,
         valueDateTime: config.expirationDate.toISOString()
       });
     }
 
     // Initialize counters
     extensions.push({
-      url: 'https://kill-the-clipboard.vercel.app/fhir/extension/failed-attempts',
+      url: EXTENSION_URLS.FAILED_ATTEMPTS,
       valueInteger: 0
     });
 
     extensions.push({
-      url: 'https://kill-the-clipboard.vercel.app/fhir/extension/is-invalidated',
+      url: EXTENSION_URLS.IS_INVALIDATED,
       valueBoolean: false
     });
 
@@ -104,64 +114,6 @@ export class MedplumStorage {
     };
 
     return await this.medplum.createResource(manifest);
-  }
-
-  /**
-   * Get SHL payload by entropy key
-   */
-  async getSHL(entropy: string): Promise<any | null> {
-    try {
-      const manifest = await this.medplum.searchOne('DocumentManifest', {
-        identifier: entropy
-      });
-
-      if (!manifest) {
-        return null;
-      }
-
-      // Find the SHL payload extension
-      const payloadExtension = manifest.extension?.find(
-        (ext: Extension) => ext.url === 'https://kill-the-clipboard.vercel.app/fhir/extension/shl-payload'
-      );
-
-      if (!payloadExtension?.valueString) {
-        return null;
-      }
-
-      return JSON.parse(payloadExtension.valueString);
-    } catch (error) {
-      console.error('Error getting SHL payload:', error);
-      return null;
-    }
-  }
-
-  /**
-   * Get manifest builder attributes by entropy key
-   */
-  async getManifestBuilder(entropy: string): Promise<any | null> {
-    try {
-      const manifest = await this.medplum.searchOne('DocumentManifest', {
-        identifier: entropy
-      });
-
-      if (!manifest) {
-        return null;
-      }
-
-      // Find the builder attributes extension
-      const builderExtension = manifest.extension?.find(
-        (ext: Extension) => ext.url === 'https://kill-the-clipboard.vercel.app/fhir/extension/builder-attrs'
-      );
-
-      if (!builderExtension?.valueString) {
-        return null;
-      }
-
-      return JSON.parse(builderExtension.valueString);
-    } catch (error) {
-      console.error('Error getting manifest builder attributes:', error);
-      return null;
-    }
   }
 
   /**
@@ -216,17 +168,92 @@ export class MedplumStorage {
       }],
       extension: [
         {
-          url: 'https://kill-the-clipboard.vercel.app/fhir/extension/ciphertext-length',
+          url: EXTENSION_URLS.CIPHERTEXT_LENGTH,
           valueInteger: fileConfig.ciphertextLength
         },
         {
-          url: 'https://kill-the-clipboard.vercel.app/fhir/extension/last-updated',
+          url: EXTENSION_URLS.LAST_UPDATED,
           valueDateTime: fileConfig.lastUpdated || new Date().toISOString()
         }
       ]
     };
 
     return await this.medplum.createResource(docRef);
+  }
+
+  /**
+   * Get Manifest Builder attributes and SHL payload by entropy key
+   */
+  async getBuilderAttrsAndSHL(
+    entropy: string
+  ): Promise<{ shlPayload: SHLPayloadV1 | null, builderAttrs: SHLManifestBuilderDBAttrs | null }> {
+    let shlPayload: SHLPayloadV1 | null = null;
+    let builderAttrs: SHLManifestBuilderDBAttrs | null = null;
+
+    const manifest = await this.medplum.searchOne('DocumentManifest', {
+      identifier: entropy
+    });
+
+    if (!manifest) {
+      return { shlPayload: null, builderAttrs: null }
+    }
+
+    // Find the SHL payload extension
+    const payloadExtension = manifest.extension?.find(
+      (ext: Extension) => ext.url === EXTENSION_URLS.SHL_PAYLOAD
+    );
+
+    if (!payloadExtension?.valueString) {
+      return { shlPayload: null, builderAttrs: null }
+    }
+
+    shlPayload = JSON.parse(payloadExtension.valueString);
+
+    // Get DocumentReference resources referenced in the manifest
+    if (manifest.content.length === 0) {
+      builderAttrs = { files: [] };
+    } else {
+      // Fetch all DocumentReference resources
+      const documentReferences = await Promise.all(
+        manifest.content.map(ref => this.medplum.readReference(ref) as Promise<DocumentReference>)
+      );
+
+      // Extract SHLManifestFileDBAttrs from each DocumentReference
+      const files = documentReferences
+        .filter((docRef): docRef is DocumentReference => docRef !== null)
+        .map(docRef => {
+          // Extract content type from the type coding
+          const contentType = docRef.type?.coding?.[0]?.code || 'application/fhir+json';
+
+          // Get the attachment URL (this is already the final presigned S3 URL when read from Medplum)
+          // This will be used through the proxy route to bypass CORS issues
+          // See `getSHLFileURL` in medplum-file-handlers.ts for more details
+          const storagePath = docRef.content?.[0]?.attachment?.url || '';
+
+          // Extract ciphertext length from extension
+          const ciphertextLengthExt = docRef.extension?.find(
+            ext => ext.url === EXTENSION_URLS.CIPHERTEXT_LENGTH
+          );
+          const ciphertextLength = ciphertextLengthExt?.valueInteger || 0;
+
+          // Extract last updated from extension
+          const lastUpdatedExt = docRef.extension?.find(
+            ext => ext.url === EXTENSION_URLS.LAST_UPDATED
+          );
+          const lastUpdated = lastUpdatedExt?.valueDateTime;
+
+          return {
+            type: contentType as SHLFileContentType,
+            storagePath,
+            ciphertextLength,
+            lastUpdated
+          };
+        });
+
+      builderAttrs = { files };
+    }
+
+    return { shlPayload, builderAttrs };
   }
 
   /**
@@ -243,7 +270,7 @@ export class MedplumStorage {
       }
 
       const passcodeExtension = manifest.extension?.find(
-        (ext: Extension) => ext.url === 'https://kill-the-clipboard.vercel.app/fhir/extension/hashed-passcode'
+        (ext: Extension) => ext.url === EXTENSION_URLS.HASHED_PASSCODE
       );
 
       return passcodeExtension?.valueString || null;
@@ -267,7 +294,7 @@ export class MedplumStorage {
       }
 
       const invalidatedExtension = manifest.extension?.find(
-        (ext: Extension) => ext.url === 'https://kill-the-clipboard.vercel.app/fhir/extension/is-invalidated'
+        (ext: Extension) => ext.url === EXTENSION_URLS.IS_INVALIDATED
       );
 
       return invalidatedExtension?.valueBoolean || false;
@@ -293,12 +320,12 @@ export class MedplumStorage {
       // Find and update failed attempts extension
       const extensions = [...(manifest.extension || [])];
       const attemptsIndex = extensions.findIndex(
-        ext => ext.url === 'https://kill-the-clipboard.vercel.app/fhir/extension/failed-attempts'
+        ext => ext.url === EXTENSION_URLS.FAILED_ATTEMPTS
       );
 
       const currentAttempts = (extensions[attemptsIndex]?.valueInteger || 0) + 1;
       extensions[attemptsIndex] = {
-        url: 'https://kill-the-clipboard.vercel.app/fhir/extension/failed-attempts',
+        url: EXTENSION_URLS.FAILED_ATTEMPTS,
         valueInteger: currentAttempts
       };
 
@@ -307,17 +334,17 @@ export class MedplumStorage {
       // Update invalidation status if needed
       if (shouldInvalidate) {
         const invalidatedIndex = extensions.findIndex(
-          ext => ext.url === 'https://kill-the-clipboard.vercel.app/fhir/extension/is-invalidated'
+          ext => ext.url === EXTENSION_URLS.IS_INVALIDATED
         );
 
         if (invalidatedIndex >= 0) {
           extensions[invalidatedIndex] = {
-            url: 'https://kill-the-clipboard.vercel.app/fhir/extension/is-invalidated',
+            url: EXTENSION_URLS.IS_INVALIDATED,
             valueBoolean: true
           };
         } else {
           extensions.push({
-            url: 'https://kill-the-clipboard.vercel.app/fhir/extension/is-invalidated',
+            url: EXTENSION_URLS.IS_INVALIDATED,
             valueBoolean: true
           });
         }

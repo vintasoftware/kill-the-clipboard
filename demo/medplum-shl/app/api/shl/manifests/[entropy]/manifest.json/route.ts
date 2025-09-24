@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { MedplumClient } from '@medplum/core';
 import { SHLExpiredError, SHLManifestBuilder } from 'kill-the-clipboard';
-import { buildMedplumFetch } from '@/lib/medplum-fetch';
 import { createMedplumStorage } from '@/lib/medplum-storage';
 import { verifyPasscode } from '@/lib/auth';
 import { buildManifestFileHandlers } from '@/lib/medplum-file-handlers';
@@ -22,22 +21,6 @@ export async function POST(
   request: NextRequest,
   { params }: { params: Promise<{ entropy: string }> }
 ) {
-  // Get authorization header and authenticate with Medplum
-  const authHeader = request.headers.get('authorization');
-  if (!authHeader) {
-    return NextResponse.json({ error: 'Authorization required' }, { status: 401 });
-  }
-
-  // Set the authorization header for the server-side client
-  const accessToken = authHeader.replace('Bearer ', '');
-  medplum.setAccessToken(accessToken);
-
-  // Verify the user is authenticated
-  const profile = await medplum.getProfileAsync();
-  if (!profile) {
-    return NextResponse.json({ error: 'Invalid authentication' }, { status: 401 });
-  }
-
   const { entropy } = await params;
   const body: ManifestRequest = await request.json();
   const { recipient, passcode, embeddedLengthMax = 4096 } = body;
@@ -71,8 +54,7 @@ export async function POST(
   }
 
   // Retrieve the stored SHL payload and builder attributes
-  const shlPayload = await storage.getSHL(entropy);
-  const builderAttrs = await storage.getManifestBuilder(entropy);
+  const { shlPayload, builderAttrs } = await storage.getBuilderAttrsAndSHL(entropy);
   if (!shlPayload || !builderAttrs) {
     // Record failed access attempt
     try {
@@ -137,9 +119,7 @@ export async function POST(
   const manifestBuilder = SHLManifestBuilder.fromDBAttrs({
     shl: shlPayload,
     attrs: builderAttrs,
-    ...buildManifestFileHandlers(medplum),
-    // Provide Medplum-authenticated fetch
-    fetch: buildMedplumFetch(medplum),
+    ...buildManifestFileHandlers(medplum)
   });
 
   try {
