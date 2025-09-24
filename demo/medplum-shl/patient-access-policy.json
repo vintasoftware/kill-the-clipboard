@@ -1,0 +1,88 @@
+{
+  "resourceType": "AccessPolicy",
+  "name": "Patient Access Policy Template",
+  "id": "0194d10a-68e9-7132-8e6f-7142a068b274",
+  "compartment": {
+    "reference": "%patient"
+  },
+  "resource": [
+    {
+      "resourceType": "Patient",
+      "criteria": "Patient?_compartment=%patient"
+    },
+    {
+      "resourceType": "AllergyIntolerance",
+      "criteria": "AllergyIntolerance?_compartment=%patient"
+    },
+    {
+      "resourceType": "Observation",
+      "criteria": "Observation?_compartment=%patient"
+    },
+    {
+      "resourceType": "DiagnosticReport",
+      "criteria": "DiagnosticReport?_compartment=%patient"
+    },
+    {
+      "resourceType": "MedicationRequest",
+      "criteria": "MedicationRequest?_compartment=%patient"
+    },
+    {
+      "resourceType": "Coverage",
+      "criteria": "Coverage?_compartment=%patient"
+    },
+    {
+      "resourceType": "PaymentNotice",
+      "criteria": "PaymentNotice?_compartment=%patient"
+    },
+    {
+      "resourceType": "CarePlan",
+      "criteria": "CarePlan?_compartment=%patient"
+    },
+    {
+      "resourceType": "Immunization",
+      "criteria": "Immunization?_compartment=%patient"
+    },
+    {
+      "resourceType": "Communication",
+      "criteria": "Communication?_compartment=%patient"
+    },
+    {
+      "resourceType": "Condition",
+      "criteria": "Condition?_compartment=%patient"
+    },
+    {
+      "resourceType": "MedicationRequest",
+      "criteria": "MedicationRequest?_compartment=%patient"
+    },
+    {
+      "resourceType": "DocumentManifest",
+      "criteria": "DocumentManifest?_compartment=%patient"
+    },
+    {
+      "resourceType": "DocumentReference",
+      "criteria": "DocumentReference?_compartment=%patient"
+    },
+    {
+      "resourceType": "Organization",
+      "readonly": true
+    },
+    {
+      "resourceType": "Practitioner",
+      "readonly": true
+    },
+    {
+      "resourceType": "Schedule",
+      "readonly": true
+    },
+    {
+      "resourceType": "Slot",
+      "readonly": true
+    },
+    {
+      "resourceType": "Binary"
+    },
+    {
+      "resourceType": "Subscription"
+    }
+  ]
+}

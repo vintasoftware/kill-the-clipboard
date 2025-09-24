@@ -37,6 +37,11 @@ This is a Next.js demo application that demonstrates Smart Health Links (SHL) fu
 - Node.js 20.19.0 or higher
 - pnpm package manager
 - Medplum account and credentials
+- Proper Patient Access Policy (see section below)
+
+### Patient Access Policy setup
+
+Ensure your project has the proper [Access Policy](https://www.medplum.com/docs/access/access-policies) for Patients. Patient users must have access to all resource types this demo requires, especially `DocumentManifest` and `DocumentReference` to support SHL file serving. Check the file [`patient-access-policy.json`](./patient-access-policy.json) for the policy you can use in your project.
 
 ### Installation
 
