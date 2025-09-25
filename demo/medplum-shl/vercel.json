@@ -1,4 +1,5 @@
 {
-  "buildCommand": "pnpm build",
-  "installCommand": "pnpm install"
+  "buildCommand": "cd ../.. && pnpm install && pnpm build && cd demo/medplum-shl && pnpm build",
+  "installCommand": "cd ../.. && pnpm install",
+  "framework": "nextjs"
 }
