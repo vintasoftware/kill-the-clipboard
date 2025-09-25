@@ -1,6 +1,6 @@
 'use client';
 import { Card, Title, Text, Stack, Button, Group, CopyButton, Tooltip, Alert, Code, Box } from '@mantine/core';
-import { IconCheck, IconCopy, IconQrcode, IconAlertCircle } from '@tabler/icons-react';
+import { IconCheck, IconCopy, IconQrcode, IconAlertCircle, IconExternalLink } from '@tabler/icons-react';
 import { useState, useEffect } from 'react';
 import { SHL } from 'kill-the-clipboard';
 
@@ -52,7 +52,7 @@ export function SHLDisplay({ shlUri, onReset }: SHLDisplayProps) {
       <Stack gap="lg">
         <div>
           <Title order={2} mb="xs">
-            Smart Health Link Created
+            SMART Health Link Created
           </Title>
           <Text size="sm" c="dimmed">
             Your health information is now securely accessible via this link.
@@ -66,7 +66,7 @@ export function SHLDisplay({ shlUri, onReset }: SHLDisplayProps) {
 
         <Box>
           <Text size="sm" fw={500} mb="xs">
-            Smart Health Link:
+            SMART Health Link:
           </Text>
           <Code block>{shlUri}</Code>
         </Box>
@@ -103,7 +103,9 @@ export function SHLDisplay({ shlUri, onReset }: SHLDisplayProps) {
             {showQR ? 'Hide QR Code' : 'Show QR Code'}
           </Button>
 
-          <Button onClick={handleView}>View Health Information</Button>
+          <Button leftSection={<IconExternalLink size="1rem" />} onClick={handleView}>
+            View Health Information
+          </Button>
         </Group>
 
         {showQR && (
@@ -123,7 +125,7 @@ export function SHLDisplay({ shlUri, onReset }: SHLDisplayProps) {
                 bg="gray.0"
               >
                 {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img src={qrCodeDataUrl} alt="Smart Health Link QR Code" />
+                <img src={qrCodeDataUrl} alt="SMART Health Link QR Code" />
               </Box>
             ) : isGeneratingQR ? (
               <Box

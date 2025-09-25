@@ -23,17 +23,17 @@ export class MedplumStorage {
    * Store SHL data as DocumentManifest with extensions
    * Creates DocumentReferences for each file first, then the DocumentManifest
    */
-  async storeManifestBuilder(
+  async storeManifestBuilder({
+    entropy,
+    shlPayload,
+    builderAttrs,
+    hashedPasscode
+  }: {
     entropy: string,
+    shlPayload: SHLPayloadV1,
     builderAttrs: SHLManifestBuilderDBAttrs,
-    config: {
-      shlPayload: any;
-      label?: string;
-      flags?: string;
-      hashedPasscode?: string;
-      expirationDate?: Date;
-    }
-  ): Promise<DocumentManifest> {
+    hashedPasscode: string
+  }): Promise<DocumentManifest> {
     // First, create DocumentReference resources for each file
     const documentReferences: DocumentReference[] = [];
 
@@ -53,35 +53,35 @@ export class MedplumStorage {
     const extensions: Extension[] = [
       {
         url: EXTENSION_URLS.SHL_PAYLOAD,
-        valueString: JSON.stringify(config.shlPayload)
+        valueString: JSON.stringify(shlPayload)
       },
     ];
 
-    if (config.label) {
+    if (shlPayload.label) {
       extensions.push({
         url: EXTENSION_URLS.SHL_LABEL,
-        valueString: config.label
+        valueString: shlPayload.label
       });
     }
 
-    if (config.flags) {
+    if (shlPayload.flag) {
       extensions.push({
         url: EXTENSION_URLS.SHL_FLAG,
-        valueString: config.flags
+        valueString: shlPayload.flag
       });
     }
 
-    if (config.hashedPasscode) {
+    if (hashedPasscode) {
       extensions.push({
         url: EXTENSION_URLS.HASHED_PASSCODE,
-        valueString: config.hashedPasscode
+        valueString: hashedPasscode
       });
     }
 
-    if (config.expirationDate) {
+    if (shlPayload.exp) {
       extensions.push({
         url: EXTENSION_URLS.EXPIRATION_DATE,
-        valueDateTime: config.expirationDate.toISOString()
+        valueDateTime: new Date(shlPayload.exp * 1000).toISOString()
       });
     }
 

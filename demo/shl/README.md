@@ -8,7 +8,7 @@ This is a Next.js demo application that demonstrates SMART Health Links (SHL) fu
 - **SMART Health Link Generator**: Creates SMART Health Links that point to a manifest; `U` flag unsupported
     - **ID-based Database Design**: Uses server-generated CUID 2 IDs for identifying SHLs in the database
     - **Passcode protection (`P` flag)**: Server-enforced passcode prompted on the viewer; passcodes are stored as Argon2id hashes in SQLite database using OWASP recommended security parameters
-    - **Persistent SHL Storage**: Complete SHL payloads, `SHLManifestBuilder` state, and passcode hashes stored in SQLite database using Prisma ORM with proper relational structure
+    - **Persistent SHL Storage**: Complete SHL payloads, `SHLManifestBuilder` attributes, and passcode hashes stored in SQLite database using Prisma ORM with proper relational structure
     - **File storage**: Encrypted JWE files persisted to local filesystem (development) or Cloudflare R2 (production)
     - **QR code rendering**: Rendering of SHL QR codes using `qr` library
 - **SMART Health Link Viewer**: Resolves `shlink:/...`, prompts for passcode if needed, fetches manifest, decrypts files, and displays FHIR resources
@@ -22,11 +22,11 @@ This is a Next.js demo application that demonstrates SMART Health Links (SHL) fu
 - **SHL Generator** (`/`): Create SHLs
 - **SHL Generation API** (`/api/shl`): Server-side SHL generation
 - **SHL Viewer** (`/viewer`): Resolve and display SHLs
-- **Manifest API** (`/api/shl/manifests/[entropy]/manifest.json`): Serve SHL manifests
 
 ## Important limitations
 
 - Static International Patient Summary (IPS) data only - no real patient data integration
+- No support for generating SHLs with `U` flag (single, direct file access, w/o manifest)
 - No polling for SHLs with `L` flag
 - No rate limiting for manifest requests
 - No authentication or user management (uses static demo data)

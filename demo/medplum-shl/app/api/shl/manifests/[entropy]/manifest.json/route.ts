@@ -48,7 +48,7 @@ export async function POST(
       console.error('Error recording access for invalidated SHL:', error);
     }
     return NextResponse.json(
-      { error: 'Smart Health Link not found' },
+      { error: 'SMART Health Link not found' },
       { status: 404 }
     );
   }
@@ -63,7 +63,7 @@ export async function POST(
       console.error('Error recording access for non-existent SHL:', error);
     }
     return NextResponse.json(
-      { error: 'Smart Health Link not found' },
+      { error: 'SMART Health Link not found' },
       { status: 404 }
     );
   }
@@ -103,7 +103,7 @@ export async function POST(
       if (invalidated) {
         // Return 404 instead of 401 to hide the fact that the SHL exists
         return NextResponse.json(
-          { error: 'Smart Health Link not found' },
+          { error: 'SMART Health Link not found' },
           { status: 404 }
         );
       }
@@ -145,7 +145,7 @@ export async function POST(
       }
 
       return NextResponse.json(
-        { error: 'Smart Health Link not found' },
+        { error: 'SMART Health Link not found' },
         { status: 404 }
       );
     }

@@ -19,7 +19,7 @@ import {
 import { useForm } from '@mantine/form';
 import { SHLViewer, SHLResolvedContent } from 'kill-the-clipboard';
 import { useState, useEffect, useCallback } from 'react';
-import { IconAlertCircle, IconCheck, IconX } from '@tabler/icons-react';
+import { IconAlertCircle, IconCheck, IconExternalLink, IconX } from '@tabler/icons-react';
 import { PatientDataBundleDisplay } from '@/components/PatientDataBundleDisplay';
 import { Bundle } from '@medplum/fhirtypes';
 
@@ -78,7 +78,7 @@ export default function ViewerPage() {
       setShlViewer(viewer);
       setStep('credentials');
     } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : 'Failed to parse Smart Health Link';
+      const errorMessage = error instanceof Error ? error.message : 'Failed to parse SMART Health Link';
       setError(errorMessage);
     }
   }, []);
@@ -96,7 +96,7 @@ export default function ViewerPage() {
   const handleUriSubmit = (values: { shlUri: string }) => {
     const shlURI = values.shlUri?.trim();
     if (!shlURI) {
-      const errorMessage = 'Please enter a Smart Health Link URI';
+      const errorMessage = 'Please enter a SMART Health Link URI';
       setError(errorMessage);
       return;
     }
@@ -119,7 +119,7 @@ export default function ViewerPage() {
       setResolvedContent(content);
       setStep('content');
 
-      // Generate QR codes for any Smart Health Cards present
+      // Generate QR codes for any SMART Health Cards present
       if (content.smartHealthCards?.length) {
         try {
           const allQrCodes = await Promise.all(
@@ -139,7 +139,7 @@ export default function ViewerPage() {
       }
     } catch (error) {
       console.error('Error resolving SHL:', error);
-      const errorMessage = error instanceof Error ? error.message : 'Failed to resolve Smart Health Link';
+      const errorMessage = error instanceof Error ? error.message : 'Failed to resolve SMART Health Link';
 
       let userFriendlyMessage = errorMessage;
       let isLinkInvalidated = false;
@@ -148,7 +148,7 @@ export default function ViewerPage() {
         userFriendlyMessage = 'Invalid passcode. Please check the passcode and try again.';
       } else if (errorMessage.includes('not found') || errorMessage.includes('404')) {
         userFriendlyMessage =
-          'This Smart Health Link has not been found. It may have been invalidated or expired. Please contact the person who shared this link to get a new one.';
+          'This SMART Health Link has not been found. It may have been invalidated or expired. Please contact the person who shared this link to get a new one.';
         isLinkInvalidated = true;
       } else if (errorMessage.includes('network') || errorMessage.includes('fetch')) {
         userFriendlyMessage = 'Network error. Please check your connection and try again.';
@@ -179,10 +179,10 @@ export default function ViewerPage() {
       <Stack gap="xl">
         <div>
           <Title order={1} mb="md">
-            Smart Health Link Viewer
+            SMART Health Link Viewer
           </Title>
           <Text size="lg" c="dimmed">
-            View and access health information from Smart Health Links
+            View and access health information from SMART Health Links
           </Text>
         </div>
 
@@ -191,10 +191,10 @@ export default function ViewerPage() {
             <Stack gap="lg">
               <div>
                 <Text size="lg" fw={500} mb="xs">
-                  Enter Smart Health Link
+                  Enter SMART Health Link
                 </Text>
                 <Text size="sm" c="dimmed">
-                  Paste the Smart Health Link URI you received
+                  Paste the SMART Health Link URI you received
                 </Text>
               </div>
 
@@ -208,8 +208,9 @@ export default function ViewerPage() {
                 <Stack gap="md">
                   <TextInput
                     name="shlUri"
-                    label="Smart Health Link URI"
+                    label="SMART Health Link URI"
                     placeholder="shlink:/..."
+                    autoComplete="off"
                     value={shlUri}
                     onChange={(e) => {
                       setShlUri(e.currentTarget.value);
@@ -273,12 +274,12 @@ export default function ViewerPage() {
                   icon={<IconAlertCircle size="1rem" />}
                   color={isInvalidated ? 'orange' : 'red'}
                   mb="md"
-                  title={isInvalidated ? 'Smart Health Link Not Found' : 'Error'}
+                  title={isInvalidated ? 'SMART Health Link Not Found' : 'Error'}
                 >
                   {error}
                   {isInvalidated && (
                     <Text size="sm" mt="xs" c="dimmed">
-                      You will need to request a new Smart Health Link from the original sender.
+                      You will need to request a new SMART Health Link from the original sender.
                     </Text>
                   )}
                 </Alert>
@@ -290,6 +291,7 @@ export default function ViewerPage() {
                     label="Your Name"
                     description="Enter your name as the recipient of this health information"
                     placeholder="e.g. John Doe"
+                    autoComplete="off"
                     required
                     disabled={isLoading || isInvalidated}
                     {...form.getInputProps('recipient')}
@@ -300,8 +302,8 @@ export default function ViewerPage() {
                       label="Passcode"
                       description={
                         isInvalidated
-                          ? 'This Smart Health Link has been disabled'
-                          : 'Enter the passcode provided with this Smart Health Link'
+                          ? 'This SMART Health Link has been disabled'
+                          : 'Enter the passcode provided with this SMART Health Link'
                       }
                       placeholder="Enter passcode"
                       required
@@ -332,12 +334,19 @@ export default function ViewerPage() {
                 <Text c="dimmed">
                   Successfully retrieved {resolvedContent.fhirResources.length} FHIR resource(s)
                   {resolvedContent.smartHealthCards.length > 0 &&
-                    ` and ${resolvedContent.smartHealthCards.length} Smart Health Card(s)`}
+                    ` and ${resolvedContent.smartHealthCards.length} SMART Health Card(s)`}
                 </Text>
 
                 <Group>
                   <Button variant="outline" onClick={handleReset}>
                     View Another Link
+                  </Button>
+                  <Button
+                    variant="outline"
+                    leftSection={<IconExternalLink size="1rem" />}
+                    onClick={() => window.open(`https://viewer.tcpdev.org/#${shlUri}`, '_blank')}
+                  >
+                    View on TCP web reader
                   </Button>
                 </Group>
               </Stack>
@@ -359,12 +368,12 @@ export default function ViewerPage() {
             {resolvedContent.smartHealthCards.length > 0 && (
               <Card withBorder p="xl">
                 <Stack gap="md">
-                  <Title order={3}>Smart Health Cards</Title>
+                  <Title order={3}>SMART Health Cards</Title>
                   <Stack gap="md">
                     {resolvedContent.smartHealthCards.map((card, index) => (
                       <Card key={index} withBorder p="md">
                         <Text fw={500} mb="xs">
-                          Smart Health Card #{index + 1}
+                          SMART Health Card #{index + 1}
                         </Text>
                         {qrCodesByCard[index]?.length ? (
                           <Stack gap="xs" mb="sm">

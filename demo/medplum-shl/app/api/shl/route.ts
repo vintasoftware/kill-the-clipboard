@@ -112,9 +112,9 @@ export async function POST(request: NextRequest) {
     fhirBundle.entry!.push(...observations.entry!);
 
     // Add the FHIR bundle to the manifest
-    await manifestBuilder.addFHIRResource({ content: fhirBundle });
+    await manifestBuilder.addFHIRResource({ content: fhirBundle, enableCompression: false });
 
-    // Add the FHIR bundle as a Smart Health Card to the manifest
+    // Add the FHIR bundle as a SMART Health Card to the manifest
     const shcIssuer = new SmartHealthCardIssuer({
       issuer: process.env.SHC_ISSUER!,
       privateKey: JSON.parse(process.env.SHC_PRIVATE_KEY!),
@@ -122,12 +122,16 @@ export async function POST(request: NextRequest) {
     });
     fhirBundle.type = 'collection';  // Required by SMART Health Cards spec
     const shc = await shcIssuer.issue(fhirBundle);
-    await manifestBuilder.addHealthCard({ shc });
+    await manifestBuilder.addHealthCard({ shc, enableCompression: false });
 
-    // Extract manifestID from the manifest URL for database key
+    // Extract entropy (unique identifier) from the manifest URL:
+    // https://shl.example.org/manifests/{entropy}/manifest.json
     const manifestUrl = shl.url;
     const urlParts = manifestUrl.split('/');
-    const manifestID = urlParts[urlParts.length - 2]; // Get the manifestID part before manifest.json
+    const entropy = urlParts[urlParts.length - 2];
+    if (!entropy || entropy.length !== 43) {
+      return NextResponse.json({ error: 'Invalid manifest URL' }, { status: 500 });
+    }
 
     // Create Medplum storage instance
     const storage = createMedplumStorage(medplum);
@@ -136,10 +140,10 @@ export async function POST(request: NextRequest) {
     const { hash } = await hashPasscode(passcode);
 
     // Store the manifest builder state and metadata in FHIR resources
-    await storage.storeManifestBuilder(manifestID, manifestBuilder.toDBAttrs(), {
+    await storage.storeManifestBuilder({
+      entropy,
       shlPayload: shl.payload,
-      label,
-      flags: longTerm ? 'LP' : 'P',
+      builderAttrs: manifestBuilder.toDBAttrs(),
       hashedPasscode: hash
     });
 
@@ -153,7 +157,7 @@ export async function POST(request: NextRequest) {
   } catch (error) {
     console.error('Error creating SHL:', error);
     return NextResponse.json(
-      { error: `Failed to create Smart Health Link: ${error instanceof Error ? error.message : String(error)}` },
+      { error: `Failed to create SMART Health Link: ${error instanceof Error ? error.message : String(error)}` },
       { status: 500 }
     );
   }

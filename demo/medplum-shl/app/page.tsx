@@ -38,10 +38,10 @@ export default function HomePage() {
       <Stack gap="xl">
         <div>
           <Title order={1} mb="md">
-            Smart Health Links Demo
+            SMART Health Links Demo
           </Title>
           <Text size="lg" c="dimmed">
-            Create and share your health information using Smart Health Links
+            Create and share your health information using SMART Health Links
           </Text>
         </div>
 
@@ -53,7 +53,7 @@ export default function HomePage() {
 
         {!profile && !isLoading && (
           <div>
-            <Text mb="md">Please sign in to create Smart Health Links with your health data.</Text>
+            <Text mb="md">Please sign in to create SMART Health Links with your health data.</Text>
             <SignInForm>Sign in</SignInForm>
           </div>
         )}
@@ -76,7 +76,7 @@ export default function HomePage() {
                 <PatientDataManager title="Your Health Information" />
                 <Group>
                   <Button size="lg" onClick={handleCreateSHL}>
-                    Create Smart Health Link
+                    Create SMART Health Link
                   </Button>
                 </Group>
               </Stack>
