@@ -43,7 +43,7 @@ Now create a Client application: inside Project page, create a Client applicatio
 
 Note: the project ID and client ID are different.
 
-For more details, see the [Medplum Client Credentials documentation](https://www.medplum.com/docs/app/client-credentials).
+For more details, see the [Medplum Client Credentials documentation](https://www.medplum.com/docs/auth/methods/client-credentials).
 
 ### Medplum reCAPTCHA setup
 
