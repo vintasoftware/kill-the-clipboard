@@ -33,16 +33,29 @@ This is a Next.js demo application that demonstrates SMART Health Links (SHL) fu
 
 - Node.js 20.19.0 or higher
 - pnpm package manager
-- Medplum project with client credentials and patient account created (see section below)
-- In Medplum project, set up a proper Patient Access Policy (see section below)
+- Configured Medplum project (see sections below)
 
 ### Medplum Client Credentials setup
 
-See [Medplum Client Credentials documentation](https://www.medplum.com/docs/app/client-credentials) for more details. Go to the [app.medplum.com (administrative interface)](https://app.medplum.com), go to Project, create a Client application, and get the client ID and secret to set as environment variables (see below).
+Get your Medplum project ID from the app.medplum.com [Project page](https://app.medplum.com/admin/project). Keep the project ID at hand to set it as an environment variable.
+
+Now create a Client application: inside Project page, create a Client application, and get the client ID and secret. The secret is necessary to authenticate the server-side client, and it will be set as an environment variable.
+
+Note: the project ID and client ID are different.
+
+For more details, see the [Medplum Client Credentials documentation](https://www.medplum.com/docs/app/client-credentials).
+
+### Medplum reCAPTCHA setup
+
+Create a new reCAPTCHA configuration to get the site key and secret key at [google.com/recaptcha/admin/create](https://www.google.com/recaptcha/admin/create).
+
+Go to the [app.medplum.com](https://app.medplum.com), go to Project, then Sites. Create a Site with domains `localhost` and `127.0.0.1` and set the reCAPTCHA site key and secret key. Also, keep the reCAPTCHA site key at hand to set it as an environment variable.
 
 ### Medplum Patient Access Policy setup
 
-Ensure your Medplum project has the proper [Access Policy](https://www.medplum.com/docs/access/access-policies#patient-access) for Patients. Patient users must have access to all resource types this demo requires, especially `DocumentManifest` and `DocumentReference` to support SHL file serving. Check the file [`patient-access-policy.json`](./patient-access-policy.json) for the policy you can use in your project. Go to the [app.medplum.com (administrative interface)](https://app.medplum.com), create an Access Policy, and use the JSON tab to set the policy.
+Ensure your Medplum project has the proper [Access Policy](https://www.medplum.com/docs/access/access-policies#patient-access) for Patients. Patient users must have access to all resource types this demo requires, especially `DocumentManifest` and `DocumentReference` to support SHL file serving. Check the file [`patient-access-policy.json`](./patient-access-policy.json) for the policy you can use in your project. Go to the [app.medplum.com Access Policy page](https://app.medplum.com/AccessPolicy), create an Access Policy, and use the "JSON" tab to set the policy JSON.
+
+Additionally, to support new Patient registrations, set the new patient access policy as the default. Navigate to [app.medplum.com Project page](https://app.medplum.com/Project) and select your project. In the "Edit" tab, set the "Default Patient Access Policy" field to your new policy and click "Update".
 
 ### Installation
 
@@ -59,8 +72,10 @@ Ensure your Medplum project has the proper [Access Policy](https://www.medplum.c
    Configure the following variables:
    ```env
    NEXT_PUBLIC_MEDPLUM_BASE_URL=https://api.medplum.com
+   NEXT_PUBLIC_MEDPLUM_PROJECT_ID=your_project_id
    NEXT_PUBLIC_MEDPLUM_CLIENT_ID=your_client_id
    MEDPLUM_CLIENT_SECRET=your_client_secret
+   NEXT_PUBLIC_MEDPLUM_RECAPTCHA_SITE_KEY=your_recaptcha_site_key
    ```
 
    The other variables can be left as is.
@@ -74,17 +89,21 @@ Ensure your Medplum project has the proper [Access Policy](https://www.medplum.c
 
 ## Usage
 
+### Patient Registration and Sign-In
+
+1. **New users**: On the home page, click "Register here" to create a new patient account
+2. **Existing users**: Sign in with your Medplum Patient credentials (non-Patient accounts are not supported)
+
 ### Creating a SMART Health Link
 
-1. Sign in with Medplum on the home page using a `Patient` account ([invite yourself if needed](https://www.medplum.com/docs/app/invite))
-2. Click on "Add Sample Data" if needed
-3. Click "Create SMART Health Link"
-4. Set a passcode (minimum 6 characters); optionally set label and `L` flag
-5. Submit the form; the server will:
+1. After signing in, click on "Add Sample Data" if needed
+2. Click "Create SMART Health Link"
+3. Set a passcode (minimum 6 characters); optionally set label and `L` flag
+4. Submit the form; the server will:
    - Build a FHIR Bundle and a SMART Health Card from your Medplum data
    - Encrypt and upload the bundle as JWE files using Medplum `Binary` FHIR resources inside `DocumentReference` resources
    - Persist SHL payload and manifest builder attributes in Medplum as FHIR `DocumentManifest` resources (which point to the `DocumentReference` resources that hold the JWE files)
-6. You'll get a `shlink:/...` URI and a button to open the viewer
+5. You'll get a `shlink:/...` URI and a button to open the viewer
 
 ### Viewing a SMART Health Link
 
@@ -116,6 +135,7 @@ demo/medplum-shl/
 │   └── root.tsx
 ├── components/
 │   ├── CreateSHLForm.tsx               # Form for creating SHLs
+│   ├── RegisterForm.tsx                # Form for patient registration
 │   └── SHLDisplay.tsx                  # Component for displaying created SHLs
 ├── lib/
 │   ├── auth.ts                         # Passcode hashing and verification
