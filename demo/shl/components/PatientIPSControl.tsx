@@ -1,4 +1,4 @@
-import React, { useCallback, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import {
   Card,
   Text,
@@ -1166,6 +1166,12 @@ export const PatientDataBundleDisplay: React.FC<PatientDataBundleDisplayProps> =
         );
     }
   };
+
+  // Select all on first render
+  useEffect(() => {
+    handleSelectAll();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   return (
     <Card withBorder p="md">
