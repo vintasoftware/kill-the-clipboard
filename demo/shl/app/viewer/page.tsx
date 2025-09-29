@@ -182,7 +182,11 @@ export default function ViewerPage() {
             SMART Health Link Viewer
           </Title>
           <Text size="lg" c="dimmed">
-            View and access health information from SMART Health Links
+            View and access health information from SMART Health Links. Built with the library{' '}
+            <a href="https://github.com/vintasoftware/kill-the-clipboard" target="_blank">
+              kill-the-clipboard
+            </a>
+            .
           </Text>
         </div>
 

@@ -54,7 +54,11 @@ export default function HomePage() {
         <Stack gap="sm">
           <Title order={1}>SMART Health Links Demo</Title>
           <Text size="lg" c="dimmed">
-            Create and share your health information using SMART Health Links
+            Create and share your health information using SMART Health Links. Built with the library{' '}
+            <a href="https://github.com/vintasoftware/kill-the-clipboard" target="_blank">
+              kill-the-clipboard
+            </a>
+            .
           </Text>
         </Stack>
 

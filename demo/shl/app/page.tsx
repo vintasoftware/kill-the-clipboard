@@ -36,7 +36,11 @@ export default function HomePage() {
             SMART Health Links Demo
           </Title>
           <Text size="lg" c="dimmed">
-            Create and share health information using SMART Health Links
+            Create and share your health information using SMART Health Links. Built with the library{' '}
+            <a href="https://github.com/vintasoftware/kill-the-clipboard" target="_blank">
+              kill-the-clipboard
+            </a>
+            .
           </Text>
         </div>
 
