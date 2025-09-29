@@ -442,7 +442,7 @@ export class MedplumStorage {
 
       // Fetch all referenced DocumentReference resources
       const files = await Promise.all(
-        manifest.content.map((ref: any) => this.medplum.readReference(ref) as Promise<DocumentReference>)
+        manifest.content.map((ref) => this.medplum.readReference(ref) as Promise<DocumentReference>)
       );
 
       return files.filter((file: DocumentReference | null): file is DocumentReference =>

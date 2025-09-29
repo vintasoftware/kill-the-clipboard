@@ -1,6 +1,14 @@
 import React, { useState } from 'react';
 import { Card, Text, Stack, Divider, List, Code, Collapse, Box, Button } from '@mantine/core';
-import { Bundle } from '@medplum/fhirtypes';
+import {
+  Bundle,
+  Resource,
+  AllergyIntolerance,
+  Condition,
+  MedicationRequest,
+  Observation,
+  Patient,
+} from '@medplum/fhirtypes';
 
 interface PatientDataBundleDisplayProps {
   bundle: Bundle;
@@ -9,13 +17,13 @@ interface PatientDataBundleDisplayProps {
 export const PatientDataBundleDisplay: React.FC<PatientDataBundleDisplayProps> = ({ bundle }) => {
   const [showRawData, setShowRawData] = useState(false);
   const entries = Array.isArray(bundle.entry) ? bundle.entry : [];
-  const getResources = (type: string) =>
-    entries.map((e: any) => e.resource).filter((r: any) => r?.resourceType === type);
-  const patient = getResources('Patient')[0];
-  const allergies = getResources('AllergyIntolerance');
-  const conditions = getResources('Condition');
-  const medications = getResources('MedicationRequest');
-  const observations = getResources('Observation');
+  const getResources = <T extends Resource>(type: T['resourceType']): T[] =>
+    entries.map((e) => e.resource).filter((r): r is T => r?.resourceType === type);
+  const patient = getResources<Patient>('Patient')[0];
+  const allergies = getResources<AllergyIntolerance>('AllergyIntolerance');
+  const conditions = getResources<Condition>('Condition');
+  const medications = getResources<MedicationRequest>('MedicationRequest');
+  const observations = getResources<Observation>('Observation');
 
   return (
     <Card withBorder p="md">
@@ -40,7 +48,7 @@ export const PatientDataBundleDisplay: React.FC<PatientDataBundleDisplayProps> =
         <Stack gap="xs" mt="sm">
           <Text fw={500}>Allergies</Text>
           <List size="sm">
-            {allergies.map((a: any, i: number) => (
+            {allergies.map((a, i) => (
               <List.Item key={`allergy-${i}`}>
                 {a.code?.text || a.code?.coding?.[0]?.display || 'Unnamed allergy'}
                 {a.clinicalStatus?.text ? ` (${a.clinicalStatus.text})` : ''}
@@ -54,7 +62,7 @@ export const PatientDataBundleDisplay: React.FC<PatientDataBundleDisplayProps> =
         <Stack gap="xs" mt="sm">
           <Text fw={500}>Conditions</Text>
           <List size="sm">
-            {conditions.map((c: any, i: number) => (
+            {conditions.map((c, i) => (
               <List.Item key={`condition-${i}`}>
                 {c.code?.text || c.code?.coding?.[0]?.display || 'Unnamed condition'}
               </List.Item>
@@ -67,7 +75,7 @@ export const PatientDataBundleDisplay: React.FC<PatientDataBundleDisplayProps> =
         <Stack gap="xs" mt="sm">
           <Text fw={500}>Medications</Text>
           <List size="sm">
-            {medications.map((m: any, i: number) => (
+            {medications.map((m, i) => (
               <List.Item key={`med-${i}`}>
                 {m.medicationCodeableConcept?.text || m.medicationCodeableConcept?.coding?.[0]?.display || 'Medication'}
               </List.Item>
@@ -80,7 +88,7 @@ export const PatientDataBundleDisplay: React.FC<PatientDataBundleDisplayProps> =
         <Stack gap="xs" mt="sm">
           <Text fw={500}>Observations</Text>
           <List size="sm">
-            {observations.map((o: any, i: number) => (
+            {observations.map((o, i) => (
               <List.Item key={`obs-${i}`}>
                 {(o.code?.text || o.code?.coding?.[0]?.display || 'Observation') +
                   (o.valueQuantity ? `: ${o.valueQuantity.value} ${o.valueQuantity.unit || ''}` : '')}
