@@ -1,11 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import {
-  FHIRBundleProcessor,
-  SHL,
-  SHLManifestBuilder,
-  SHLViewer,
-  SmartHealthCardIssuer,
-} from '@/index'
+import { FHIRBundleProcessor, SHCIssuer, SHL, SHLManifestBuilder, SHLViewer } from '@/index'
 import { createValidFHIRBundle, testPrivateKeyPKCS8, testPublicKeySPKI } from '../helpers'
 
 describe('End-to-End SHL Workflow', () => {
@@ -38,7 +32,7 @@ describe('End-to-End SHL Workflow', () => {
     await manifestBuilder.addFHIRResource({ content: fhirBundle })
 
     // Add a SHC (will be 'location' due to larger size)
-    const issuer = new SmartHealthCardIssuer({
+    const issuer = new SHCIssuer({
       issuer: 'https://example.com',
       privateKey: testPrivateKeyPKCS8,
       publicKey: testPublicKeySPKI,

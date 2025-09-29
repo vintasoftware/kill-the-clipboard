@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import type { Bundle } from '@medplum/fhirtypes';
-import { SHL, SHLManifestBuilder, SmartHealthCardIssuer } from 'kill-the-clipboard';
+import { SHL, SHLManifestBuilder, SHCIssuer } from 'kill-the-clipboard';
 import { createSHL, storeManifestBuilder, storePasscode } from '@/lib/storage';
 import { hashPasscode } from '@/lib/auth';
 import { createManifestFileHandlers } from '@/lib/storage-factory';
@@ -137,7 +137,7 @@ export async function POST(request: NextRequest) {
     await manifestBuilder.addFHIRResource({ content: fhirBundle, enableCompression: false });
 
     // Add the FHIR bundle as a SMART Health Card to the manifest
-    const shcIssuer = new SmartHealthCardIssuer({
+    const shcIssuer = new SHCIssuer({
       issuer: process.env.SHC_ISSUER!,
       privateKey: JSON.parse(process.env.SHC_PRIVATE_KEY!),
       publicKey: JSON.parse(process.env.SHC_PUBLIC_KEY!),

@@ -1,4 +1,4 @@
-// SmartHealthCard class
+// SHC class
 
 import { FHIRBundleProcessor } from './fhir/bundle-processor.js'
 import { QRCodeGenerator } from './qr/qr-code-generator.js'
@@ -12,7 +12,7 @@ import type { FHIRBundle, QRCodeConfigParams } from './types.js'
  * @group SHC
  * @category High-Level API
  */
-export class SmartHealthCard {
+export class SHC {
   constructor(
     private readonly jws: string,
     private readonly originalBundle: FHIRBundle

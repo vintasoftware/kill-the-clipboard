@@ -7,14 +7,14 @@
  * @group SHC
  * @category Errors
  */
-export class SmartHealthCardError extends Error {
+export class SHCError extends Error {
   constructor(
     message: string,
     /** Error code for programmatic handling. */
     public readonly code: string
   ) {
     super(message)
-    this.name = 'SmartHealthCardError'
+    this.name = 'SHCError'
   }
 }
 
@@ -25,7 +25,7 @@ export class SmartHealthCardError extends Error {
  * @group SHC
  * @category Errors
  */
-export class JWSError extends SmartHealthCardError {
+export class JWSError extends SHCError {
   constructor(message: string) {
     super(message, 'JWS_ERROR')
     this.name = 'JWSError'
@@ -39,7 +39,7 @@ export class JWSError extends SmartHealthCardError {
  * @group SHC
  * @category Errors
  */
-export class QRCodeError extends SmartHealthCardError {
+export class QRCodeError extends SHCError {
   constructor(message: string) {
     super(message, 'QR_CODE_ERROR')
     this.name = 'QRCodeError'
@@ -53,7 +53,7 @@ export class QRCodeError extends SmartHealthCardError {
  * @group SHC
  * @category Errors
  */
-export class InvalidBundleReferenceError extends SmartHealthCardError {
+export class InvalidBundleReferenceError extends SHCError {
   constructor(message: string) {
     super(message, 'INVALID_BUNDLE_REFERENCE_ERROR')
     this.name = 'InvalidBundleReferenceError'
@@ -67,7 +67,7 @@ export class InvalidBundleReferenceError extends SmartHealthCardError {
  * @group SHC
  * @category Errors
  */
-export class FileFormatError extends SmartHealthCardError {
+export class FileFormatError extends SHCError {
   constructor(message: string) {
     super(message, 'FILE_FORMAT_ERROR')
     this.name = 'FileFormatError'
@@ -81,7 +81,7 @@ export class FileFormatError extends SmartHealthCardError {
  * @group SHC
  * @category Errors
  */
-export class VerificationError extends SmartHealthCardError {
+export class VerificationError extends SHCError {
   constructor(message: string) {
     super(message, 'VERIFICATION_ERROR')
     this.name = 'VerificationError'
@@ -95,7 +95,7 @@ export class VerificationError extends SmartHealthCardError {
  * @group SHC
  * @category Errors
  */
-export class SignatureVerificationError extends SmartHealthCardError {
+export class SignatureVerificationError extends SHCError {
   constructor(message: string) {
     super(message, 'BAD_SIGNATURE')
     this.name = 'SignatureVerificationError'
@@ -109,7 +109,7 @@ export class SignatureVerificationError extends SmartHealthCardError {
  * @group SHC
  * @category Errors
  */
-export class ExpirationError extends SmartHealthCardError {
+export class ExpirationError extends SHCError {
   constructor(message: string) {
     super(message, 'EXPIRED')
     this.name = 'ExpirationError'
@@ -123,7 +123,7 @@ export class ExpirationError extends SmartHealthCardError {
  * @group SHC
  * @category Errors
  */
-export class PayloadValidationError extends SmartHealthCardError {
+export class PayloadValidationError extends SHCError {
   constructor(message: string) {
     super(message, 'FAILED_VALIDATION')
     this.name = 'PayloadValidationError'
@@ -137,7 +137,7 @@ export class PayloadValidationError extends SmartHealthCardError {
  * @group SHC
  * @category Errors
  */
-export class BundleValidationError extends SmartHealthCardError {
+export class BundleValidationError extends SHCError {
   constructor(message: string) {
     super(message, 'FAILED_VALIDATION')
     this.name = 'BundleValidationError'
@@ -151,7 +151,7 @@ export class BundleValidationError extends SmartHealthCardError {
  * @group SHC
  * @category Errors
  */
-export class CredentialValidationError extends SmartHealthCardError {
+export class CredentialValidationError extends SHCError {
   constructor(message: string) {
     super(message, 'FAILED_VALIDATION')
     this.name = 'CredentialValidationError'

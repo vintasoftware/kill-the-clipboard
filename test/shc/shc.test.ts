@@ -5,11 +5,11 @@ import {
   type FHIRBundle,
   JWSProcessor,
   QRCodeError,
+  type SHCConfig,
+  SHCIssuer,
+  SHCReader,
+  type SHCReaderConfigParams,
   SignatureVerificationError,
-  type SmartHealthCardConfig,
-  SmartHealthCardIssuer,
-  SmartHealthCardReader,
-  type SmartHealthCardReaderConfigParams,
 } from '@/index'
 import {
   createInvalidBundle,
@@ -21,12 +21,12 @@ import {
   testPublicKeySPKI,
 } from '../helpers'
 
-describe('SmartHealthCard', () => {
-  let issuer: SmartHealthCardIssuer
-  let reader: SmartHealthCardReader
+describe('SHC', () => {
+  let issuer: SHCIssuer
+  let reader: SHCReader
   let validBundle: FHIRBundle
-  let issuerConfig: SmartHealthCardConfig
-  let readerConfig: SmartHealthCardReaderConfigParams
+  let issuerConfig: SHCConfig
+  let readerConfig: SHCReaderConfigParams
 
   beforeEach(() => {
     validBundle = createValidFHIRBundle()
@@ -43,8 +43,8 @@ describe('SmartHealthCard', () => {
       enableQROptimization: false,
       strictReferences: true,
     }
-    issuer = new SmartHealthCardIssuer(issuerConfig)
-    reader = new SmartHealthCardReader(readerConfig)
+    issuer = new SHCIssuer(issuerConfig)
+    reader = new SHCReader(readerConfig)
   })
 
   describe('issue()', () => {
@@ -63,7 +63,7 @@ describe('SmartHealthCard', () => {
       const privateKeyCrypto = await importPKCS8(testPrivateKeyPKCS8, 'ES256')
       const publicKeyCrypto = await importSPKI(testPublicKeySPKI, 'ES256')
 
-      const configWithCryptoKeys: SmartHealthCardConfig = {
+      const configWithCryptoKeys: SHCConfig = {
         issuer: 'https://example.com/issuer',
         privateKey: privateKeyCrypto,
         publicKey: publicKeyCrypto,
@@ -71,8 +71,8 @@ describe('SmartHealthCard', () => {
         enableQROptimization: false,
         strictReferences: true,
       }
-      const issuerWithCryptoKeys = new SmartHealthCardIssuer(configWithCryptoKeys)
-      const readerWithCryptoKeys = new SmartHealthCardReader({
+      const issuerWithCryptoKeys = new SHCIssuer(configWithCryptoKeys)
+      const readerWithCryptoKeys = new SHCReader({
         publicKey: publicKeyCrypto,
         enableQROptimization: false,
         strictReferences: true,
@@ -92,11 +92,11 @@ describe('SmartHealthCard', () => {
     })
 
     it('should issue health card with expiration when configured', async () => {
-      const configWithExpiration: SmartHealthCardConfig = {
+      const configWithExpiration: SHCConfig = {
         ...issuerConfig,
         expirationTime: 3600,
       }
-      const issuerWithExpiration = new SmartHealthCardIssuer(configWithExpiration)
+      const issuerWithExpiration = new SHCIssuer(configWithExpiration)
 
       const healthCard = await issuerWithExpiration.issue(validBundle)
       const jws = healthCard.asJWS()
@@ -144,7 +144,7 @@ describe('SmartHealthCard', () => {
     })
   })
 
-  describe('verification with SmartHealthCardReader', () => {
+  describe('verification with SHCReader', () => {
     it('should verify a valid SMART Health Card', async () => {
       const healthCard = await issuer.issue(validBundle)
       const verifiedHealthCard = await reader.fromJWS(healthCard.asJWS())
@@ -206,7 +206,7 @@ describe('SmartHealthCard', () => {
     })
   })
 
-  describe('SmartHealthCard object methods', () => {
+  describe('SHC object methods', () => {
     it('should return the original bundle with asBundle()', async () => {
       const healthCard = await issuer.issue(validBundle)
       const bundleFromCard = await healthCard.asBundle()
@@ -298,7 +298,7 @@ describe('SmartHealthCard', () => {
     })
   })
 
-  describe('SmartHealthCard output formats', () => {
+  describe('SHC output formats', () => {
     it('should create file content in correct format', async () => {
       const healthCard = await issuer.issue(validBundle)
       const fileContent = await healthCard.asFileContent()
@@ -413,10 +413,10 @@ describe('SmartHealthCard', () => {
   })
 
   describe('JsonWebKey support', () => {
-    let issuerJWK: SmartHealthCardIssuer
-    let readerJWK: SmartHealthCardReader
-    let issuerConfigJWK: SmartHealthCardConfig
-    let readerConfigJWK: SmartHealthCardReaderConfigParams
+    let issuerJWK: SHCIssuer
+    let readerJWK: SHCReader
+    let issuerConfigJWK: SHCConfig
+    let readerConfigJWK: SHCReaderConfigParams
 
     beforeEach(() => {
       issuerConfigJWK = {
@@ -432,8 +432,8 @@ describe('SmartHealthCard', () => {
         enableQROptimization: false,
         strictReferences: true,
       }
-      issuerJWK = new SmartHealthCardIssuer(issuerConfigJWK)
-      readerJWK = new SmartHealthCardReader(readerConfigJWK)
+      issuerJWK = new SHCIssuer(issuerConfigJWK)
+      readerJWK = new SHCReader(readerConfigJWK)
     })
 
     it('should issue and verify SMART Health Card with JsonWebKey', async () => {

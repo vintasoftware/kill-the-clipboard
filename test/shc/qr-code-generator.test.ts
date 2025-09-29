@@ -1,6 +1,6 @@
 // biome-ignore-all lint/suspicious/noExplicitAny: Tests intentionally cover invalid value branches
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { QRCodeError, QRCodeGenerator, SmartHealthCardIssuer, SmartHealthCardReader } from '@/index'
+import { QRCodeError, QRCodeGenerator, SHCIssuer, SHCReader } from '@/index'
 import { createValidFHIRBundle, testPrivateKeyPKCS8, testPublicKeySPKI } from '../helpers'
 
 describe('QRCodeGenerator', () => {
@@ -10,7 +10,7 @@ describe('QRCodeGenerator', () => {
   beforeEach(async () => {
     qrGenerator = new QRCodeGenerator()
 
-    const issuer = new SmartHealthCardIssuer({
+    const issuer = new SHCIssuer({
       issuer: 'https://example.com/issuer',
       privateKey: testPrivateKeyPKCS8,
       publicKey: testPublicKeySPKI,
@@ -438,7 +438,7 @@ describe('QRCodeGenerator', () => {
       const scannedJWS = await qrGenerator.decodeQR([qrContent])
       expect(scannedJWS).toBe(validJWS)
 
-      const reader = new SmartHealthCardReader({
+      const reader = new SHCReader({
         publicKey: testPublicKeySPKI,
         enableQROptimization: false,
         strictReferences: true,

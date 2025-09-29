@@ -4,9 +4,9 @@ import { beforeEach, describe, expect, it } from 'vitest'
 import {
   type FHIRBundle,
   FHIRBundleProcessor,
-  type SmartHealthCardConfigParams,
-  SmartHealthCardIssuer,
-  SmartHealthCardReader,
+  type SHCConfigParams,
+  SHCIssuer,
+  SHCReader,
 } from '@/index'
 import { createValidFHIRBundle, testPrivateKeyPKCS8, testPublicKeySPKI } from '../helpers'
 
@@ -300,16 +300,16 @@ describe('QR Optimization Features', () => {
     expect(optimized.entry?.length).toBe(1)
   })
 
-  it('should create SmartHealthCard with QR optimization enabled', async () => {
-    const config: SmartHealthCardConfigParams = {
+  it('should create SHC with QR optimization enabled', async () => {
+    const config: SHCConfigParams = {
       issuer: 'https://example.com/issuer',
       privateKey: testPrivateKeyPKCS8,
       publicKey: testPublicKeySPKI,
       expirationTime: null,
     }
 
-    const issuer = new SmartHealthCardIssuer(config)
-    const reader = new SmartHealthCardReader({
+    const issuer = new SHCIssuer(config)
+    const reader = new SHCReader({
       publicKey: config.publicKey,
       enableQROptimization: config.enableQROptimization,
       strictReferences: config.strictReferences,
@@ -342,8 +342,8 @@ describe('QR Optimization Features', () => {
       strictReferences: true,
     }
 
-    const issuer = new SmartHealthCardIssuer(config)
-    const reader = new SmartHealthCardReader({
+    const issuer = new SHCIssuer(config)
+    const reader = new SHCReader({
       publicKey: config.publicKey,
       enableQROptimization: config.enableQROptimization,
       strictReferences: config.strictReferences,

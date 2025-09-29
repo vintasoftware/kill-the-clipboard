@@ -60,23 +60,23 @@ yarn add kill-the-clipboard
 
 **Security warning**: Issue/sign on a secure backend only; never expose the ES256 private key in browsers.
 
-Use `SmartHealthCardIssuer` on the server. Use `SmartHealthCardReader` in the browser or server to verify and render QR.
+Use `SHCIssuer` on the server. Use `SHCReader` in the browser or server to verify and render QR.
 
 Typical flow: client sends FHIR Bundle → server returns JWS/.smart-health-card or QR data.
 
 ```typescript
-import { SmartHealthCardIssuer, SmartHealthCardReader } from 'kill-the-clipboard';
+import { SHCIssuer, SHCReader } from 'kill-the-clipboard';
 
 // Configure issuer with your details and ES256 key pair
 // SECURITY: Use issuer on a secure backend only; never include privateKey in client-side code.
-const issuer = new SmartHealthCardIssuer({
+const issuer = new SHCIssuer({
   issuer: 'https://your-healthcare-org.com',
   privateKey: privateKeyPKCS8String, // ES256 private key in PKCS#8 format
   publicKey: publicKeySPKIString, // ES256 public key in SPKI format
 });
 
 // Configure reader for verification (only needs public key)
-const reader = new SmartHealthCardReader({
+const reader = new SHCReader({
   publicKey: publicKeySPKIString, // ES256 public key in SPKI format
 });
 
@@ -315,21 +315,21 @@ pnpm docs:build
 
 ```typescript
 import { 
-  SmartHealthCardIssuer,
-  SmartHealthCardReader,
+  SHCIssuer,
+  SHCReader,
   FHIRBundleProcessor, 
   VerifiableCredentialProcessor,
   JWSProcessor,
   QRCodeGenerator 
 } from 'kill-the-clipboard';
 
-// High-level API with SmartHealthCard object
-const issuer = new SmartHealthCardIssuer(config);
+// High-level API with SHC object
+const issuer = new SHCIssuer(config);
 const healthCard = await issuer.issue(fhirBundle, {
   includeAdditionalTypes: ['https://smarthealth.cards#covid19'],
 });
 
-// SmartHealthCard provides various output formats
+// SHC provides various output formats
 const qrCodes = await healthCard.asQR({
   enableChunking: false,
   encodeOptions: {
@@ -411,10 +411,10 @@ const decodedJWS = qrGenerator.decodeNumericToJWS(numericData);
 ### SMART Health Cards File Operations
 
 ```typescript
-import { SmartHealthCardIssuer, SmartHealthCardReader } from 'kill-the-clipboard';
+import { SHCIssuer, SHCReader } from 'kill-the-clipboard';
 
-const issuer = new SmartHealthCardIssuer(config);
-const reader = new SmartHealthCardReader({ publicKey: config.publicKey });
+const issuer = new SHCIssuer(config);
+const reader = new SHCReader({ publicKey: config.publicKey });
 
 // Issue a health card
 const healthCard = await issuer.issue(fhirBundle);
@@ -477,7 +477,7 @@ const { publicKey, privateKey } = await crypto.webcrypto.subtle.generateKey(
 const privateKeyPKCS8 = await exportPKCS8(privateKey);
 const publicKeySPKI = await exportSPKI(publicKey);
 
-// Use these keys in SmartHealthCardIssuer config
+// Use these keys in SHCIssuer config
 const config = {
   issuer: 'https://your-org.com',
   privateKey: privateKeyPKCS8,

@@ -6,8 +6,8 @@ import {
   JWSError,
   JWSProcessor,
   PayloadValidationError,
+  type SHCJWT,
   SignatureVerificationError,
-  type SmartHealthCardJWT,
   type VerifiableCredential,
   VerifiableCredentialProcessor,
 } from '@/index'
@@ -24,7 +24,7 @@ describe('JWSProcessor', () => {
   let validBundle: FHIRBundle
   let vcProcessor: VerifiableCredentialProcessor
   let validVC: VerifiableCredential
-  let validJWTPayload: SmartHealthCardJWT
+  let validJWTPayload: SHCJWT
 
   beforeEach(async () => {
     processor = new JWSProcessor()
@@ -123,18 +123,10 @@ describe('JWSProcessor', () => {
 
     it('should throw PayloadValidationError for null payload', async () => {
       await expect(
-        processor.sign(
-          null as unknown as SmartHealthCardJWT,
-          testPrivateKeyPKCS8,
-          testPublicKeySPKI
-        )
+        processor.sign(null as unknown as SHCJWT, testPrivateKeyPKCS8, testPublicKeySPKI)
       ).rejects.toThrow(PayloadValidationError)
       await expect(
-        processor.sign(
-          null as unknown as SmartHealthCardJWT,
-          testPrivateKeyPKCS8,
-          testPublicKeySPKI
-        )
+        processor.sign(null as unknown as SHCJWT, testPrivateKeyPKCS8, testPublicKeySPKI)
       ).rejects.toThrow('Invalid JWT payload: must be an object')
     })
 
@@ -291,7 +283,7 @@ describe('JWSProcessor', () => {
 
     it('should reject expired JWS by default', async () => {
       const now = Math.floor(Date.now() / 1000)
-      const expiredPayload: SmartHealthCardJWT = {
+      const expiredPayload: SHCJWT = {
         iss: 'https://example.com/issuer',
         nbf: now - 7200,
         exp: now - 3600,
@@ -307,7 +299,7 @@ describe('JWSProcessor', () => {
 
     it('should allow skipping expiration verification when option set', async () => {
       const now = Math.floor(Date.now() / 1000)
-      const expiredPayload: SmartHealthCardJWT = {
+      const expiredPayload: SHCJWT = {
         iss: 'https://example.com/issuer',
         nbf: now - 7200,
         exp: now - 3600,

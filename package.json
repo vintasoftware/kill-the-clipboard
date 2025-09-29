@@ -47,7 +47,8 @@
     "release": "semantic-release",
     "validate:examples": "node ./scripts/validate-health-cards-examples.ts",
     "shc:demo:dev": "pnpm run build && cd demo/shc && pnpm dev",
-    "shl:demo:dev": "pnpm run build && cd demo/shl && pnpm dev"
+    "shl:demo:dev": "pnpm run build && cd demo/shl && pnpm dev",
+    "medplum-shl:demo:dev": "pnpm run build && cd demo/medplum-shl && pnpm dev"
   },
   "lint-staged": {
     "*.{js,ts,json}": "biome check --write --no-errors-on-unmatched"

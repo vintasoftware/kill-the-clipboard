@@ -29,9 +29,9 @@ This document provides essential context for AI models interacting with this pro
     * `src/shl/`: SMART Health Links implementation (encryption, manifest serving, decryption)
     * `src/common/`: Shared utilities (compression, etc.)
 * **Main Entry Points:**
-    * **SmartHealthCard**: SHC immutable class with methods to export the health card in different formats
-    * **SmartHealthCardIssuer**: Server-side health card creation and signing
-    * **SmartHealthCardReader**: Client/server-side verification and QR scanning
+    * **SHC**: SHC immutable class with methods to export the health card in different formats
+    * **SHCIssuer**: Server-side health card creation and signing
+    * **SHCReader**: Client/server-side verification and QR scanning
     * **SHL**: SHL immutable class with methods to export the SHL in different formats
     * **SHL.generate, SHLManifestBuilder**: Server-side SHL creation and manifest building
     * **SHLViewer**: Client-side SHL resolution and decryption
@@ -39,6 +39,7 @@ This document provides essential context for AI models interacting with this pro
 * **Demo Applications:**
     * `demo/shc/`: Vanilla JS browser demo for SMART Health Cards QR generation and scanning
     * `demo/shl/`: Next.js full-stack demo for SMART Health Links generation and viewing
+    * `demo/medplum-shl/`: Next.js as frontend + Medplum as backend demo for SMART Health Links generation and viewing
 
 ## 4. Development Workflow & Commands
 
@@ -80,7 +81,7 @@ This document provides essential context for AI models interacting with this pro
     * All SHL file URLs should be HTTPS and short-lived
     * Passcodes are server-side only and never included in encrypted payloads
 * **Naming Conventions:**
-    * Classes: PascalCase (e.g., `SmartHealthCardIssuer`)
+    * Classes: PascalCase (e.g., `SHCIssuer`)
     * Files: kebab-case (e.g., `manifest-builder.ts`)
     * Constants: SCREAMING_SNAKE_CASE for module-level constants
 * **Documentation:** Use TypeDoc for API documentation on all public APIs.

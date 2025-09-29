@@ -1,5 +1,5 @@
 import type { List, Resource } from '@medplum/fhirtypes'
-import type { SmartHealthCard } from '../shc/shc.js'
+import type { SHC } from '../shc/shc.js'
 import { encryptSHLFile } from './crypto.js'
 import { SHLError, SHLExpiredError, SHLManifestError, SHLNetworkError } from './errors.js'
 import { SHL } from './shl.js'
@@ -56,7 +56,7 @@ import type {
  * });
  *
  * // Add files
- * await builder.addHealthCard({ shc: mySmartHealthCard });
+ * await builder.addHealthCard({ shc: mySHC });
  * await builder.addFHIRResource({ content: myFhirBundle });
  *
  * // Generate manifest
@@ -219,7 +219,7 @@ export class SHLManifestBuilder {
    * The SHC is wrapped in a `verifiableCredential` array as per SMART Health Cards specification.
    *
    * @param params - Configuration for adding the health card. The object should contain:
-   *   - `shc`: SMART Health Card to add (JWS string or SmartHealthCard object)
+   *   - `shc`: SMART Health Card to add (JWS string or SHC object)
    *   - `enableCompression`: Optional. Whether to compress the file content before encryption (defaults to false, as SHCs are typically already compressed)
    * @returns Promise resolving to object with encrypted file metadata and storage path
    * @returns returns.encryptedFile - Encrypted file object with type and JWE string
@@ -230,8 +230,8 @@ export class SHLManifestBuilder {
    *
    * @example
    * ```typescript
-   * // Add from SmartHealthCard object
-   * const result = await builder.addHealthCard({ shc: mySmartHealthCard });
+   * // Add from SHC object
+   * const result = await builder.addHealthCard({ shc: mySHC });
    * console.log('Added file:', result.storagePath, 'Size:', result.ciphertextLength);
    *
    * // Add from JWS string
@@ -239,13 +239,13 @@ export class SHLManifestBuilder {
    *
    * // Add with compression (not recommended for SHCs)
    * await builder.addHealthCard({
-   *   shc: mySmartHealthCard,
+   *   shc: mySHC,
    *   enableCompression: true
    * });
    * ```
    */
   async addHealthCard(params: {
-    shc: SmartHealthCard | string
+    shc: SHC | string
     enableCompression?: boolean
   }): Promise<{ encryptedFile: SHLFileJWE; storagePath: string; ciphertextLength: number }> {
     const jwsString = typeof params.shc === 'string' ? params.shc : params.shc.asJWS()
@@ -466,7 +466,7 @@ export class SHLManifestBuilder {
    * storage path, and the manifest metadata is updated accordingly.
    *
    * @param storagePath - Storage path of the file to update (as returned by uploadFile)
-   * @param shc - New SMART Health Card to store (JWS string or SmartHealthCard object)
+   * @param shc - New SMART Health Card to store (JWS string or SHC object)
    * @param enableCompression - Whether to compress the file content before encryption (defaults to false for SHCs)
    * @param lastUpdated - Optional custom timestamp for the update. If not provided,
    *   the current time will be used.
@@ -477,7 +477,7 @@ export class SHLManifestBuilder {
    *
    * @example
    * ```typescript
-   * // Update with SmartHealthCard object
+   * // Update with SHC object
    * // Note: This requires providing updateFile function in constructor
    * await builder.updateHealthCard('shl-files/card123.jwe', myUpdatedHealthCard);
    *
@@ -487,7 +487,7 @@ export class SHLManifestBuilder {
    */
   async updateHealthCard(
     storagePath: string,
-    shc: SmartHealthCard | string,
+    shc: SHC | string,
     enableCompression?: boolean,
     lastUpdated?: Date
   ): Promise<void> {

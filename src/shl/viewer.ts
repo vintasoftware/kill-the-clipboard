@@ -1,7 +1,7 @@
 import type { Resource } from '@medplum/fhirtypes'
-import { SmartHealthCardReader } from '../shc/reader.js'
-import type { SmartHealthCard } from '../shc/shc.js'
-import type { SmartHealthCardReaderConfigParams } from '../shc/types.js'
+import { SHCReader } from '../shc/reader.js'
+import type { SHC } from '../shc/shc.js'
+import type { SHCReaderConfigParams } from '../shc/types.js'
 import { decryptSHLFile } from './crypto.js'
 import {
   SHLError,
@@ -51,7 +51,7 @@ import type {
  *   embeddedLengthMax: 16384 // prefer embedding files under 16KB
  * });
  *
- * console.log(resolved.smartHealthCards); // Array of SmartHealthCard objects
+ * console.log(resolved.smartHealthCards); // Array of SHC objects
  * console.log(resolved.fhirResources); // Array of FHIR resources
  * ```
  *
@@ -197,7 +197,7 @@ export class SHLViewer {
     passcode?: string
     recipient: string
     embeddedLengthMax?: number
-    shcReaderConfig?: SmartHealthCardReaderConfigParams
+    shcReaderConfig?: SHCReaderConfigParams
   }): Promise<SHLResolvedContent> {
     const shl = this.shl
 
@@ -578,7 +578,7 @@ export class SHLViewer {
    * Parse decrypted files into structured SMART Health Cards and FHIR resources.
    *
    * This method processes the decrypted file content based on their content types,
-   * creating SmartHealthCard objects from application/smart-health-card files
+   * creating SHC objects from application/smart-health-card files
    * and parsing FHIR resources from application/fhir+json files.
    *
    * @param files - Array of decrypted files with metadata
@@ -603,9 +603,9 @@ export class SHLViewer {
       content: string
       contentType: string | undefined
     }>,
-    shcReaderConfig?: SmartHealthCardReaderConfigParams
-  ): Promise<{ smartHealthCards: SmartHealthCard[]; fhirResources: Resource[] }> {
-    const smartHealthCards: SmartHealthCard[] = []
+    shcReaderConfig?: SHCReaderConfigParams
+  ): Promise<{ smartHealthCards: SHC[]; fhirResources: Resource[] }> {
+    const smartHealthCards: SHC[] = []
     const fhirResources: Resource[] = []
     for (const file of files) {
       let parsedContent: Record<string, unknown>
@@ -630,7 +630,7 @@ export class SHLViewer {
             'Invalid SMART Health Card file: missing verifiableCredential array'
           )
         }
-        const reader = new SmartHealthCardReader(shcReaderConfig ?? {})
+        const reader = new SHCReader(shcReaderConfig ?? {})
         for (const jws of fileContent.verifiableCredential) {
           try {
             const shc = await reader.fromJWS(jws)

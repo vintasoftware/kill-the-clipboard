@@ -1,9 +1,6 @@
 // Import the SMART Health Cards library
 // In a real application, you would import from 'kill-the-clipboard'
-import {
-  SmartHealthCardIssuer,
-  SmartHealthCardReader,
-} from "kill-the-clipboard";
+import { SHCIssuer, SHCReader } from "kill-the-clipboard";
 // Import QR code decoding library
 import decodeQR from "qr/decode.js";
 // Import JOSE for key handling
@@ -241,13 +238,13 @@ async function init() {
     await loadTestKeys();
 
     // Initialize SMART Health Card issuer and reader with test keys
-    issuer = new SmartHealthCardIssuer({
+    issuer = new SHCIssuer({
       issuer: "https://spec.smarthealth.cards/examples/issuer",
       privateKey: TEST_SIGNING_KEY,
       publicKey: TEST_VERIFICATION_KEY,
     });
 
-    reader = new SmartHealthCardReader({
+    reader = new SHCReader({
       publicKey: TEST_VERIFICATION_KEY,
     });
 

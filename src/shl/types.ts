@@ -1,6 +1,6 @@
 // Types for SMART Health Links
 import type { List, Resource } from '@medplum/fhirtypes'
-import type { SmartHealthCard } from '../shc/shc.js'
+import type { SHC } from '../shc/shc.js'
 import type { QREncodeParams } from '../shc/types.js'
 
 /**
@@ -416,7 +416,7 @@ export interface SHLResolvedContent {
    * SMART Health Cards extracted from application/smart-health-card files.
    * Each card is fully parsed and ready for verification or display.
    */
-  smartHealthCards: SmartHealthCard[]
+  smartHealthCards: SHC[]
   /**
    * FHIR resources extracted from application/fhir+json files.
    * Each resource is a parsed JSON object conforming to FHIR R4 specification.

@@ -1,6 +1,6 @@
 /**
  * Script: validate-health-cards-examples
- * Purpose: Use this library's SmartHealthCard API to reproduce the reference
+ * Purpose: Use this library's SHC API to reproduce the reference
  *          example artifacts in `health-cards/docs/examples`, using the same
  *          signing keys as the reference implementation.
  *
@@ -11,7 +11,7 @@ import fs from "fs";
 import path from "path";
 import { fileURLToPath } from "url";
 
-import { SmartHealthCardIssuer, SmartHealthCardReader } from "kill-the-clipboard";
+import { SHCIssuer, SHCReader } from "kill-the-clipboard";
 
 import { importJWK } from "jose";
 
@@ -82,10 +82,10 @@ function deepEqualJson(a, b) {
 async function generateForExample(fixture, exampleNum, issuerIndex, qrCount) {
   const prefix = `example-${exampleNum}-`;
 
-  // Sign using SmartHealthCardIssuer API with same keys and issuer
+  // Sign using SHCIssuer API with same keys and issuer
   const { privateKey, publicKey } = await loadIssuerKeys(issuerIndex);
   const issuerUrl = "https://spec.smarthealth.cards/examples/issuer";
-  const issuer = new SmartHealthCardIssuer({
+  const issuer = new SHCIssuer({
     issuer: issuerUrl,
     privateKey,
     publicKey,
@@ -121,7 +121,7 @@ async function generateForExample(fixture, exampleNum, issuerIndex, qrCount) {
   // Load the payload, to ensure deterministic differences are not present.
 
   // Create reader for verification
-  const reader = new SmartHealthCardReader({
+  const reader = new SHCReader({
     publicKey,
     enableQROptimization: true,
     strictReferences: false,

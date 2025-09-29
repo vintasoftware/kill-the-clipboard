@@ -1,11 +1,11 @@
 // biome-ignore-all lint/suspicious/noExplicitAny: The test needs to use `any` to mock the fetch function
 import { describe, expect, it, vi } from 'vitest'
-import { SmartHealthCardIssuer, SmartHealthCardReader, VerificationError } from '@/index'
+import { SHCIssuer, SHCReader, VerificationError } from '@/index'
 import { createValidFHIRBundle, testPrivateKeyPKCS8, testPublicKeySPKI } from '../helpers'
 
-describe('JWKS fetching for SmartHealthCardReader', () => {
+describe('JWKS fetching for SHCReader', () => {
   it('fetches issuer JWKS and verifies using matching kid when publicKey is omitted', async () => {
-    const issuer = new SmartHealthCardIssuer({
+    const issuer = new SHCIssuer({
       issuer: 'https://spec.smarthealth.cards/examples/issuer',
       privateKey: testPrivateKeyPKCS8,
       publicKey: testPublicKeySPKI,
@@ -35,7 +35,7 @@ describe('JWKS fetching for SmartHealthCardReader', () => {
     )
     ;(globalThis as any).fetch = fetchMock
 
-    const reader = new SmartHealthCardReader({
+    const reader = new SHCReader({
       enableQROptimization: false,
       strictReferences: true,
     } as any)
@@ -52,7 +52,7 @@ describe('JWKS fetching for SmartHealthCardReader', () => {
   })
 
   it('throws VerificationError when JWKS fetch fails', async () => {
-    const issuer = new SmartHealthCardIssuer({
+    const issuer = new SHCIssuer({
       issuer: 'https://spec.smarthealth.cards/examples/issuer',
       privateKey: testPrivateKeyPKCS8,
       publicKey: testPublicKeySPKI,
@@ -76,7 +76,7 @@ describe('JWKS fetching for SmartHealthCardReader', () => {
     )
     ;(globalThis as any).fetch = fetchMock
 
-    const reader = new SmartHealthCardReader({
+    const reader = new SHCReader({
       enableQROptimization: false,
       strictReferences: true,
     } as any)

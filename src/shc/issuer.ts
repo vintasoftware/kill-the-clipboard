@@ -1,13 +1,13 @@
-// SmartHealthCardIssuer class
+// SHCIssuer class
 
 import { FHIRBundleProcessor } from './fhir/bundle-processor.js'
 import { JWSProcessor } from './jws/jws-processor.js'
-import { SmartHealthCard } from './shc.js'
+import { SHC } from './shc.js'
 import type {
   FHIRBundle,
-  SmartHealthCardConfig,
-  SmartHealthCardConfigParams,
-  SmartHealthCardJWT,
+  SHCConfig,
+  SHCConfigParams,
+  SHCJWT,
   VerifiableCredentialParams,
 } from './types.js'
 import { VerifiableCredentialProcessor } from './vc.js'
@@ -21,35 +21,35 @@ import { VerifiableCredentialProcessor } from './vc.js'
  * @group SHC
  * @category High-Level API
  */
-export class SmartHealthCardIssuer {
-  private config: SmartHealthCardConfig
+export class SHCIssuer {
+  private config: SHCConfig
   private bundleProcessor: FHIRBundleProcessor
   private vcProcessor: VerifiableCredentialProcessor
   private jwsProcessor: JWSProcessor
 
   /**
-   * Creates a new SmartHealthCardIssuer instance.
+   * Creates a new SHCIssuer instance.
    *
    * @param config - Configuration parameters for the issuer
    *
    * @example
    * ```typescript
    * // Using PEM format keys
-   * const issuer = new SmartHealthCardIssuer({
+   * const issuer = new SHCIssuer({
    *   issuer: 'https://your-healthcare-org.com',
    *   privateKey: privateKeyPKCS8String, // ES256 private key in PKCS#8 format
    *   publicKey: publicKeySPKIString, // ES256 public key in SPKI format
    * });
    *
    * // Using JsonWebKey format
-   * const issuerJWK = new SmartHealthCardIssuer({
+   * const issuerJWK = new SHCIssuer({
    *   issuer: 'https://your-healthcare-org.com',
    *   privateKey: { kty: 'EC', crv: 'P-256', x: '...', y: '...', d: '...' },
    *   publicKey: { kty: 'EC', crv: 'P-256', x: '...', y: '...' },
    * });
    * ```
    */
-  constructor(config: SmartHealthCardConfigParams) {
+  constructor(config: SHCConfigParams) {
     this.config = {
       ...config,
       expirationTime: config.expirationTime ?? null,
@@ -67,24 +67,21 @@ export class SmartHealthCardIssuer {
    *
    * @param fhirBundle - FHIR R4 Bundle containing medical data
    * @param config - Optional Verifiable Credential parameters. See {@link VerifiableCredentialParams}.
-   * @returns Promise resolving to SmartHealthCard object
+   * @returns Promise resolving to SHC object
    * @throws {@link CredentialValidationError} When FHIR bundle is invalid
    * @throws {@link JWSError} When signing fails
    *
    * @example
    * ```typescript
-   * const issuer = new SmartHealthCardIssuer(config);
+   * const issuer = new SHCIssuer(config);
    * const healthCard = await issuer.issue(fhirBundle, {
    *   includeAdditionalTypes: ['https://smarthealth.cards#covid19']
    * });
    * ```
    */
-  async issue(
-    fhirBundle: FHIRBundle,
-    config: VerifiableCredentialParams = {}
-  ): Promise<SmartHealthCard> {
+  async issue(fhirBundle: FHIRBundle, config: VerifiableCredentialParams = {}): Promise<SHC> {
     const jws = await this.createJWS(fhirBundle, config)
-    return new SmartHealthCard(jws, fhirBundle)
+    return new SHC(jws, fhirBundle)
   }
 
   /**
@@ -108,7 +105,7 @@ export class SmartHealthCardIssuer {
 
     // Step 3: Create JWT payload with issuer information
     const now = Math.floor(Date.now() / 1000)
-    const jwtPayload: SmartHealthCardJWT = {
+    const jwtPayload: SHCJWT = {
       iss: this.config.issuer,
       nbf: now,
       vc: vc.vc,

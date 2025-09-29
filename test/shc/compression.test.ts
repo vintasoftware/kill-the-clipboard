@@ -1,15 +1,15 @@
 import { beforeEach, describe, expect, it } from 'vitest'
-import { type FHIRBundle, SmartHealthCardIssuer, SmartHealthCardReader } from '@/index'
+import { type FHIRBundle, SHCIssuer, SHCReader } from '@/index'
 import { createValidFHIRBundle, testPrivateKeyPKCS8, testPublicKeySPKI } from '../helpers'
 
 describe('Compression Features', () => {
-  let issuer: SmartHealthCardIssuer
-  let reader: SmartHealthCardReader
+  let issuer: SHCIssuer
+  let reader: SHCReader
   let validBundle: FHIRBundle
 
   beforeEach(() => {
     validBundle = createValidFHIRBundle()
-    issuer = new SmartHealthCardIssuer({
+    issuer = new SHCIssuer({
       issuer: 'https://example.com/issuer',
       privateKey: testPrivateKeyPKCS8,
       publicKey: testPublicKeySPKI,
@@ -17,7 +17,7 @@ describe('Compression Features', () => {
       enableQROptimization: false,
       strictReferences: true,
     })
-    reader = new SmartHealthCardReader({
+    reader = new SHCReader({
       publicKey: testPublicKeySPKI,
       enableQROptimization: false,
       strictReferences: true,

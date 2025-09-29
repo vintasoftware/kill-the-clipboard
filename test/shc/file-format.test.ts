@@ -2,19 +2,19 @@ import { beforeEach, describe, expect, it } from 'vitest'
 import {
   type FHIRBundle,
   FileFormatError,
-  type SmartHealthCardConfig,
-  SmartHealthCardIssuer,
-  SmartHealthCardReader,
-  type SmartHealthCardReaderConfigParams,
+  type SHCConfig,
+  SHCIssuer,
+  SHCReader,
+  type SHCReaderConfigParams,
 } from '@/index'
 import { createValidFHIRBundle, testPrivateKeyPKCS8, testPublicKeySPKI } from '../helpers'
 
 describe('File Format Features', () => {
-  let issuer: SmartHealthCardIssuer
-  let reader: SmartHealthCardReader
+  let issuer: SHCIssuer
+  let reader: SHCReader
   let validBundle: FHIRBundle
-  let issuerConfig: SmartHealthCardConfig
-  let readerConfig: SmartHealthCardReaderConfigParams
+  let issuerConfig: SHCConfig
+  let readerConfig: SHCReaderConfigParams
 
   beforeEach(() => {
     validBundle = createValidFHIRBundle()
@@ -31,8 +31,8 @@ describe('File Format Features', () => {
       enableQROptimization: false,
       strictReferences: true,
     }
-    issuer = new SmartHealthCardIssuer(issuerConfig)
-    reader = new SmartHealthCardReader(readerConfig)
+    issuer = new SHCIssuer(issuerConfig)
+    reader = new SHCReader(readerConfig)
   })
 
   it('should create file with JSON wrapper format', async () => {

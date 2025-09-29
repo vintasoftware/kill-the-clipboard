@@ -15,10 +15,10 @@ import {
   ExpirationError,
   JWSError,
   PayloadValidationError,
+  SHCError,
   SignatureVerificationError,
-  SmartHealthCardError,
 } from '../errors.js'
-import type { SmartHealthCardJWT } from '../types.js'
+import type { SHCJWT } from '../types.js'
 
 /**
  * Handles JWT/JWS signing and verification with ES256 algorithm.
@@ -41,7 +41,7 @@ export class JWSProcessor {
    * @throws {@link JWSError} When signing fails or key import fails
    */
   async sign(
-    payload: SmartHealthCardJWT,
+    payload: SHCJWT,
     privateKey: CryptoKey | Uint8Array | string | JsonWebKey,
     publicKey: CryptoKey | Uint8Array | string | JsonWebKey,
     config: { enableCompression?: boolean } = {}
@@ -86,7 +86,7 @@ export class JWSProcessor {
       const jws = await new CompactSign(payloadBytes).setProtectedHeader(header).sign(key)
       return jws
     } catch (error) {
-      if (error instanceof SmartHealthCardError) {
+      if (error instanceof SHCError) {
         throw error
       }
       const errorMessage = error instanceof Error ? error.message : String(error)
@@ -136,7 +136,7 @@ export class JWSProcessor {
     jws: string,
     publicKey: CryptoKey | Uint8Array | string | JsonWebKey,
     config?: { verifyExpiration?: boolean }
-  ): Promise<SmartHealthCardJWT> {
+  ): Promise<SHCJWT> {
     try {
       if (!jws || typeof jws !== 'string') {
         throw new PayloadValidationError('Invalid JWS: must be a non-empty string')
@@ -173,7 +173,7 @@ export class JWSProcessor {
 
       // Parse JSON
       const payloadJson = new TextDecoder().decode(payloadBytes)
-      const smartPayload = JSON.parse(payloadJson) as SmartHealthCardJWT
+      const smartPayload = JSON.parse(payloadJson) as SHCJWT
 
       // Validate structure
       this.validateJWTPayload(smartPayload)
@@ -189,7 +189,7 @@ export class JWSProcessor {
 
       return smartPayload
     } catch (error) {
-      if (error instanceof SmartHealthCardError) {
+      if (error instanceof SHCError) {
         throw error
       }
       const errorMessage = error instanceof Error ? error.message : String(error)
@@ -200,7 +200,7 @@ export class JWSProcessor {
   /**
    * Validates the structure of a SMART Health Card JWT payload
    */
-  private validateJWTPayload(payload: SmartHealthCardJWT): void {
+  private validateJWTPayload(payload: SHCJWT): void {
     if (!payload || typeof payload !== 'object') {
       throw new PayloadValidationError('Invalid JWT payload: must be an object')
     }
@@ -249,7 +249,7 @@ export class JWSProcessor {
    */
   async parseUnverified(
     jws: string
-  ): Promise<{ header: { kid?: string; zip?: 'DEF' | string }; payload: SmartHealthCardJWT }> {
+  ): Promise<{ header: { kid?: string; zip?: 'DEF' | string }; payload: SHCJWT }> {
     try {
       if (!jws || typeof jws !== 'string') {
         throw new PayloadValidationError('Invalid JWS: must be a non-empty string')
@@ -268,11 +268,11 @@ export class JWSProcessor {
       const decompressed =
         header.zip === 'DEF' ? await decompressDeflateRaw(payloadBytes) : payloadBytes
       const json = new TextDecoder().decode(decompressed)
-      const payload = JSON.parse(json) as SmartHealthCardJWT
+      const payload = JSON.parse(json) as SHCJWT
 
       return { header, payload }
     } catch (error) {
-      if (error instanceof SmartHealthCardError) {
+      if (error instanceof SHCError) {
         throw error
       }
       const message = error instanceof Error ? error.message : String(error)

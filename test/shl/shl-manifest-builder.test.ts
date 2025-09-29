@@ -2,11 +2,11 @@ import type { List, Resource } from '@medplum/fhirtypes'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import {
   decryptSHLFile,
+  SHCIssuer,
   SHL,
   SHLExpiredError,
   SHLManifestBuilder,
   SHLNetworkError,
-  SmartHealthCardIssuer,
 } from '@/index'
 import { createValidFHIRBundle, testPrivateKeyPKCS8, testPublicKeySPKI } from '../helpers'
 
@@ -54,7 +54,7 @@ describe('SHLManifestBuilder', () => {
 
   it('should add SMART Health Cards to manifest', async () => {
     const beforeTime = new Date()
-    const issuer = new SmartHealthCardIssuer({
+    const issuer = new SHCIssuer({
       issuer: 'https://example.com',
       privateKey: testPrivateKeyPKCS8,
       publicKey: testPublicKeySPKI,
@@ -239,7 +239,7 @@ describe('SHLManifestBuilder', () => {
   })
 
   it('should persist and reconstruct builder state correctly', async () => {
-    const issuer = new SmartHealthCardIssuer({
+    const issuer = new SHCIssuer({
       issuer: 'https://example.com',
       privateKey: testPrivateKeyPKCS8,
       publicKey: testPublicKeySPKI,
@@ -332,7 +332,7 @@ describe('SHLManifestBuilder', () => {
   })
 
   it('should handle different file types', async () => {
-    const issuer = new SmartHealthCardIssuer({
+    const issuer = new SHCIssuer({
       issuer: 'https://example.com',
       privateKey: testPrivateKeyPKCS8,
       publicKey: testPublicKeySPKI,
@@ -349,7 +349,7 @@ describe('SHLManifestBuilder', () => {
   })
 
   it('should handle compression options for different file types', async () => {
-    const issuer = new SmartHealthCardIssuer({
+    const issuer = new SHCIssuer({
       issuer: 'https://example.com',
       privateKey: testPrivateKeyPKCS8,
       publicKey: testPublicKeySPKI,
@@ -394,7 +394,7 @@ describe('SHLManifestBuilder', () => {
   })
 
   it('should handle string JWS input for addHealthCard', async () => {
-    const issuer = new SmartHealthCardIssuer({
+    const issuer = new SHCIssuer({
       issuer: 'https://example.com',
       privateKey: testPrivateKeyPKCS8,
       publicKey: testPublicKeySPKI,
@@ -462,7 +462,7 @@ describe('SHLManifestBuilder', () => {
   })
 
   it('should handle builder reconstruction without optional parameters', async () => {
-    const issuer = new SmartHealthCardIssuer({
+    const issuer = new SHCIssuer({
       issuer: 'https://example.com',
       privateKey: testPrivateKeyPKCS8,
       publicKey: testPublicKeySPKI,
@@ -671,7 +671,7 @@ describe('SHLManifestBuilder', () => {
     })
 
     it('should remove SMART Health Card files successfully', async () => {
-      const issuer = new SmartHealthCardIssuer({
+      const issuer = new SHCIssuer({
         issuer: 'https://example.com',
         privateKey: testPrivateKeyPKCS8,
         publicKey: testPublicKeySPKI,
@@ -820,7 +820,7 @@ describe('SHLManifestBuilder', () => {
     })
 
     it('should throw error when trying to update non-FHIR file', async () => {
-      const issuer = new SmartHealthCardIssuer({
+      const issuer = new SHCIssuer({
         issuer: 'https://example.com',
         privateKey: testPrivateKeyPKCS8,
         publicKey: testPublicKeySPKI,
@@ -884,7 +884,7 @@ describe('SHLManifestBuilder', () => {
 
   describe('SMART Health Card Updates', () => {
     it('should update SMART Health Card files successfully', async () => {
-      const issuer = new SmartHealthCardIssuer({
+      const issuer = new SHCIssuer({
         issuer: 'https://example.com',
         privateKey: testPrivateKeyPKCS8,
         publicKey: testPublicKeySPKI,
@@ -929,7 +929,7 @@ describe('SHLManifestBuilder', () => {
     })
 
     it('should update SMART Health Card files with JWS string', async () => {
-      const issuer = new SmartHealthCardIssuer({
+      const issuer = new SHCIssuer({
         issuer: 'https://example.com',
         privateKey: testPrivateKeyPKCS8,
         publicKey: testPublicKeySPKI,
@@ -958,7 +958,7 @@ describe('SHLManifestBuilder', () => {
     it('should throw error when trying to update non-SMART Health Card file', async () => {
       const result = await manifestBuilder.addFHIRResource({ content: createValidFHIRBundle() })
 
-      const issuer = new SmartHealthCardIssuer({
+      const issuer = new SHCIssuer({
         issuer: 'https://example.com',
         privateKey: testPrivateKeyPKCS8,
         publicKey: testPublicKeySPKI,
@@ -986,7 +986,7 @@ describe('SHLManifestBuilder', () => {
         },
       })
 
-      const issuer = new SmartHealthCardIssuer({
+      const issuer = new SHCIssuer({
         issuer: 'https://example.com',
         privateKey: testPrivateKeyPKCS8,
         publicKey: testPublicKeySPKI,
@@ -1006,7 +1006,7 @@ describe('SHLManifestBuilder', () => {
     it('should find existing files by storage path', async () => {
       const fhirResult = await manifestBuilder.addFHIRResource({ content: createValidFHIRBundle() })
 
-      const issuer = new SmartHealthCardIssuer({
+      const issuer = new SHCIssuer({
         issuer: 'https://example.com',
         privateKey: testPrivateKeyPKCS8,
         publicKey: testPublicKeySPKI,
@@ -1043,7 +1043,7 @@ describe('SHLManifestBuilder', () => {
 
   describe('Persistence and Reconstruction with File Management Functions', () => {
     it('should handle persistence with file management functions', async () => {
-      const issuer = new SmartHealthCardIssuer({
+      const issuer = new SHCIssuer({
         issuer: 'https://example.com',
         privateKey: testPrivateKeyPKCS8,
         publicKey: testPublicKeySPKI,

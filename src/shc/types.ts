@@ -39,7 +39,7 @@ export interface VerifiableCredential {
  * @group SHC
  * @category Types
  */
-export interface SmartHealthCardJWT {
+export interface SHCJWT {
   /** Issuer URL identifying the organization. */
   iss: string
   /** Not before timestamp (Unix timestamp). */
@@ -51,13 +51,13 @@ export interface SmartHealthCardJWT {
 }
 
 /**
- * Configuration parameters for SmartHealthCardIssuer.
+ * Configuration parameters for SHCIssuer.
  *
  * @public
  * @group SHC
  * @category Configuration
  */
-export interface SmartHealthCardConfigParams {
+export interface SHCConfigParams {
   /**
    * Issuer URL identifying the organization issuing the health card.
    * This value appears in the JWT `iss` claim.
@@ -103,17 +103,17 @@ export interface SmartHealthCardConfigParams {
  * @group SHC
  * @category Configuration
  */
-export type SmartHealthCardConfig = Required<SmartHealthCardConfigParams>
+export type SHCConfig = Required<SHCConfigParams>
 
 /**
- * Configuration parameters for SmartHealthCardReader.
+ * Configuration parameters for SHCReader.
  * Reader configuration only needs public key for verification.
  *
  * @public
  * @group SHC
  * @category Configuration
  */
-export interface SmartHealthCardReaderConfigParams {
+export interface SHCReaderConfigParams {
   /**
    * ES256 public key for verifying health card signatures.
    * Can be a WebCrypto CryptoKey, raw bytes as Uint8Array, PEM-formatted string, or JsonWebKey object.
@@ -147,14 +147,14 @@ export interface SmartHealthCardReaderConfigParams {
  * @group SHC
  * @category Configuration
  */
-export type SmartHealthCardReaderConfig = {
+export type SHCReaderConfig = {
   /**
    * ES256 public key for verifying health card signatures.
    * Can be a WebCrypto CryptoKey, raw bytes as Uint8Array, PEM-formatted string, or JsonWebKey object.
    * If `null`, the reader will attempt to resolve the public key from the issuer's JWKS endpoint.
    */
   publicKey?: CryptoKey | Uint8Array | string | JsonWebKey | null
-} & Required<Omit<SmartHealthCardReaderConfigParams, 'publicKey'>>
+} & Required<Omit<SHCReaderConfigParams, 'publicKey'>>
 
 /**
  * Parameters for creating Verifiable Credentials.

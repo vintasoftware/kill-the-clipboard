@@ -2,6 +2,7 @@ import { base64url } from 'jose'
 import { describe, expect, it, vi } from 'vitest'
 import {
   encryptSHLFile,
+  SHCIssuer,
   SHL,
   SHLDecryptionError,
   SHLExpiredError,
@@ -15,7 +16,6 @@ import {
   SHLNetworkError,
   SHLViewer,
   SHLViewerError,
-  SmartHealthCardIssuer,
 } from '@/index'
 import { createValidFHIRBundle, testPrivateKeyPKCS8, testPublicKeySPKI } from '../helpers'
 
@@ -187,7 +187,7 @@ describe('SHLViewer', () => {
         baseManifestURL: 'https://files.example.org',
         label: 'Direct SHC',
       })
-      const issuer = new SmartHealthCardIssuer({
+      const issuer = new SHCIssuer({
         issuer: 'https://example.com',
         privateKey: testPrivateKeyPKCS8,
         publicKey: testPublicKeySPKI,
