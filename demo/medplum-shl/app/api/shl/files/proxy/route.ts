@@ -18,8 +18,6 @@ export async function GET(request: NextRequest) {
       return new Response('Invalid URL format', { status: 400 });
     }
 
-    console.log('Proxying file request to:', presignedUrl);
-
     // Fetch the file from Medplum storage
     const response = await fetch(presignedUrl);
 

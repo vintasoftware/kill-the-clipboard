@@ -17,8 +17,6 @@ export async function uploadSHLFile(
   content: string,
   contentType?: string
 ): Promise<string> {
-  console.log('uploadSHLFile called with content length:', content.length);
-
   try {
     // Upload encrypted file content to Medplum as Binary resource
     // Use createBinary method which handles file data properly
@@ -27,8 +25,6 @@ export async function uploadSHLFile(
       filename: `shl-file-${uuidv4()}.jwe`,
       contentType: contentType || 'application/jose', // JWE content type
     });
-
-    console.log('At uploadSHLFile, Binary resource created:', binary.id);
     return `Binary/${binary.id}`; // Return the Binary FHIR path
   } catch (error) {
     console.error('Error uploading file to Medplum:', error);
