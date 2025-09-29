@@ -20,6 +20,7 @@ This aligns with the [CMS Interoperability Framework](https://www.cms.gov/health
 - Decoding / Verification support
 
 **SMART Health Links (SHL)**
+- Implements [SMART Health Links Specification v1.0.0 STU 1](https://hl7.org/fhir/uv/smart-health-cards-and-links/links-specification.html)
 - SHL URI generation per SHL specification
 - `SHLManifestBuilder` for producing manifests with embedded and location file entries
 - `SHLViewer` to resolve SHLs, fetch manifests, and decrypt content
