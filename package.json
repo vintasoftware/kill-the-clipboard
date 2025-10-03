@@ -42,7 +42,6 @@
     "docs:build": "pnpm run docs:clean && pnpm run docs:generate",
     "docs:watch": "typedoc --watch",
     "prepare": "husky",
-    "postinstall": "husky",
     "prepublishOnly": "pnpm run test && pnpm run build && pnpm run attw",
     "release": "semantic-release",
     "validate:examples": "node ./scripts/validate-health-cards-examples.ts",
