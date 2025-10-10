@@ -11,6 +11,7 @@ import {
   type SHCReaderConfigParams,
   SignatureVerificationError,
 } from '@/index'
+import { Directory } from '@/shc/directory'
 import {
   createInvalidBundle,
   createValidFHIRBundle,
@@ -55,6 +56,39 @@ describe('SHC', () => {
       expect(jws).toBeDefined()
       expect(typeof jws).toBe('string')
       expect(jws.split('.')).toHaveLength(3)
+    })
+
+    it('should bundle issuerInfo into SHC when reader created with a directory', async () => {
+      const { importPKCS8, importSPKI } = await import('jose')
+
+      const privateKeyCrypto = await importPKCS8(testPrivateKeyPKCS8, 'ES256')
+      const publicKeyCrypto = await importSPKI(testPublicKeySPKI, 'ES256')
+
+      const configWithCryptoKeys: SHCConfig = {
+        issuer: 'https://example.com/issuer',
+        privateKey: privateKeyCrypto,
+        publicKey: publicKeyCrypto,
+        expirationTime: null,
+        enableQROptimization: false,
+        strictReferences: true,
+      }
+      const issuerWithCryptoKeys = new SHCIssuer(configWithCryptoKeys)
+
+      const healthCard = await issuerWithCryptoKeys.issue(validBundle)
+      const jws = healthCard.asJWS()
+
+      const directory = await Directory.fromURLs([
+        'https://raw.githubusercontent.com/seanno/shc-demo-data/main',
+      ])
+      const readerWithDirectory = new SHCReader({
+        publicKey: publicKeyCrypto,
+        enableQROptimization: false,
+        strictReferences: true,
+        directory,
+      })
+
+      const verifiedHealthCard = await readerWithDirectory.fromJWS(jws)
+      expect(verifiedHealthCard.getIssuerInfo()).toBe(directory.getIssuerInfo())
     })
 
     it('should issue SMART Health Card with CryptoKey objects', async () => {

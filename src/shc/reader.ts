@@ -5,7 +5,12 @@ import { FHIRBundleProcessor } from './fhir/bundle-processor.js'
 import { JWSProcessor } from './jws/jws-processor.js'
 import { QRCodeGenerator } from './qr/qr-code-generator.js'
 import { SHC } from './shc.js'
-import type { SHCReaderConfig, SHCReaderConfigParams, VerifiableCredential } from './types.js'
+import type {
+  IssuerInterface,
+  SHCReaderConfig,
+  SHCReaderConfigParams,
+  VerifiableCredential,
+} from './types.js'
 import { VerifiableCredentialProcessor } from './vc.js'
 
 /**
@@ -50,6 +55,7 @@ export class SHCReader {
       enableQROptimization: config.enableQROptimization ?? true,
       strictReferences: config.strictReferences ?? true,
       verifyExpiration: config.verifyExpiration ?? true,
+      directory: config.directory ?? null,
     }
 
     this.bundleProcessor = new FHIRBundleProcessor()
@@ -147,7 +153,11 @@ export class SHCReader {
       this.vcProcessor.validate(vc)
 
       // Step 4: Return the original FHIR Bundle
-      return new SHC(jws, originalBundle)
+      let issuerInfo: IssuerInterface[] = []
+      if (this.config.directory) {
+        issuerInfo = this.config.directory.getIssuerInfo()
+      }
+      return new SHC(jws, originalBundle, issuerInfo)
     } catch (error) {
       if (error instanceof SHCError) {
         throw error

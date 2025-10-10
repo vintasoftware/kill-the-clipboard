@@ -1,5 +1,6 @@
 // Types and processors for SMART Health Cards
 import type { Bundle } from '@medplum/fhirtypes'
+import type { Directory } from './directory'
 
 /**
  * FHIR R4 Bundle type re-exported from @medplum/fhirtypes for convenience.
@@ -141,6 +142,8 @@ export interface SHCReaderConfigParams {
    * @defaultValue `true`
    */
   verifyExpiration?: boolean
+
+  directory?: Directory | null
 }
 
 /**
@@ -288,3 +291,9 @@ export interface QRCodeConfigParams {
  * @category Configuration
  */
 export type QRCodeConfig = Required<QRCodeConfigParams>
+
+export interface IssuerInterface {
+  iss: string
+  keys: []
+  crls: any[]
+}

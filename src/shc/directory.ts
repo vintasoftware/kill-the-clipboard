@@ -1,31 +1,19 @@
-interface IssuerInterface {
-  iss: string
-  keys: []
-  crls: any[]
-}
-
-interface DirectoryInterface {
-  fhirBundle: {}
-  issuerInfo: IssuerInterface[]
-}
+import type { IssuerInterface } from './types'
 
 export class Directory {
-  constructor(private directory: DirectoryInterface) {}
+  constructor(private issuerInfo: IssuerInterface[]) {}
 
-  getDirectory(): DirectoryInterface {
-    return this.directory
+  getIssuerInfo(): IssuerInterface[] {
+    return this.issuerInfo
   }
 
   static fromJSON(json: JSON): Directory {
-    const data = {}
-    return new Directory(data as DirectoryInterface)
+    const data: IssuerInterface[] = []
+    return new Directory(data)
   }
 
   static async fromURLs(issUrls: string[]): Promise<Directory> {
-    const data: DirectoryInterface = {
-      fhirBundle: {},
-      issuerInfo: [],
-    }
+    const data: IssuerInterface[] = []
 
     for (const issUrl of issUrls) {
       const issuer: IssuerInterface = {
@@ -54,9 +42,9 @@ export class Directory {
 
       issuer.keys = issKeys.keys
       issuer.crls = crls
-      data.issuerInfo.push(issuer)
+      data.push(issuer)
     }
 
-    return new Directory(data as DirectoryInterface)
+    return new Directory(data)
   }
 }
