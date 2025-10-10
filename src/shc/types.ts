@@ -292,7 +292,7 @@ export interface QRCodeConfigParams {
  */
 export type QRCodeConfig = Required<QRCodeConfigParams>
 
-export interface IssuerInterface {
+export interface Issuer {
   iss: string
   keys: []
   crls: any[]

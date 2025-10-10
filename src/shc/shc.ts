@@ -2,7 +2,7 @@
 
 import { FHIRBundleProcessor } from './fhir/bundle-processor.js'
 import { QRCodeGenerator } from './qr/qr-code-generator.js'
-import type { FHIRBundle, IssuerInterface, QRCodeConfigParams } from './types.js'
+import type { FHIRBundle, Issuer, QRCodeConfigParams } from './types.js'
 
 /**
  * Represents an issued SMART Health Card with various output formats.
@@ -16,7 +16,7 @@ export class SHC {
   constructor(
     private readonly jws: string,
     private readonly originalBundle: FHIRBundle,
-    private readonly issuerInfo: IssuerInterface[] = []
+    private readonly issuerInfo: Issuer[] = []
   ) {}
 
   /**
@@ -37,7 +37,7 @@ export class SHC {
     return this.originalBundle
   }
 
-  getIssuerInfo(): IssuerInterface[] {
+  getIssuerInfo(): Issuer[] {
     return this.issuerInfo
   }
 

@@ -1,22 +1,22 @@
-import type { IssuerInterface } from './types'
+import type { Issuer } from './types'
 
 export class Directory {
-  constructor(private issuerInfo: IssuerInterface[]) {}
+  constructor(private issuerInfo: Issuer[]) {}
 
-  getIssuerInfo(): IssuerInterface[] {
+  getIssuerInfo(): Issuer[] {
     return this.issuerInfo
   }
 
   static fromJSON(json: JSON): Directory {
-    const data: IssuerInterface[] = []
+    const data: Issuer[] = []
     return new Directory(data)
   }
 
   static async fromURLs(issUrls: string[]): Promise<Directory> {
-    const data: IssuerInterface[] = []
+    const data: Issuer[] = []
 
     for (const issUrl of issUrls) {
-      const issuer: IssuerInterface = {
+      const issuer: Issuer = {
         iss: issUrl,
         keys: [],
         crls: [],

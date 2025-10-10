@@ -6,7 +6,7 @@ import { JWSProcessor } from './jws/jws-processor.js'
 import { QRCodeGenerator } from './qr/qr-code-generator.js'
 import { SHC } from './shc.js'
 import type {
-  IssuerInterface,
+  Issuer,
   SHCReaderConfig,
   SHCReaderConfigParams,
   VerifiableCredential,
@@ -153,7 +153,7 @@ export class SHCReader {
       this.vcProcessor.validate(vc)
 
       // Step 4: Return the original FHIR Bundle
-      let issuerInfo: IssuerInterface[] = []
+      let issuerInfo: Issuer[] = []
       if (this.config.directory) {
         issuerInfo = this.config.directory.getIssuerInfo()
       }
