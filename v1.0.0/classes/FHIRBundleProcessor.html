@@ -1,0 +1,194 @@
+<!DOCTYPE html><html class="default" lang="en" data-base="../"><head><meta charset="utf-8"/><meta http-equiv="x-ua-compatible" content="IE=edge"/><title>FHIRBundleProcessor | Kill the Clipboard - SMART Health Cards Library - v1.0.0</title><meta name="description" content="Documentation for Kill the Clipboard - SMART Health Cards Library"/><meta name="viewport" content="width=device-width, initial-scale=1"/><link rel="stylesheet" href="../assets/style.css"/><link rel="stylesheet" href="../assets/highlight.css"/><script defer src="../assets/main.js"></script><script async src="../assets/icons.js" id="tsd-icons-script"></script><script async src="../assets/search.js" id="tsd-search-script"></script><script async src="../assets/navigation.js" id="tsd-nav-script"></script><script async src="../assets/hierarchy.js" id="tsd-hierarchy-script"></script><style>
+@media (prefers-color-scheme: dark) {
+  :root {
+    --md-sys-color-primary: #b7c4ff;
+    --md-sys-color-on-primary: #002682;
+    --md-sys-color-primary-container: #0038b6;
+    --md-sys-color-on-primary-container: #dde1ff;
+    --md-sys-color-secondary: #c2c5dd;
+    --md-sys-color-on-secondary: #2c3042;
+    --md-sys-color-secondary-container: #424659;
+    --md-sys-color-on-secondary-container: #dee1f9;
+    --md-sys-color-tertiary: #e4bada;
+    --md-sys-color-on-tertiary: #43273f;
+    --md-sys-color-tertiary-container: #5c3d56;
+    --md-sys-color-on-tertiary-container: #ffd7f4;
+    --md-sys-color-error: #ffb4ab;
+    --md-sys-color-on-error: #690005;
+    --md-sys-color-error-container: #93000a;
+    --md-sys-color-on-error-container: #ffb4ab;
+    --md-sys-color-background: #1b1b1f;
+    --md-sys-color-on-background: #e4e1e6;
+    --md-sys-color-surface: #1b1b1f;
+    --md-sys-color-on-surface: #e4e1e6;
+    --md-sys-color-surface-variant: #45464f;
+    --md-sys-color-on-surface-variant: #c6c5d0;
+    --md-sys-color-outline: #90909a;
+    --md-sys-color-outline-variant: #45464f;
+    --md-sys-color-shadow: #000000;
+    --md-sys-color-scrim: #000000;
+    --md-sys-color-inverse-surface: #e4e1e6;
+    --md-sys-color-inverse-on-surface: #303034;
+    --md-sys-color-inverse-primary: #004ced;
+    --md-sys-color-surface-dim: #131316;
+    --md-sys-color-surface-bright: #39393c;
+    --md-sys-color-surface-container-lowest: #0e0e11;
+    --md-sys-color-surface-container-low: #1b1b1f;
+    --md-sys-color-surface-container: #1f1f23;
+    --md-sys-color-surface-container-high: #2a2a2d;
+    --md-sys-color-surface-container-highest: #343438
+  }
+}
+:root[data-theme="dark"] {
+  --md-sys-color-primary: #b7c4ff;
+  --md-sys-color-on-primary: #002682;
+  --md-sys-color-primary-container: #0038b6;
+  --md-sys-color-on-primary-container: #dde1ff;
+  --md-sys-color-secondary: #c2c5dd;
+  --md-sys-color-on-secondary: #2c3042;
+  --md-sys-color-secondary-container: #424659;
+  --md-sys-color-on-secondary-container: #dee1f9;
+  --md-sys-color-tertiary: #e4bada;
+  --md-sys-color-on-tertiary: #43273f;
+  --md-sys-color-tertiary-container: #5c3d56;
+  --md-sys-color-on-tertiary-container: #ffd7f4;
+  --md-sys-color-error: #ffb4ab;
+  --md-sys-color-on-error: #690005;
+  --md-sys-color-error-container: #93000a;
+  --md-sys-color-on-error-container: #ffb4ab;
+  --md-sys-color-background: #1b1b1f;
+  --md-sys-color-on-background: #e4e1e6;
+  --md-sys-color-surface: #1b1b1f;
+  --md-sys-color-on-surface: #e4e1e6;
+  --md-sys-color-surface-variant: #45464f;
+  --md-sys-color-on-surface-variant: #c6c5d0;
+  --md-sys-color-outline: #90909a;
+  --md-sys-color-outline-variant: #45464f;
+  --md-sys-color-shadow: #000000;
+  --md-sys-color-scrim: #000000;
+  --md-sys-color-inverse-surface: #e4e1e6;
+  --md-sys-color-inverse-on-surface: #303034;
+  --md-sys-color-inverse-primary: #004ced;
+  --md-sys-color-surface-dim: #131316;
+  --md-sys-color-surface-bright: #39393c;
+  --md-sys-color-surface-container-lowest: #0e0e11;
+  --md-sys-color-surface-container-low: #1b1b1f;
+  --md-sys-color-surface-container: #1f1f23;
+  --md-sys-color-surface-container-high: #2a2a2d;
+  --md-sys-color-surface-container-highest: #343438
+}
+
+@media (prefers-color-scheme: light) {
+  :root {
+    --md-sys-color-primary: #004ced;
+    --md-sys-color-on-primary: #ffffff;
+    --md-sys-color-primary-container: #dde1ff;
+    --md-sys-color-on-primary-container: #001452;
+    --md-sys-color-secondary: #5a5d72;
+    --md-sys-color-on-secondary: #ffffff;
+    --md-sys-color-secondary-container: #dee1f9;
+    --md-sys-color-on-secondary-container: #171b2c;
+    --md-sys-color-tertiary: #75546f;
+    --md-sys-color-on-tertiary: #ffffff;
+    --md-sys-color-tertiary-container: #ffd7f4;
+    --md-sys-color-on-tertiary-container: #2c1229;
+    --md-sys-color-error: #ba1a1a;
+    --md-sys-color-on-error: #ffffff;
+    --md-sys-color-error-container: #ffdad6;
+    --md-sys-color-on-error-container: #410002;
+    --md-sys-color-background: #fefbff;
+    --md-sys-color-on-background: #1b1b1f;
+    --md-sys-color-surface: #fefbff;
+    --md-sys-color-on-surface: #1b1b1f;
+    --md-sys-color-surface-variant: #e2e1ec;
+    --md-sys-color-on-surface-variant: #45464f;
+    --md-sys-color-outline: #767680;
+    --md-sys-color-outline-variant: #c6c5d0;
+    --md-sys-color-shadow: #000000;
+    --md-sys-color-scrim: #000000;
+    --md-sys-color-inverse-surface: #303034;
+    --md-sys-color-inverse-on-surface: #f2f0f4;
+    --md-sys-color-inverse-primary: #b7c4ff;
+    --md-sys-color-surface-dim: #dbd9de;
+    --md-sys-color-surface-bright: #fbf8fd;
+    --md-sys-color-surface-container-lowest: #ffffff;
+    --md-sys-color-surface-container-low: #f5f3f7;
+    --md-sys-color-surface-container: #efedf1;
+    --md-sys-color-surface-container-high: #eae7ec;
+    --md-sys-color-surface-container-highest: #e4e1e6
+  }
+}
+:root[data-theme="light"] {
+  --md-sys-color-primary: #004ced;
+  --md-sys-color-on-primary: #ffffff;
+  --md-sys-color-primary-container: #dde1ff;
+  --md-sys-color-on-primary-container: #001452;
+  --md-sys-color-secondary: #5a5d72;
+  --md-sys-color-on-secondary: #ffffff;
+  --md-sys-color-secondary-container: #dee1f9;
+  --md-sys-color-on-secondary-container: #171b2c;
+  --md-sys-color-tertiary: #75546f;
+  --md-sys-color-on-tertiary: #ffffff;
+  --md-sys-color-tertiary-container: #ffd7f4;
+  --md-sys-color-on-tertiary-container: #2c1229;
+  --md-sys-color-error: #ba1a1a;
+  --md-sys-color-on-error: #ffffff;
+  --md-sys-color-error-container: #ffdad6;
+  --md-sys-color-on-error-container: #410002;
+  --md-sys-color-background: #fefbff;
+  --md-sys-color-on-background: #1b1b1f;
+  --md-sys-color-surface: #fefbff;
+  --md-sys-color-on-surface: #1b1b1f;
+  --md-sys-color-surface-variant: #e2e1ec;
+  --md-sys-color-on-surface-variant: #45464f;
+  --md-sys-color-outline: #767680;
+  --md-sys-color-outline-variant: #c6c5d0;
+  --md-sys-color-shadow: #000000;
+  --md-sys-color-scrim: #000000;
+  --md-sys-color-inverse-surface: #303034;
+  --md-sys-color-inverse-on-surface: #f2f0f4;
+  --md-sys-color-inverse-primary: #b7c4ff;
+  --md-sys-color-surface-dim: #dbd9de;
+  --md-sys-color-surface-bright: #fbf8fd;
+  --md-sys-color-surface-container-lowest: #ffffff;
+  --md-sys-color-surface-container-low: #f5f3f7;
+  --md-sys-color-surface-container: #efedf1;
+  --md-sys-color-surface-container-high: #eae7ec;
+  --md-sys-color-surface-container-highest: #e4e1e6
+}
+</style><link rel="stylesheet" href="../assets/material-style.css"/><link rel="stylesheet" href="../assets/version-select.css"/><script src="../assets/version-select.js"></script></head><body><script>document.documentElement.dataset.theme = localStorage.getItem("tsd-theme") || "os";document.body.style.display="none";setTimeout(() => window.app?app.showPage():document.body.style.removeProperty("display"),500)</script><header class="tsd-page-toolbar"><div class="tsd-toolbar-contents container"><a href="../index.html" class="title">Kill the Clipboard - SMART Health Cards Library - v1.0.0</a><select id="version-select" class="title loading"></select><div id="tsd-toolbar-links"><a href="https://github.com/vintasoftware/kill-the-clipboard">GitHub</a><a href="https://www.vinta.com.br">Maintained by Vinta Software</a></div><button id="tsd-search-trigger" class="tsd-widget" aria-label="Search"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true"><use href="../assets/icons.svg#icon-search"></use></svg></button><dialog id="tsd-search" aria-label="Search"><input role="combobox" id="tsd-search-input" aria-controls="tsd-search-results" aria-autocomplete="list" aria-expanded="true" autocapitalize="off" autocomplete="off" placeholder="Search the docs" maxLength="100"/><ul role="listbox" id="tsd-search-results"></ul><div id="tsd-search-status" aria-live="polite" aria-atomic="true"><div>Preparing search index...</div></div></dialog><a href="#" class="tsd-widget menu" id="tsd-toolbar-menu-trigger" data-toggle="menu" aria-label="Menu"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true"><use href="../assets/icons.svg#icon-menu"></use></svg></a></div></header><div class="container container-main"><div class="col-content"><div class="tsd-page-title"><ul class="tsd-breadcrumb" aria-label="Breadcrumb"><li><a href="" aria-current="page">FHIRBundleProcessor</a></li></ul><h1>Class FHIRBundleProcessor</h1></div><section class="tsd-panel tsd-comment"><div class="tsd-comment tsd-typography"><p>Processes and validates FHIR R4 Bundles according to SMART Health Cards specification.</p>
+</div><div class="tsd-comment tsd-typography"></div></section><aside class="tsd-sources"><ul><li>Defined in <a href="https://github.com/vintasoftware/kill-the-clipboard/blob/main/src/shc/fhir/bundle-processor.ts#L13">src/shc/fhir/bundle-processor.ts:13</a></li></ul></aside><section class="tsd-panel-group tsd-index-group"><section class="tsd-panel tsd-index-panel"><details class="tsd-index-content tsd-accordion" open><summary class="tsd-accordion-summary tsd-index-summary"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true"><use href="../assets/icons.svg#icon-chevronDown"></use></svg><h5 class="tsd-index-heading uppercase">Index</h5></summary><div class="tsd-accordion-details"><section class="tsd-index-section"><h3 class="tsd-index-heading">Constructors</h3><div class="tsd-index-list"><a href="#constructor" class="tsd-index-link"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="Constructor"><use href="../assets/icons.svg#icon-512"></use></svg><span>constructor</span></a>
+</div></section><section class="tsd-index-section"><h3 class="tsd-index-heading">Methods</h3><div class="tsd-index-list"><a href="#process" class="tsd-index-link"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="Method"><use href="../assets/icons.svg#icon-2048"></use></svg><span>process</span></a>
+<a href="#processforqr" class="tsd-index-link"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="Method"><use href="../assets/icons.svg#icon-2048"></use></svg><span>process<wbr/>For<wbr/>QR</span></a>
+<a href="#validate" class="tsd-index-link"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="Method"><use href="../assets/icons.svg#icon-2048"></use></svg><span>validate</span></a>
+</div></section></div></details></section></section><details class="tsd-panel-group tsd-member-group tsd-accordion" open><summary class="tsd-accordion-summary" data-key="section-Constructors"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true"><use href="../assets/icons.svg#icon-chevronDown"></use></svg><h2>Constructors</h2></summary><section><section class="tsd-panel tsd-member"><h3 class="tsd-anchor-link" id="constructor"><span>constructor</span><a href="#constructor" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h3><ul class="tsd-signatures"><li class=""><div class="tsd-signature tsd-anchor-link" id="constructorfhirbundleprocessor"><span class="tsd-signature-keyword">new</span> <span class="tsd-kind-constructor-signature">FHIRBundleProcessor</span><span class="tsd-signature-symbol">()</span><span class="tsd-signature-symbol">:</span> <a href="" class="tsd-signature-type tsd-kind-class">FHIRBundleProcessor</a><a href="#constructorfhirbundleprocessor" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></div><div class="tsd-description"><h4 class="tsd-returns-title">Returns <a href="" class="tsd-signature-type tsd-kind-class">FHIRBundleProcessor</a></h4></div></li></ul></section></section></details><details class="tsd-panel-group tsd-member-group tsd-accordion" open><summary class="tsd-accordion-summary" data-key="section-Methods"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true"><use href="../assets/icons.svg#icon-chevronDown"></use></svg><h2>Methods</h2></summary><section><section class="tsd-panel tsd-member"><h3 class="tsd-anchor-link" id="process"><span>process</span><a href="#process" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h3><ul class="tsd-signatures"><li class=""><div class="tsd-signature tsd-anchor-link" id="process-1"><span class="tsd-kind-call-signature">process</span><span class="tsd-signature-symbol">(</span><span class="tsd-kind-parameter">bundle</span><span class="tsd-signature-symbol">:</span> <a href="../types/FHIRBundle.html" class="tsd-signature-type tsd-kind-type-alias">FHIRBundle</a><span class="tsd-signature-symbol">)</span><span class="tsd-signature-symbol">:</span> <a href="../types/FHIRBundle.html" class="tsd-signature-type tsd-kind-type-alias">FHIRBundle</a><a href="#process-1" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></div><div class="tsd-description"><div class="tsd-comment tsd-typography"><p>Processes a FHIR Bundle with standard processing.</p>
+</div><div class="tsd-parameters"><h4 class="tsd-parameters-title">Parameters</h4><ul class="tsd-parameter-list"><li><span><span class="tsd-kind-parameter">bundle</span>: <a href="../types/FHIRBundle.html" class="tsd-signature-type tsd-kind-type-alias">FHIRBundle</a></span><div class="tsd-comment tsd-typography"><p>FHIR Bundle to process</p>
+</div><div class="tsd-comment tsd-typography"></div></li></ul></div><h4 class="tsd-returns-title">Returns <a href="../types/FHIRBundle.html" class="tsd-signature-type tsd-kind-type-alias">FHIRBundle</a></h4><p>Processed FHIR Bundle</p>
+<div class="tsd-comment tsd-typography"><div class="tsd-tag-throws"><h4 class="tsd-anchor-link" id="throws">Throws<a href="#throws" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h4><p><a href="BundleValidationError.html" class="tsd-kind-class">BundleValidationError</a> When bundle is not a valid FHIR Bundle</p>
+</div></div><aside class="tsd-sources"><ul><li>Defined in <a href="https://github.com/vintasoftware/kill-the-clipboard/blob/main/src/shc/fhir/bundle-processor.ts#L21">src/shc/fhir/bundle-processor.ts:21</a></li></ul></aside></div></li></ul></section><section class="tsd-panel tsd-member"><h3 class="tsd-anchor-link" id="processforqr"><span>process<wbr/>For<wbr/>QR</span><a href="#processforqr" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h3><ul class="tsd-signatures"><li class=""><div class="tsd-signature tsd-anchor-link" id="processforqr-1"><span class="tsd-kind-call-signature">processForQR</span><span class="tsd-signature-symbol">(</span><br/>    <span class="tsd-kind-parameter">bundle</span><span class="tsd-signature-symbol">:</span> <a href="../types/FHIRBundle.html" class="tsd-signature-type tsd-kind-type-alias">FHIRBundle</a><span class="tsd-signature-symbol">,</span><br/>    <span class="tsd-kind-parameter">config</span><span class="tsd-signature-symbol">?:</span> <span class="tsd-signature-symbol">{</span> <span class="tsd-kind-property">strictReferences</span><span class="tsd-signature-symbol">?:</span> <span class="tsd-signature-type">boolean</span> <span class="tsd-signature-symbol">}</span><span class="tsd-signature-symbol">,</span><br/><span class="tsd-signature-symbol">)</span><span class="tsd-signature-symbol">:</span> <a href="../types/FHIRBundle.html" class="tsd-signature-type tsd-kind-type-alias">FHIRBundle</a><a href="#processforqr-1" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></div><div class="tsd-description"><div class="tsd-comment tsd-typography"><p>Processes a FHIR Bundle with QR code optimizations (short resource-scheme URIs, removes unnecessary fields).</p>
+</div><div class="tsd-parameters"><h4 class="tsd-parameters-title">Parameters</h4><ul class="tsd-parameter-list"><li><span><span class="tsd-kind-parameter">bundle</span>: <a href="../types/FHIRBundle.html" class="tsd-signature-type tsd-kind-type-alias">FHIRBundle</a></span><div class="tsd-comment tsd-typography"><p>FHIR Bundle to process</p>
+</div><div class="tsd-comment tsd-typography"></div></li><li><span><span class="tsd-kind-parameter">config</span>: <span class="tsd-signature-symbol">{</span> <span class="tsd-kind-property">strictReferences</span><span class="tsd-signature-symbol">?:</span> <span class="tsd-signature-type">boolean</span> <span class="tsd-signature-symbol">}</span><span class="tsd-signature-symbol"> = {}</span></span><ul class="tsd-parameters"><li class="tsd-parameter"><h5><code class="tsd-tag">Optional</code><span class="tsd-kind-property">strictReferences</span><span class="tsd-signature-symbol">?: </span><span class="tsd-signature-type">boolean</span></h5><div class="tsd-comment tsd-typography"><p>When <code>strictReferences</code> is true,
+missing <code>Reference.reference</code> targets throw <code>InvalidBundleReferenceError</code>;
+when false, original references are preserved when no target resource is found in bundle.</p>
+</div><div class="tsd-comment tsd-typography"></div></li></ul></li></ul></div><h4 class="tsd-returns-title">Returns <a href="../types/FHIRBundle.html" class="tsd-signature-type tsd-kind-type-alias">FHIRBundle</a></h4><p>Processed FHIR Bundle optimized for QR codes</p>
+<div class="tsd-comment tsd-typography"><div class="tsd-tag-throws"><h4 class="tsd-anchor-link" id="throws-1">Throws<a href="#throws-1" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h4><p><a href="InvalidBundleReferenceError.html" class="tsd-kind-class">InvalidBundleReferenceError</a> When <code>strictReferences</code> is true and a reference cannot be resolved</p>
+</div></div><aside class="tsd-sources"><ul><li>Defined in <a href="https://github.com/vintasoftware/kill-the-clipboard/blob/main/src/shc/fhir/bundle-processor.ts#L48">src/shc/fhir/bundle-processor.ts:48</a></li></ul></aside></div></li></ul></section><section class="tsd-panel tsd-member"><h3 class="tsd-anchor-link" id="validate"><span>validate</span><a href="#validate" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h3><ul class="tsd-signatures"><li class=""><div class="tsd-signature tsd-anchor-link" id="validate-1"><span class="tsd-kind-call-signature">validate</span><span class="tsd-signature-symbol">(</span><span class="tsd-kind-parameter">bundle</span><span class="tsd-signature-symbol">:</span> <a href="../types/FHIRBundle.html" class="tsd-signature-type tsd-kind-type-alias">FHIRBundle</a><span class="tsd-signature-symbol">)</span><span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">boolean</span><a href="#validate-1" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></div><div class="tsd-description"><div class="tsd-comment tsd-typography"><p>Validates a FHIR Bundle for basic compliance.</p>
+</div><div class="tsd-parameters"><h4 class="tsd-parameters-title">Parameters</h4><ul class="tsd-parameter-list"><li><span><span class="tsd-kind-parameter">bundle</span>: <a href="../types/FHIRBundle.html" class="tsd-signature-type tsd-kind-type-alias">FHIRBundle</a></span><div class="tsd-comment tsd-typography"><p>FHIR Bundle to validate</p>
+</div><div class="tsd-comment tsd-typography"></div></li></ul></div><h4 class="tsd-returns-title">Returns <span class="tsd-signature-type">boolean</span></h4><p><code>true</code> if validation passes</p>
+<div class="tsd-comment tsd-typography"><div class="tsd-tag-throws"><h4 class="tsd-anchor-link" id="throws-2">Throws<a href="#throws-2" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h4><p><a href="BundleValidationError.html" class="tsd-kind-class">BundleValidationError</a> if validation fails</p>
+</div></div><aside class="tsd-sources"><ul><li>Defined in <a href="https://github.com/vintasoftware/kill-the-clipboard/blob/main/src/shc/fhir/bundle-processor.ts#L228">src/shc/fhir/bundle-processor.ts:228</a></li></ul></aside></div></li></ul></section></section></details></div><div class="col-sidebar"><div class="page-menu"><div class="tsd-navigation settings"><details class="tsd-accordion"><summary class="tsd-accordion-summary"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true"><use href="../assets/icons.svg#icon-chevronDown"></use></svg><h3>Settings</h3></summary><div class="tsd-accordion-details"><div class="tsd-filter-visibility"><span class="settings-label">Member Visibility</span><ul id="tsd-filter-options"><li class="tsd-filter-item"><label class="tsd-filter-input"><input type="checkbox" id="tsd-filter-inherited" name="inherited" checked/><svg width="32" height="32" viewBox="0 0 32 32" aria-hidden="true"><rect class="tsd-checkbox-background" width="30" height="30" x="1" y="1" rx="6" fill="none"></rect><path class="tsd-checkbox-checkmark" d="M8.35422 16.8214L13.2143 21.75L24.6458 10.25" stroke="none" stroke-width="3.5" stroke-linejoin="round" fill="none"></path></svg><span>Inherited</span></label></li><li class="tsd-filter-item"><label class="tsd-filter-input"><input type="checkbox" id="tsd-filter-external" name="external"/><svg width="32" height="32" viewBox="0 0 32 32" aria-hidden="true"><rect class="tsd-checkbox-background" width="30" height="30" x="1" y="1" rx="6" fill="none"></rect><path class="tsd-checkbox-checkmark" d="M8.35422 16.8214L13.2143 21.75L24.6458 10.25" stroke="none" stroke-width="3.5" stroke-linejoin="round" fill="none"></path></svg><span>External</span></label></li><li class="tsd-filter-item"><label class="tsd-filter-input"><input type="checkbox" id="tsd-filter-alpha" name="alpha"/><svg width="32" height="32" viewBox="0 0 32 32" aria-hidden="true"><rect class="tsd-checkbox-background" width="30" height="30" x="1" y="1" rx="6" fill="none"></rect><path class="tsd-checkbox-checkmark" d="M8.35422 16.8214L13.2143 21.75L24.6458 10.25" stroke="none" stroke-width="3.5" stroke-linejoin="round" fill="none"></path></svg><span>Alpha</span></label></li><li class="tsd-filter-item"><label class="tsd-filter-input"><input type="checkbox" id="tsd-filter-beta" name="beta"/><svg width="32" height="32" viewBox="0 0 32 32" aria-hidden="true"><rect class="tsd-checkbox-background" width="30" height="30" x="1" y="1" rx="6" fill="none"></rect><path class="tsd-checkbox-checkmark" d="M8.35422 16.8214L13.2143 21.75L24.6458 10.25" stroke="none" stroke-width="3.5" stroke-linejoin="round" fill="none"></path></svg><span>Beta</span></label></li></ul></div><div class="tsd-theme-toggle"><label class="settings-label" for="tsd-theme">Theme</label><select id="tsd-theme"><option value="os">OS</option><option value="light">Light</option><option value="dark">Dark</option></select></div></div></details></div><details open class="tsd-accordion tsd-page-navigation"><summary class="tsd-accordion-summary"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true"><use href="../assets/icons.svg#icon-chevronDown"></use></svg><h3>On This Page</h3></summary><div class="tsd-accordion-details"><details open class="tsd-accordion tsd-page-navigation-section"><summary class="tsd-accordion-summary" data-key="section-Constructors"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true"><use href="../assets/icons.svg#icon-chevronDown"></use></svg>Constructors</summary><div><a href="#constructor"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="Constructor"><use href="../assets/icons.svg#icon-512"></use></svg><span>constructor</span></a></div></details><details open class="tsd-accordion tsd-page-navigation-section"><summary class="tsd-accordion-summary" data-key="section-Methods"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true"><use href="../assets/icons.svg#icon-chevronDown"></use></svg>Methods</summary><div><a href="#process"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="Method"><use href="../assets/icons.svg#icon-2048"></use></svg><span>process</span></a><a href="#processforqr"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="Method"><use href="../assets/icons.svg#icon-2048"></use></svg><span>process<wbr/>For<wbr/>QR</span></a><a href="#validate"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="Method"><use href="../assets/icons.svg#icon-2048"></use></svg><span>validate</span></a></div></details></div></details></div><div class="site-menu"><nav id="tsd-sidebar-links" class="tsd-navigation"><a href="https://github.com/vintasoftware/kill-the-clipboard" class="tsd-nav-link">GitHub</a><a href="https://www.vinta.com.br" class="tsd-nav-link">Maintained by Vinta Software</a></nav><nav class="tsd-navigation"><a href="../modules.html">Kill the Clipboard - SMART Health Cards Library - v1.0.0</a><ul class="tsd-small-nested-navigation" id="tsd-nav-container"><li>Loading...</li></ul></nav></div></div></div><footer><p class="tsd-generator">Generated using <a href="https://typedoc.org/" target="_blank">TypeDoc</a></p></footer><div class="overlay"></div><script>
+          try {
+            const generateLinkElement = document.querySelector(".tsd-generator a");
+            const link = document.createElement("a");
+            Object.assign(link, {
+              href: "https://github.com/dmnsgn/typedoc-material-theme",
+              target: "_blank",
+              rel: "noreferrer",
+              innerText: "typedoc-material-theme."
+            });
+            generateLinkElement.insertAdjacentElement("afterend", link);
+            generateLinkElement.insertAdjacentText("afterend", " with ");
+          } catch (error) {
+
+          }
+        </script></body></html>
