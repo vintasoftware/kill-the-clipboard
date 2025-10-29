@@ -1,6 +1,6 @@
 {
   "name": "kill-the-clipboard",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "description": "JavaScript/TypeScript universal (browser and node) library to generate QR codes containing medical records for patients to share with providers. Implements both the SMART Health Cards Framework and SMART Health Links Protocol for handling FHIR-based medical records.",
   "type": "module",
   "main": "./dist/index.cjs",
