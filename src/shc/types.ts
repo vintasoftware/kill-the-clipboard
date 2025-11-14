@@ -292,8 +292,30 @@ export interface QRCodeConfigParams {
  */
 export type QRCodeConfig = Required<QRCodeConfigParams>
 
+export interface IssuerKey {
+  kty: string
+  kid: string
+}
+
+export interface IssuerCrl {
+  kid: string
+  method: string
+  ctr: number
+  rids: string[]
+}
+
 export interface Issuer {
   iss: string
-  keys: []
-  crls: any[]
+  keys: IssuerKey[]
+  crls?: IssuerCrl[]
+}
+
+export interface DirectoryJSON {
+  issuerInfo: {
+    issuer: {
+      iss: string
+    }
+    keys: IssuerKey[]
+    crls?: IssuerCrl[]
+  }[]
 }

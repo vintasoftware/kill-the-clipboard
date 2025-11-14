@@ -1,4 +1,4 @@
-import type { Issuer } from './types'
+import type { DirectoryJSON, Issuer } from './types'
 
 export class Directory {
   constructor(private issuerInfo: Issuer[]) {}
@@ -7,8 +7,10 @@ export class Directory {
     return this.issuerInfo
   }
 
-  static fromJSON(json: JSON): Directory {
-    const data: Issuer[] = []
+  static fromJSON(dirJson: DirectoryJSON): Directory {
+    const data: Issuer[] = dirJson.issuerInfo.map(({ issuer: { iss }, keys, crls }) => {
+      return { iss, keys, crls } as Issuer
+    })
     return new Directory(data)
   }
 
