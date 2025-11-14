@@ -95,7 +95,7 @@ describe('Directory', () => {
     expect(issuers).toHaveLength(4)
 
     const issuer1 = issuers[0]!
-    expect(issuer1.iss).toBe('https://example.com/issuer')
+    expect(issuer1.iss).toEqual('https://example.com/issuer')
     expect(issuer1.keys).toHaveLength(2)
     const crls1 = issuer1.crls!
     expect(crls1).toHaveLength(1)
@@ -157,7 +157,7 @@ describe('Directory', () => {
     const issuers = directory.getIssuerInfo()
     expect(issuers).toHaveLength(1)
     const issuer = issuers[0]!
-    expect(issuer.iss).toBe(ISS_URL)
+    expect(issuer.iss).toEqual(ISS_URL)
     // Only one CRL should be collected (kid1 failed)
     expect(issuer.crls).toHaveLength(1)
     expect(issuer.crls![0]!.kid).toEqual('kid2')

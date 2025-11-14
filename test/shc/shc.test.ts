@@ -120,7 +120,7 @@ describe('SHC', () => {
       })
 
       const verifiedHealthCard = await readerWithDirectory.fromJWS(jws)
-      expect(verifiedHealthCard.getIssuerInfo()).toBe(directory.getIssuerInfo())
+      expect(verifiedHealthCard.getIssuerInfo()).toEqual(directory.getIssuerInfo())
     })
 
     it('should issue SMART Health Card with CryptoKey objects', async () => {

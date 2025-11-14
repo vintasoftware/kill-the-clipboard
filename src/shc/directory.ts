@@ -8,8 +8,15 @@ export class Directory {
   }
 
   static fromJSON(dirJson: DirectoryJSON): Directory {
-    const data: Issuer[] = dirJson.issuerInfo.map(({ issuer: { iss }, keys, crls }) => {
-      return { iss, keys, crls } as Issuer
+    const data: Issuer[] = dirJson.issuerInfo.map(({ issuer, keys, crls }) => {
+      const iss = typeof issuer?.iss === 'string' ? issuer.iss : ''
+      const validKeys = Array.isArray(keys) ? keys : []
+      const validCrls = Array.isArray(crls) ? crls : []
+      return {
+        iss,
+        keys: validKeys,
+        crls: validCrls,
+      }
     })
     return new Directory(data)
   }
