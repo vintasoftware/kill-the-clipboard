@@ -1,5 +1,6 @@
 // QR code generation for SMART Health Cards
 
+import QRCode from 'qrcode'
 import { QRCodeError } from '../errors.js'
 import type { QRCodeConfig, QRCodeConfigParams, QREncodeParams } from '../types.js'
 
@@ -168,8 +169,6 @@ export class QRCodeGenerator {
    * Generates a single QR code with multi-segment encoding per SMART Health Cards spec
    */
   private async generateSingleQR(numericData: string): Promise<string[]> {
-    const QRCode = await import('qrcode')
-
     // Create multi-segment encoding per SMART Health Cards specification:
     // Segment 1: Bytes mode for "shc:/" prefix
     // Segment 2: Numeric mode for JWS numeric data
@@ -222,8 +221,6 @@ export class QRCodeGenerator {
    * Generates chunked QR codes with multi-segment encoding (deprecated but supported for compatibility)
    */
   private async generateChunkedQR(jws: string): Promise<string[]> {
-    const QRCode = await import('qrcode')
-
     // Use the public chunking method to split JWS
     const jwsChunks = this.chunkJWS(jws)
     const totalChunks = jwsChunks.length

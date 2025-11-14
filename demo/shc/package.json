@@ -1,6 +1,6 @@
 {
   "name": "kill-the-clipboard-demo",
-  "version": "1.0.0",
+  "version": "1.0.2",
   "private": true,
   "description": "Demo application demonstrating SMART Health Cards QR code generation and scanning - FOR TESTING ONLY",
   "type": "module",

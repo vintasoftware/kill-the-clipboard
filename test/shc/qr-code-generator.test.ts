@@ -1,4 +1,6 @@
 // biome-ignore-all lint/suspicious/noExplicitAny: Tests intentionally cover invalid value branches
+
+import QRCode from 'qrcode'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { QRCodeError, QRCodeGenerator, SHCIssuer, SHCReader } from '@/index'
 import { createValidFHIRBundle, testPrivateKeyPKCS8, testPublicKeySPKI } from '../helpers'
@@ -168,10 +170,9 @@ describe('QRCodeGenerator', () => {
     })
 
     it('should generate QR codes with custom encodeOptions applied', async () => {
-      const mockToDataURL = vi.fn()
-      mockToDataURL.mockResolvedValue('data:image/png;base64,AAA')
-
-      vi.doMock('qrcode', () => ({ toDataURL: mockToDataURL }))
+      const mockToDataURL = vi
+        .spyOn(QRCode, 'toDataURL')
+        .mockResolvedValue('data:image/png;base64,AAA')
 
       const simpleJWS = 'header.payload.signature'
 
@@ -201,7 +202,7 @@ describe('QRCodeGenerator', () => {
       expect(qrDataUrls).toHaveLength(1)
       expect(qrDataUrls[0]).toMatch(/^data:image\/png;base64,/)
 
-      vi.doUnmock('qrcode')
+      mockToDataURL.mockRestore()
     })
   })
 

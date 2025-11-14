@@ -7,7 +7,11 @@
   "excludeProtected": true,
   "excludeInternal": true,
   "readme": "README.md",
-  "plugin": ["typedoc-material-theme", "typedoc-plugin-version-select"],
+  "plugin": [
+    "typedoc-material-theme",
+    "typedoc-plugin-version-select",
+    "./typedoc-google-verification.js"
+  ],
   "themeColor": "#0052ff",
   "hideGenerator": false,
   "sort": ["alphabetical"],
