@@ -1,5 +1,5 @@
 // biome-ignore-all lint/suspicious/noExplicitAny: The test needs to use `any` to test error cases
-import { beforeEach, describe, expect, it } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 import {
   BundleValidationError,
   type FHIRBundle,
@@ -77,9 +77,41 @@ describe('SHC', () => {
       const healthCard = await issuerWithCryptoKeys.issue(validBundle)
       const jws = healthCard.asJWS()
 
-      const directory = await Directory.fromURLs([
-        'https://raw.githubusercontent.com/seanno/shc-demo-data/main',
-      ])
+      const ISS_URL = 'https://example.com/issuer'
+      const originalFetch = globalThis.fetch
+      const fetchMock = vi.fn().mockImplementation((url: string) => {
+        if (url === `${ISS_URL}/.well-known/jwks.json`) {
+          return Promise.resolve({
+            ok: true,
+            json: async () => ({
+              keys: [
+                {
+                  kid: 'kid1',
+                  kty: 'EC',
+                },
+              ],
+            }),
+          })
+        }
+
+        if (url === `${ISS_URL}/.well-known/crl/kid1.json`) {
+          return Promise.resolve({
+            ok: true,
+            json: async () => ({
+              kid: 'kid1',
+              method: 'rid',
+              ctr: 1,
+              rids: ['imrevoked'],
+            }),
+          })
+        }
+
+        return Promise.resolve({ ok: false, status: 404, json: async () => ({}) })
+      })
+      ;(globalThis as any).fetch = fetchMock
+      const directory = await Directory.fromURLs([ISS_URL])
+      ;(globalThis as any).fetch = originalFetch
+
       const readerWithDirectory = new SHCReader({
         publicKey: publicKeyCrypto,
         enableQROptimization: false,

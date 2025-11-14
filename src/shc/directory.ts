@@ -36,14 +36,16 @@ export class Directory {
           const crlUrl = `${issUrl}/.well-known/crl/${key.kid}.json`
           const crlResponse = await fetch(crlUrl)
           if (!crlResponse.ok) {
-            const errorData = await crlResponse.json().catch(() => ({ error: 'Unknown error' }))
-            throw new Error(errorData.error || `Failed to fetch crl at ${crlUrl}`)
+            console.debug(
+              `Failed to fetch crl at ${crlUrl} with status ${crlResponse.status}, skipping.`
+            )
+            continue
           }
           const crl = await crlResponse.json()
           if (crl) crls.push(crl)
         }
 
-        issuer.keys = issKeys.keys
+        issuer.keys = issKeys
         issuer.crls = crls
         issuersInfo.push(issuer)
       }
