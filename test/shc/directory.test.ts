@@ -1,4 +1,4 @@
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 import { Directory } from '../../src/shc/directory'
 import type { DirectoryJSON } from '../../src/shc/types'
 
@@ -7,11 +7,6 @@ describe('Directory', () => {
 
   afterEach(() => {
     vi.restoreAllMocks()
-  })
-
-  beforeEach(() => {
-    // suppress console output during tests
-    vi.spyOn(console, 'debug').mockImplementation(() => undefined)
   })
 
   it('should create a directory from JSON', () => {
@@ -152,6 +147,8 @@ describe('Directory', () => {
     })
     ;(globalThis as any).fetch = fetchMock
 
+    const debugSpy = vi.spyOn(console, 'debug').mockImplementation(() => undefined)
+
     const directory = await Directory.fromURLs([ISS_URL])
     const issuers = directory.getIssuerInfo()
     expect(issuers).toHaveLength(1)
@@ -162,6 +159,11 @@ describe('Directory', () => {
     expect(issuer.crls![0]!.kid).toEqual('kid2')
     // Both keys should be present
     expect(issuer.keys).toHaveLength(2)
+
+    expect(debugSpy).toHaveBeenCalledTimes(1)
+    expect(debugSpy).toHaveBeenCalledWith(
+      `Failed to fetch crl at ${ISS_URL}/.well-known/crl/kid1.json with status 404, skipping key.`
+    )
 
     ;(globalThis as any).fetch = originalFetch
   })
@@ -210,6 +212,8 @@ describe('Directory', () => {
     })
     ;(globalThis as any).fetch = fetchMock
 
+    const debugSpy = vi.spyOn(console, 'debug').mockImplementation(() => undefined)
+
     const directory = await Directory.fromURLs([ISS_URL, ISS_URL2, ISS_URL3])
     const issuers = directory.getIssuerInfo()
     // issuer3 jwks fetch will throw and be caught; only issuer1 and issuer2 should be present
@@ -230,6 +234,14 @@ describe('Directory', () => {
     // issuer3 should not be present due to JWKS fetch failure
     expect(issuer3).toBeUndefined()
 
+    expect(debugSpy).toHaveBeenCalledTimes(2)
+    expect(debugSpy).toHaveBeenCalledWith(
+      `Failed to fetch crl at ${ISS_URL}/.well-known/crl/kid1.json with status 404, skipping key.`
+    )
+    expect(debugSpy).toHaveBeenCalledWith(
+      `Failed to fetch jwks at ${ISS_URL3}/.well-known/jwks.json with status 404, skipping issuer.`
+    )
+
     ;(globalThis as any).fetch = originalFetch
   })
 
@@ -246,9 +258,32 @@ describe('Directory', () => {
     })
     ;(globalThis as any).fetch = fetchMock
 
+    const debugSpy = vi.spyOn(console, 'debug').mockImplementation(() => undefined)
+
     const directory = await Directory.fromURLs([ISS_URL])
     const issuers = directory.getIssuerInfo()
     expect(issuers).toHaveLength(0)
+
+    expect(debugSpy).toHaveBeenCalledTimes(1)
+    expect(debugSpy).toHaveBeenCalledWith(
+      `Failed to fetch jwks at ${ISS_URL}/.well-known/jwks.json with status 404, skipping issuer.`
+    )
+
+    ;(globalThis as any).fetch = originalFetch
+  })
+
+  it('should log error when fetch throws and return empty directory', async () => {
+    const originalFetch = globalThis.fetch
+    const fetchMock = vi.fn().mockImplementation(() => Promise.reject(new Error('fetch failed')))
+    ;(globalThis as any).fetch = fetchMock
+
+    const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => undefined)
+
+    const directory = await Directory.fromURLs([ISS_URL])
+    const issuers = directory.getIssuerInfo()
+    expect(issuers).toHaveLength(0)
+
+    expect(errorSpy).toHaveBeenCalledTimes(1)
 
     ;(globalThis as any).fetch = originalFetch
   })
