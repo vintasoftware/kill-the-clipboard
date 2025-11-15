@@ -1,5 +1,6 @@
 // SMART Health Cards barrel export
 
+export * from './directory.js'
 export * from './errors.js'
 export * from './fhir/index.js'
 export * from './issuer.js'

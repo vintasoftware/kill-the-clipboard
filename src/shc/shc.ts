@@ -37,6 +37,11 @@ export class SHC {
     return this.originalBundle
   }
 
+  /**
+   * Return the issuer metadata associated with this health card.
+   *
+   * @returns Array of issuer objects (may be empty)
+   */
   getIssuerInfo(): Issuer[] {
     return this.issuerInfo
   }
