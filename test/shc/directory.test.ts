@@ -110,6 +110,57 @@ describe('Directory', () => {
     expect(crls4).toHaveLength(1)
   })
 
+  it('should handle missing or invalid values when building directory using fromJSON', () => {
+    const directoryJson = {
+      directory: 'https://example.com/keystore/directory.json',
+      issuerInfo: [
+        {
+          issuer: {
+            iss: 'https://missing.example/issuer',
+            name: 'Missing Issuer',
+          },
+          // keys and crls intentionally missing
+        },
+        {
+          issuer: {
+            iss: 'https://invalid.example/issuer',
+            name: 'Invalid Issuer',
+          },
+          // keys and crls present but invalid types
+          keys: 'not-an-array' as any,
+          crls: null as any,
+        },
+        {
+          issuer: {
+            // non-string iss should be coerced to ''
+            iss: 123 as any,
+            name: 'NonString Issuer',
+          },
+          // keys and crls omitted
+        },
+      ],
+    }
+
+    const directory = Directory.fromJSON(directoryJson as DirectoryJSON)
+    const issuers = directory.getIssuerInfo()
+    expect(issuers).toHaveLength(3)
+
+    const missing = issuers.find(i => i.iss === 'https://missing.example/issuer')!
+    expect(missing).toBeDefined()
+    expect(missing.keys).toEqual([])
+    expect(missing.crls).toEqual([])
+
+    const invalid = issuers.find(i => i.iss === 'https://invalid.example/issuer')!
+    expect(invalid).toBeDefined()
+    expect(invalid.keys).toEqual([])
+    expect(invalid.crls).toEqual([])
+
+    const nonstring = issuers.find(i => i.iss === '')!
+    expect(nonstring).toBeDefined()
+    expect(nonstring.keys).toEqual([])
+    expect(nonstring.crls).toEqual([])
+  })
+
   it('should create a directory from a list of issuer urls and fetch jwks and crls', async () => {
     const originalFetch = globalThis.fetch
     const fetchMock = vi.fn().mockImplementation((url: string) => {
