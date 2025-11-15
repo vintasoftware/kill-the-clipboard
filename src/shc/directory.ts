@@ -36,8 +36,9 @@ export class Directory {
         const jwksUrl = `${issUrl}/.well-known/jwks.json`
         const jwksResponse = await fetch(jwksUrl)
         if (!jwksResponse.ok) {
-          const errorData = await jwksResponse.json().catch(() => ({ error: 'Unknown error' }))
-          throw new Error(errorData.error || `Failed to fetch jwks at ${jwksUrl}`)
+          const errorMessage = `Failed to fetch jwks at ${jwksUrl} with status ${jwksResponse.status}, skipping issuer.`
+          console.debug(errorMessage)
+          continue
         }
 
         const { keys: issKeys } = await jwksResponse.json()
@@ -45,9 +46,8 @@ export class Directory {
           const crlUrl = `${issUrl}/.well-known/crl/${key.kid}.json`
           const crlResponse = await fetch(crlUrl)
           if (!crlResponse.ok) {
-            console.debug(
-              `Failed to fetch crl at ${crlUrl} with status ${crlResponse.status}, skipping.`
-            )
+            const errorMessage = `Failed to fetch crl at ${crlUrl} with status ${crlResponse.status}, skipping key.`
+            console.debug(errorMessage)
             continue
           }
           const crl = await crlResponse.json()

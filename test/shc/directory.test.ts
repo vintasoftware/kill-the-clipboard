@@ -11,7 +11,6 @@ describe('Directory', () => {
 
   beforeEach(() => {
     // suppress console output during tests
-    vi.spyOn(console, 'error').mockImplementation(() => undefined)
     vi.spyOn(console, 'debug').mockImplementation(() => undefined)
   })
 
@@ -149,7 +148,7 @@ describe('Directory', () => {
         })
       }
 
-      return Promise.resolve({ ok: false, status: 404, json: async () => ({}) })
+      return Promise.resolve({ ok: false, status: 404 })
     })
     ;(globalThis as any).fetch = fetchMock
 
@@ -204,11 +203,10 @@ describe('Directory', () => {
         return Promise.resolve({
           ok: false,
           status: 404,
-          json: async () => ({ error: 'Not found' }),
         })
       }
 
-      return Promise.resolve({ ok: false, status: 404, json: async () => ({}) })
+      return Promise.resolve({ ok: false, status: 404 })
     })
     ;(globalThis as any).fetch = fetchMock
 
@@ -242,10 +240,9 @@ describe('Directory', () => {
         return Promise.resolve({
           ok: false,
           status: 404,
-          json: async () => ({ error: 'Not found' }),
         })
       }
-      return Promise.resolve({ ok: false, status: 404, json: async () => ({}) })
+      return Promise.resolve({ ok: false, status: 404 })
     })
     ;(globalThis as any).fetch = fetchMock
 
