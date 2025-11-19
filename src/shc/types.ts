@@ -1,5 +1,6 @@
 // Types and processors for SMART Health Cards
 import type { Bundle } from '@medplum/fhirtypes'
+import type { Directory } from './directory'
 
 /**
  * FHIR R4 Bundle type re-exported from @medplum/fhirtypes for convenience.
@@ -141,6 +142,14 @@ export interface SHCReaderConfigParams {
    * @defaultValue `true`
    */
   verifyExpiration?: boolean
+
+  /**
+   * Optional pre-fetched `Directory` instance containing issuer metadata
+   * (JWKS keys and optional CRLs). Pass `null` to explicitly indicate
+   * no directory is available.
+   * @defaultValue `null`
+   */
+  issuerDirectory?: Directory | null
 }
 
 /**
@@ -288,3 +297,72 @@ export interface QRCodeConfigParams {
  * @category Configuration
  */
 export type QRCodeConfig = Required<QRCodeConfigParams>
+
+/**
+ * Minimal JWK descriptor used in the public Directory representation.
+ *
+ * @public
+ * @group SHC
+ * @category Types
+ */
+export interface IssuerKey {
+  /** Key type (e.g. 'EC' or 'RSA'). */
+  kty: string
+  /** Key ID used to identify the key in JWKS responses. */
+  kid: string
+}
+
+/**
+ * Representation of a Certificate Revocation List (CRL) entry used by the
+ * directory to mark revoked resource IDs for a given key.
+ *
+ * @public
+ * @group SHC
+ * @category Types
+ */
+export interface IssuerCrl {
+  /** The `kid` of the key this CRL pertains to. */
+  kid: string
+  /** Revocation method identifier (e.g. 'rid'). */
+  method: string
+  /** Monotonic counter for CRL updates. */
+  ctr: number
+  /** List of revoked resource ids (rids). */
+  rids: string[]
+}
+
+/**
+ * Public issuer metadata aggregated by the Directory.
+ *
+ * @public
+ * @group SHC
+ * @category Types
+ */
+export interface Issuer {
+  /** Issuer base URL (the `iss` claim value). */
+  iss: string
+  /** Array of known JWK descriptors for the issuer. */
+  keys: IssuerKey[]
+  /** Optional array of CRL entries for revoked resource ids. */
+  crls?: IssuerCrl[]
+}
+
+/**
+ * JSON shape for a published directory file containing issuer metadata.
+ *
+ * @public
+ * @group SHC
+ * @category Types
+ */
+export interface DirectoryJSON {
+  issuerInfo: {
+    issuer: {
+      /** Issuer base URL */
+      iss: string
+    }
+    /** Array of JWK descriptors returned from the issuer's JWKS endpoint. */
+    keys: IssuerKey[]
+    /** Optional CRL entries published alongside the directory. */
+    crls?: IssuerCrl[]
+  }[]
+}
