@@ -55,7 +55,7 @@ export class SHCReader {
       enableQROptimization: config.enableQROptimization ?? true,
       strictReferences: config.strictReferences ?? true,
       verifyExpiration: config.verifyExpiration ?? true,
-      directory: config.directory ?? null,
+      issuerDirectory: config.issuerDirectory ?? null,
     }
 
     this.bundleProcessor = new FHIRBundleProcessor()
@@ -154,8 +154,8 @@ export class SHCReader {
 
       // Step 4: Return the original FHIR Bundle
       let issuerInfo: Issuer[] = []
-      if (this.config.directory) {
-        issuerInfo = this.config.directory.getIssuerInfo()
+      if (this.config.issuerDirectory) {
+        issuerInfo = this.config.issuerDirectory.getIssuerInfo()
       }
       return new SHC(jws, originalBundle, issuerInfo)
     } catch (error) {

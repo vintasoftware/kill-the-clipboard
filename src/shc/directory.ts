@@ -1,4 +1,4 @@
-import type { DirectoryJSON, Issuer } from './types'
+import type { DirectoryJSON, Issuer, IssuerCrl, IssuerKey } from './types'
 
 /**
  * Directory is a lightweight representation of issuer metadata used by
@@ -71,17 +71,20 @@ export class Directory {
    * const directory = await Directory.fromURLs(['https://example.com/issuer'])
    */
   static async fromURLs(issUrls: string[]): Promise<Directory> {
-    const issuersInfo: Issuer[] = []
+    const directoryJson: DirectoryJSON = {
+      issuerInfo: [],
+    }
 
     try {
       for (const issUrl of issUrls) {
-        const issuer: Issuer = {
-          iss: issUrl,
-          keys: [],
-          crls: [],
+        const issuerInfo = {
+          issuer: {
+            iss: issUrl,
+          },
+          keys: [] as IssuerKey[],
+          crls: [] as IssuerCrl[],
         }
 
-        const crls = []
         const jwksUrl = `${issUrl}/.well-known/jwks.json`
         const jwksResponse = await fetch(jwksUrl)
         if (!jwksResponse.ok) {
@@ -92,6 +95,7 @@ export class Directory {
 
         const { keys: issKeys } = await jwksResponse.json()
         for (const key of issKeys) {
+          issuerInfo.keys.push(key)
           const crlUrl = `${issUrl}/.well-known/crl/${key.kid}.json`
           const crlResponse = await fetch(crlUrl)
           if (!crlResponse.ok) {
@@ -100,17 +104,15 @@ export class Directory {
             continue
           }
           const crl = await crlResponse.json()
-          if (crl) crls.push(crl)
+          if (crl) issuerInfo.crls.push(crl)
         }
 
-        issuer.keys = issKeys
-        issuer.crls = crls
-        issuersInfo.push(issuer)
+        directoryJson.issuerInfo.push(issuerInfo)
       }
     } catch (error) {
       console.error('Error creating Directory:', error)
     }
 
-    return new Directory(issuersInfo)
+    return Directory.fromJSON(directoryJson)
   }
 }

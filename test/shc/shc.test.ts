@@ -116,7 +116,7 @@ describe('SHC', () => {
         publicKey: publicKeyCrypto,
         enableQROptimization: false,
         strictReferences: true,
-        directory,
+        issuerDirectory: directory,
       })
 
       const verifiedHealthCard = await readerWithDirectory.fromJWS(jws)

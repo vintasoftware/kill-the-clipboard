@@ -149,7 +149,7 @@ export interface SHCReaderConfigParams {
    * no directory is available.
    * @defaultValue `null`
    */
-  directory?: Directory | null
+  issuerDirectory?: Directory | null
 }
 
 /**
