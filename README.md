@@ -290,6 +290,25 @@ console.log('Resolved FHIR resources:', resolved.fhirResources);
 
 This example above demonstrates the complete lifecycle: SHL generation, content addition, manifest builder persistence in server-side database, manifest serving, and client-side resolution. In a real application, you would implement persistence for the manifest builder state and serve the manifest endpoint from your backend server.
 
+### Directories
+#### Building a Directory from VCI Snapshot
+`Directory.fromVCI` is a convenience helper that fetches the VCI Directory snapshot published by The Commons Project and returns a Directory instance built from that snapshot.
+
+Use it when you want a quick, canonical directory of issuer metadata (JWKS + CRLs) without manually assembling or maintaining a directory JSON.
+
+```typescript
+import { Directory } from 'kill-the-clipboard'
+
+// top-level async context or inside an async function
+try {
+  const directory = await Directory.fromVCI()
+  const issuers = directory.getIssuerInfo()
+  console.log('Loaded issuers:', issuers.length)
+} catch (err) {
+  console.error('Failed to load VCI Directory:', err)
+}
+```
+
 ### Error Handling
 
 The library provides granular error handling with specific error codes for different failure scenarios. Check each method documentation for the specific errors that can be thrown.
