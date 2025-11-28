@@ -2,6 +2,107 @@ import { afterEach, describe, expect, it, vi } from 'vitest'
 import { Directory } from '../../src/shc/directory'
 import type { DirectoryJSON } from '../../src/shc/types'
 
+const SAMPLE_DIRECTORY_JSON = {
+  directory: 'https://example.com/keystore/directory.json',
+  issuerInfo: [
+    {
+      issuer: {
+        iss: 'https://example.com/issuer',
+        name: 'Example Issuer 1',
+      },
+      keys: [
+        {
+          kty: 'EC',
+          kid: 'kid-1-simple',
+        },
+        {
+          kty: 'EC',
+          kid: 'kid-2-simple',
+        },
+      ],
+      crls: [
+        {
+          kid: 'kid-2-simple',
+          method: 'rid',
+          ctr: 1,
+          rids: ['revoked-1'],
+        },
+      ],
+    },
+    {
+      issuer: {
+        iss: 'https://example.com/issuer2',
+        name: 'Example Issuer 2',
+      },
+      keys: [
+        {
+          kty: 'EC',
+          kid: 'kid-A-simple',
+        },
+      ],
+    },
+    {
+      issuer: {
+        iss: 'https://example.com/issuer3',
+        name: 'Example Issuer 3',
+      },
+      keys: [
+        {
+          kty: 'EC',
+          kid: 'kid-C-simple',
+        },
+      ],
+    },
+    {
+      issuer: {
+        iss: 'https://example.com/issuer4',
+        name: 'Example Issuer 4',
+        website: 'https://example.com/issuer4',
+      },
+      keys: [
+        {
+          kty: 'EC',
+          kid: 'kid-D-simple',
+        },
+      ],
+      crls: [
+        {
+          kid: 'kid-D-simple',
+          method: 'rid',
+          ctr: 1,
+          rids: ['revoked-2'],
+        },
+      ],
+    },
+  ],
+}
+
+function assertDirectoryFromSampleJson(directory: Directory) {
+  const issuers = directory.getIssuerInfo()
+  expect(issuers).toHaveLength(4)
+
+  const issuer1 = issuers[0]!
+  expect(issuer1.iss).toEqual('https://example.com/issuer')
+  expect(issuer1.keys).toHaveLength(2)
+  const crls1 = issuer1.crls!
+  expect(crls1).toHaveLength(1)
+  expect(crls1[0]!.kid).toEqual('kid-2-simple')
+
+  const issuer2 = issuers.find(i => i.iss === 'https://example.com/issuer2')!
+  expect(issuer2).toBeDefined()
+  expect(issuer2.keys).toHaveLength(1)
+
+  const issuer3 = issuers.find(i => i.iss === 'https://example.com/issuer3')!
+  expect(issuer3).toBeDefined()
+  expect(issuer3.keys).toHaveLength(1)
+
+  const issuer4 = issuers.find(i => i.iss === 'https://example.com/issuer4')!
+  expect(issuer4).toBeDefined()
+  expect(issuer4.keys).toHaveLength(1)
+  const crls4 = issuer4.crls!
+  expect(crls4).toHaveLength(1)
+}
+
 describe('Directory', () => {
   const ISS_URL = 'https://example.com/issuer'
 
@@ -9,105 +110,46 @@ describe('Directory', () => {
     vi.restoreAllMocks()
   })
 
+  it('should create a directory from the VCI snapshot', async () => {
+    const originalFetch = globalThis.fetch
+    const fetchMock = vi.fn().mockImplementation((url: string) => {
+      if (url.includes('vci_snapshot.json')) {
+        return Promise.resolve({
+          ok: true,
+          json: async () => SAMPLE_DIRECTORY_JSON,
+        })
+      }
+
+      return Promise.resolve({ ok: false, status: 404 })
+    })
+    ;(globalThis as any).fetch = fetchMock
+
+    const directory = await Directory.fromVCI()
+    assertDirectoryFromSampleJson(directory)
+
+    ;(globalThis as any).fetch = originalFetch
+  })
+
+  it('should throw when VCI snapshot fetch fails', async () => {
+    const originalFetch = globalThis.fetch
+    const fetchMock = vi.fn().mockImplementation((url: string) => {
+      if (url.includes('vci_snapshot.json')) {
+        return Promise.resolve({ ok: false, status: 500 })
+      }
+      return Promise.resolve({ ok: false, status: 404 })
+    })
+    ;(globalThis as any).fetch = fetchMock
+
+    await expect(Directory.fromVCI()).rejects.toThrow(
+      'Failed to fetch VCI Directory snapshot with status 500'
+    )
+
+    ;(globalThis as any).fetch = originalFetch
+  })
+
   it('should create a directory from JSON', () => {
-    const directoryJson = {
-      directory: 'https://example.com/keystore/directory.json',
-      issuerInfo: [
-        {
-          issuer: {
-            iss: 'https://example.com/issuer',
-            name: 'Example Issuer 1',
-          },
-          keys: [
-            {
-              kty: 'EC',
-              kid: 'kid-1-simple',
-            },
-            {
-              kty: 'EC',
-              kid: 'kid-2-simple',
-            },
-          ],
-          crls: [
-            {
-              kid: 'kid-2-simple',
-              method: 'rid',
-              ctr: 1,
-              rids: ['revoked-1'],
-            },
-          ],
-        },
-        {
-          issuer: {
-            iss: 'https://example.com/issuer2',
-            name: 'Example Issuer 2',
-          },
-          keys: [
-            {
-              kty: 'EC',
-              kid: 'kid-A-simple',
-            },
-          ],
-        },
-        {
-          issuer: {
-            iss: 'https://example.com/issuer3',
-            name: 'Example Issuer 3',
-          },
-          keys: [
-            {
-              kty: 'EC',
-              kid: 'kid-C-simple',
-            },
-          ],
-        },
-        {
-          issuer: {
-            iss: 'https://example.com/issuer4',
-            name: 'Example Issuer 4',
-            website: 'https://example.com/issuer4',
-          },
-          keys: [
-            {
-              kty: 'EC',
-              kid: 'kid-D-simple',
-            },
-          ],
-          crls: [
-            {
-              kid: 'kid-D-simple',
-              method: 'rid',
-              ctr: 1,
-              rids: ['revoked-2'],
-            },
-          ],
-        },
-      ],
-    }
-    const directory = Directory.fromJSON(directoryJson as DirectoryJSON)
-    const issuers = directory.getIssuerInfo()
-    expect(issuers).toHaveLength(4)
-
-    const issuer1 = issuers[0]!
-    expect(issuer1.iss).toEqual('https://example.com/issuer')
-    expect(issuer1.keys).toHaveLength(2)
-    const crls1 = issuer1.crls!
-    expect(crls1).toHaveLength(1)
-    expect(crls1[0]!.kid).toEqual('kid-2-simple')
-
-    const issuer2 = issuers.find(i => i.iss === 'https://example.com/issuer2')!
-    expect(issuer2).toBeDefined()
-    expect(issuer2.keys).toHaveLength(1)
-
-    const issuer3 = issuers.find(i => i.iss === 'https://example.com/issuer3')!
-    expect(issuer3).toBeDefined()
-    expect(issuer3.keys).toHaveLength(1)
-
-    const issuer4 = issuers.find(i => i.iss === 'https://example.com/issuer4')!
-    expect(issuer4).toBeDefined()
-    expect(issuer4.keys).toHaveLength(1)
-    const crls4 = issuer4.crls!
-    expect(crls4).toHaveLength(1)
+    const directory = Directory.fromJSON(SAMPLE_DIRECTORY_JSON as DirectoryJSON)
+    assertDirectoryFromSampleJson(directory)
   })
 
   it('should handle missing or invalid values when building directory using fromJSON', () => {
