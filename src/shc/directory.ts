@@ -28,6 +28,32 @@ export class Directory {
   }
 
   /**
+   * Fetch a snapshot of the VCI Directory published by The Commons Project
+   * and build a {@link Directory} from it.
+   *
+   * This helper fetches a well-known VCI snapshot JSON file and delegates to
+   * `Directory.fromJSON` to produce a `Directory` instance. If the snapshot
+   * cannot be retrieved (non-2xx response) the function throws an Error.
+   *
+   * @returns A {@link Directory} populated from the VCI snapshot
+   * @throws Error when the VCI snapshot HTTP fetch returns a non-OK status
+   * @example
+   * const directory = await Directory.fromVCI()
+   */
+  static async fromVCI(): Promise<Directory> {
+    const vciSnapshotResponse = await fetch(
+      'https://raw.githubusercontent.com/the-commons-project/vci-directory/main/logs/vci_snapshot.json'
+    )
+    if (!vciSnapshotResponse.ok) {
+      throw new Error(
+        `Failed to fetch VCI Directory snapshot with status ${vciSnapshotResponse.status}`
+      )
+    }
+    const vciDirectoryJson = await vciSnapshotResponse.json()
+    return Directory.fromJSON(vciDirectoryJson)
+  }
+
+  /**
    * Build a Directory from a parsed JSON object matching the published
    * directory schema.
    *
