@@ -32,7 +32,7 @@
     "@tabler/icons-react": "^3.34.1",
     "argon2": "^0.44.0",
     "kill-the-clipboard": "workspace:../..",
-    "next": "15.5.3",
+    "next": "15.5.7",
     "react": "19.1.1",
     "react-dom": "19.1.1",
     "uuid": "^11.1.0"
