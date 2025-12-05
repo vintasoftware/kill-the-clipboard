@@ -291,6 +291,16 @@ console.log('Resolved FHIR resources:', resolved.fhirResources);
 This example above demonstrates the complete lifecycle: SHL generation, content addition, manifest builder persistence in server-side database, manifest serving, and client-side resolution. In a real application, you would implement persistence for the manifest builder state and serve the manifest endpoint from your backend server.
 
 ### Directories
+A `Directory` is a lightweight, serializable collection of issuer metadata used by this library: each entry contains an issuer URL, its JWK descriptors (public keys) and optional CRL entries (revoked resource ids).
+
+It provides a local/cached source of JWKS + CRL data so verification and lookup code can resolve public keys and revocation information without hitting network endpoints repeatedly.
+
+It can be built through the following methods:
+
+1. Build from a JSON manifest: `Directory.fromJSON`
+2. Build by fetching from issuer endpoints: `Directory.fromURLs`
+3. Build by loading the VCI snapshot: `Directory.fromVCI`
+
 #### Building a Directory from VCI Snapshot
 `Directory.fromVCI` is a convenience helper that fetches the VCI Directory snapshot published by The Commons Project and returns a Directory instance built from that snapshot.
 
