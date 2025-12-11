@@ -1,6 +1,13 @@
 // SHCReader class
 import { importJWK } from 'jose'
-import { FileFormatError, QRCodeError, SHCError, VerificationError } from './errors.js'
+import { Directory } from './directory.js'
+import {
+  FileFormatError,
+  QRCodeError,
+  SHCError,
+  SHCReaderConfigError,
+  VerificationError,
+} from './errors.js'
 import { FHIRBundleProcessor } from './fhir/bundle-processor.js'
 import { JWSProcessor } from './jws/jws-processor.js'
 import { QRCodeGenerator } from './qr/qr-code-generator.js'
@@ -50,12 +57,19 @@ export class SHCReader {
    * ```
    */
   constructor(config: SHCReaderConfigParams) {
+    if (config.issuerDirectory && config.useVciDirectory) {
+      throw new SHCReaderConfigError(
+        'SHCReader configuration error: Cannot specify both issuerDirectory and useVciDirectory'
+      )
+    }
+
     this.config = {
       ...config,
       enableQROptimization: config.enableQROptimization ?? true,
       strictReferences: config.strictReferences ?? true,
       verifyExpiration: config.verifyExpiration ?? true,
       issuerDirectory: config.issuerDirectory ?? null,
+      useVciDirectory: config.useVciDirectory ?? false,
     }
 
     this.bundleProcessor = new FHIRBundleProcessor()
@@ -152,11 +166,17 @@ export class SHCReader {
       const vc: VerifiableCredential = { vc: payload.vc }
       this.vcProcessor.validate(vc)
 
-      // Step 4: Return the original FHIR Bundle
+      // Step 4: Get the issuer info from a provided directory
+      // or from the VCI snapshot
       let issuerInfo: Issuer[] = []
       if (this.config.issuerDirectory) {
         issuerInfo = this.config.issuerDirectory.getIssuerInfo()
+      } else if (this.config.useVciDirectory) {
+        const vciDirectory = await Directory.fromVCI()
+        issuerInfo = vciDirectory.getIssuerInfo()
       }
+
+      // Step 5: Return the original FHIR Bundle
       return new SHC(jws, originalBundle, issuerInfo)
     } catch (error) {
       if (error instanceof SHCError) {

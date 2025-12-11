@@ -146,6 +146,72 @@ const healthCardFromQR = await reader.fromQRNumeric(qrNumericStrings);
 console.log('Bundle from QR:', await healthCardFromQR.asBundle());
 ```
 
+#### Usage with the VCI Directory Snapshot
+
+The library can optionally consult the VCI directory snapshot to obtain a canonical collection of issuer metadata (JWKS and CRLs). This is useful when you want an authoritative, ready-made source of issuer keys without assembling or maintaining your own `Directory` object. In order to bundle it directly into your `SHCReader` object, you may provide the `useVciDirectory: true` parameter to its constructor.
+
+Example usage:
+
+```typescript
+import { SHCIssuer, SHCReader } from 'kill-the-clipboard';
+
+const issuer = new SHCIssuer({
+  issuer: 'https://your-healthcare-org.com',
+  privateKey: privateKeyPKCS8String, // ES256 private key in PKCS#8 format
+  publicKey: publicKeySPKIString, // ES256 public key in SPKI format
+});
+
+const reader = new SHCReader({
+  publicKey: publicKeySPKIString, // ES256 public key in SPKI format
+  useVciDirectory: true,
+});
+
+// Create FHIR Bundle
+const fhirBundle = {
+  resourceType: 'Bundle',  
+  type: 'collection',
+  entry: [
+    {
+      fullUrl: 'https://example.org/fhir/Patient/123',
+      resource: {
+        resourceType: 'Patient',
+        id: '123', 
+        name: [{ family: 'Doe', given: ['John'] }],
+        birthDate: '1990-01-01',
+      },
+    },
+    {
+      fullUrl: 'https://example.org/fhir/Immunization/456',
+      resource: {
+        resourceType: 'Immunization',
+        id: '456',
+        status: 'completed',
+        vaccineCode: {
+          coding: [{
+            system: 'http://hl7.org/fhir/sid/cvx',
+            code: '207',
+            display: 'COVID-19 vaccine', 
+          }],
+        },
+        patient: { reference: 'Patient/123' },
+        occurrenceDateTime: '2023-01-15',
+      },
+    },
+  ],
+};
+
+// Issue a new SMART Health Card
+const healthCard = await issuer.issue(fhirBundle);
+
+// Verify and read the health card
+const verifiedHealthCard = await reader.fromJWS(healthCard.asJWS());
+console.log('VCI Directory issuers info:', verifiedHealthCard.getIssuerInfo())
+```
+
+#### Usage with a generic Directory object
+
+Optionally, you may also provide your own `Directory` object to the `SHCReader` constructor, through the `issuerDirectory` parameter. For more information on how to build a `Directory` instance, please check the [Directories section](#directories).
+ 
 ### SMART Health Links Quick Start
 
 SHLs enable encrypted, link-based sharing of health information. The flow involves:

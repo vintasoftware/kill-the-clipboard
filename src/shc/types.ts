@@ -150,6 +150,14 @@ export interface SHCReaderConfigParams {
    * @defaultValue `null`
    */
   issuerDirectory?: Directory | null
+
+  /**
+   * Whether to consult the VCI directory to resolve issuer metadata (JWKS and related information).
+   * When `true`, the reader will attempt to resolve keys from the VCI directory during verification.
+   * When `false`, no automatic VCI directory lookup will be performed.
+   * @defaultValue `false`
+   */
+  useVciDirectory?: boolean
 }
 
 /**

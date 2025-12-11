@@ -157,3 +157,17 @@ export class CredentialValidationError extends SHCError {
     this.name = 'CredentialValidationError'
   }
 }
+
+/**
+ * Error thrown when SHCReader configuration is invalid.
+ *
+ * @public
+ * @group SHC
+ * @category Errors
+ */
+export class SHCReaderConfigError extends SHCError {
+  constructor(message: string) {
+    super(message, 'INVALID_CONFIGURATION')
+    this.name = 'SHCReaderConfigError'
+  }
+}

@@ -8,6 +8,7 @@ import {
   type SHCConfig,
   SHCIssuer,
   SHCReader,
+  SHCReaderConfigError,
   type SHCReaderConfigParams,
   SignatureVerificationError,
 } from '@/index'
@@ -16,6 +17,7 @@ import {
   createInvalidBundle,
   createValidFHIRBundle,
   decodeQRFromDataURL,
+  SAMPLE_DIRECTORY_JSON,
   testPrivateKeyJWK,
   testPrivateKeyPKCS8,
   testPublicKeyJWK,
@@ -121,6 +123,61 @@ describe('SHC', () => {
 
       const verifiedHealthCard = await readerWithDirectory.fromJWS(jws)
       expect(verifiedHealthCard.getIssuerInfo()).toEqual(directory.getIssuerInfo())
+    })
+
+    it('should fetch the VCI directory and bundle issuerInfo into SHC', async () => {
+      const { importPKCS8, importSPKI } = await import('jose')
+
+      const privateKeyCrypto = await importPKCS8(testPrivateKeyPKCS8, 'ES256')
+      const publicKeyCrypto = await importSPKI(testPublicKeySPKI, 'ES256')
+
+      const configWithCryptoKeys: SHCConfig = {
+        issuer: 'https://example.com/issuer',
+        privateKey: privateKeyCrypto,
+        publicKey: publicKeyCrypto,
+        expirationTime: null,
+        enableQROptimization: false,
+        strictReferences: true,
+      }
+      const issuerWithCryptoKeys = new SHCIssuer(configWithCryptoKeys)
+
+      const healthCard = await issuerWithCryptoKeys.issue(validBundle)
+      const jws = healthCard.asJWS()
+
+      const readerWithDirectory = new SHCReader({
+        publicKey: publicKeyCrypto,
+        enableQROptimization: false,
+        strictReferences: true,
+        useVciDirectory: true,
+      })
+
+      const originalFetch = globalThis.fetch
+      const fetchMock = vi.fn().mockImplementation((url: string) => {
+        if (url.includes('vci_snapshot.json')) {
+          return Promise.resolve({
+            ok: true,
+            json: async () => SAMPLE_DIRECTORY_JSON,
+          })
+        }
+
+        return Promise.resolve({ ok: false, status: 404 })
+      })
+
+      ;(globalThis as any).fetch = fetchMock
+      const vciDirectory = await Directory.fromVCI()
+      const verifiedHealthCard = await readerWithDirectory.fromJWS(jws)
+      ;(globalThis as any).fetch = originalFetch
+
+      expect(verifiedHealthCard.getIssuerInfo()).toEqual(vciDirectory.getIssuerInfo())
+    })
+
+    it('should raise SHCReaderConfigError if both issuerDirectory and useVciDirectory are set', async () => {
+      expect(() => {
+        new SHCReader({
+          useVciDirectory: true,
+          issuerDirectory: Directory.fromJSON(SAMPLE_DIRECTORY_JSON),
+        })
+      }).toThrow(SHCReaderConfigError)
     })
 
     it('should issue SMART Health Card with CryptoKey objects', async () => {
