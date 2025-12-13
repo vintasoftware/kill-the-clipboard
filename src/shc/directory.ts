@@ -16,15 +16,19 @@ export class Directory {
    *
    * @param issuerInfo - Array of issuer entries (see {@link Issuer})
    */
-  constructor(private issuerInfo: Issuer[]) {}
+  constructor(private issuers: Issuer[]) {}
 
   /**
-   * Return the internal issuer info array.
+   * Return the internal issuers array.
    *
-   * @returns Array of issuer info objects
+   * @returns Array of `Issuer` objects
    */
-  getIssuerInfo(): Issuer[] {
-    return this.issuerInfo
+  getIssuers(): Issuer[] {
+    return this.issuers
+  }
+
+  getIssuerByIss(iss: string): Issuer | undefined {
+    return this.issuers.find(issuer => issuer.iss === iss)
   }
 
   /**

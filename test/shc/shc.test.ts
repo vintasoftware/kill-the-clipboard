@@ -60,117 +60,6 @@ describe('SHC', () => {
       expect(jws.split('.')).toHaveLength(3)
     })
 
-    it('should bundle issuerInfo into SHC when reader created with a directory', async () => {
-      const { importPKCS8, importSPKI } = await import('jose')
-
-      const privateKeyCrypto = await importPKCS8(testPrivateKeyPKCS8, 'ES256')
-      const publicKeyCrypto = await importSPKI(testPublicKeySPKI, 'ES256')
-
-      const configWithCryptoKeys: SHCConfig = {
-        issuer: 'https://example.com/issuer',
-        privateKey: privateKeyCrypto,
-        publicKey: publicKeyCrypto,
-        expirationTime: null,
-        enableQROptimization: false,
-        strictReferences: true,
-      }
-      const issuerWithCryptoKeys = new SHCIssuer(configWithCryptoKeys)
-
-      const healthCard = await issuerWithCryptoKeys.issue(validBundle)
-      const jws = healthCard.asJWS()
-
-      const ISS_URL = 'https://example.com/issuer'
-      const originalFetch = globalThis.fetch
-      const fetchMock = vi.fn().mockImplementation((url: string) => {
-        if (url === `${ISS_URL}/.well-known/jwks.json`) {
-          return Promise.resolve({
-            ok: true,
-            json: async () => ({
-              keys: [
-                {
-                  kid: 'kid1',
-                  kty: 'EC',
-                },
-              ],
-            }),
-          })
-        }
-
-        if (url === `${ISS_URL}/.well-known/crl/kid1.json`) {
-          return Promise.resolve({
-            ok: true,
-            json: async () => ({
-              kid: 'kid1',
-              method: 'rid',
-              ctr: 1,
-              rids: ['imrevoked'],
-            }),
-          })
-        }
-
-        return Promise.resolve({ ok: false, status: 404, json: async () => ({}) })
-      })
-      ;(globalThis as any).fetch = fetchMock
-      const directory = await Directory.fromURLs([ISS_URL])
-      ;(globalThis as any).fetch = originalFetch
-
-      const readerWithDirectory = new SHCReader({
-        publicKey: publicKeyCrypto,
-        enableQROptimization: false,
-        strictReferences: true,
-        issuerDirectory: directory,
-      })
-
-      const verifiedHealthCard = await readerWithDirectory.fromJWS(jws)
-      expect(verifiedHealthCard.getIssuerInfo()).toEqual(directory.getIssuerInfo())
-    })
-
-    it('should fetch the VCI directory and bundle issuerInfo into SHC', async () => {
-      const { importPKCS8, importSPKI } = await import('jose')
-
-      const privateKeyCrypto = await importPKCS8(testPrivateKeyPKCS8, 'ES256')
-      const publicKeyCrypto = await importSPKI(testPublicKeySPKI, 'ES256')
-
-      const configWithCryptoKeys: SHCConfig = {
-        issuer: 'https://example.com/issuer',
-        privateKey: privateKeyCrypto,
-        publicKey: publicKeyCrypto,
-        expirationTime: null,
-        enableQROptimization: false,
-        strictReferences: true,
-      }
-      const issuerWithCryptoKeys = new SHCIssuer(configWithCryptoKeys)
-
-      const healthCard = await issuerWithCryptoKeys.issue(validBundle)
-      const jws = healthCard.asJWS()
-
-      const readerWithDirectory = new SHCReader({
-        publicKey: publicKeyCrypto,
-        enableQROptimization: false,
-        strictReferences: true,
-        useVciDirectory: true,
-      })
-
-      const originalFetch = globalThis.fetch
-      const fetchMock = vi.fn().mockImplementation((url: string) => {
-        if (url.includes('vci_snapshot.json')) {
-          return Promise.resolve({
-            ok: true,
-            json: async () => SAMPLE_DIRECTORY_JSON,
-          })
-        }
-
-        return Promise.resolve({ ok: false, status: 404 })
-      })
-
-      ;(globalThis as any).fetch = fetchMock
-      const vciDirectory = await Directory.fromVCI()
-      const verifiedHealthCard = await readerWithDirectory.fromJWS(jws)
-      ;(globalThis as any).fetch = originalFetch
-
-      expect(verifiedHealthCard.getIssuerInfo()).toEqual(vciDirectory.getIssuerInfo())
-    })
-
     it('should raise SHCReaderConfigError if both issuerDirectory and useVciDirectory are set', async () => {
       expect(() => {
         new SHCReader({
@@ -273,6 +162,84 @@ describe('SHC', () => {
       const verifiedHealthCard = await reader.fromJWS(healthCard.asJWS())
       const verifiedBundle = await verifiedHealthCard.asBundle()
 
+      expect(verifiedBundle).toBeDefined()
+      expect(verifiedBundle).toEqual(validBundle)
+    })
+
+    it('should verify SHC when reader created with a directory', async () => {
+      const healthCard = await issuer.issue(validBundle)
+
+      const ISS_URL = 'https://example.com/issuer'
+      const originalFetch = globalThis.fetch
+      const fetchMock = vi.fn().mockImplementation((url: string) => {
+        if (url === `${ISS_URL}/.well-known/jwks.json`) {
+          return Promise.resolve({
+            ok: true,
+            json: async () => ({
+              keys: [
+                {
+                  kid: 'kid1',
+                  kty: 'EC',
+                },
+              ],
+            }),
+          })
+        }
+
+        if (url === `${ISS_URL}/.well-known/crl/kid1.json`) {
+          return Promise.resolve({
+            ok: true,
+            json: async () => ({
+              kid: 'kid1',
+              method: 'rid',
+              ctr: 1,
+              rids: ['imrevoked'],
+            }),
+          })
+        }
+
+        return Promise.resolve({ ok: false, status: 404, json: async () => ({}) })
+      })
+      ;(globalThis as any).fetch = fetchMock
+      const directory = await Directory.fromURLs([ISS_URL])
+      ;(globalThis as any).fetch = originalFetch
+
+      const readerWithDirectory = new SHCReader({
+        ...readerConfig,
+        issuerDirectory: directory,
+      })
+
+      const verifiedHealthCard = await readerWithDirectory.fromJWS(healthCard.asJWS())
+      const verifiedBundle = await verifiedHealthCard.asBundle()
+
+      expect(verifiedBundle).toBeDefined()
+      expect(verifiedBundle).toEqual(validBundle)
+    })
+
+    it('should verify SHC when reader is created with the VCI snapshot directory', async () => {
+      const healthCard = await issuer.issue(validBundle)
+      const readerWithDirectory = new SHCReader({
+        ...readerConfig,
+        useVciDirectory: true,
+      })
+
+      const originalFetch = globalThis.fetch
+      const fetchMock = vi.fn().mockImplementation((url: string) => {
+        if (url.includes('vci_snapshot.json')) {
+          return Promise.resolve({
+            ok: true,
+            json: async () => SAMPLE_DIRECTORY_JSON,
+          })
+        }
+
+        return Promise.resolve({ ok: false, status: 404 })
+      })
+
+      ;(globalThis as any).fetch = fetchMock
+      const verifiedHealthCard = await readerWithDirectory.fromJWS(healthCard.asJWS())
+      ;(globalThis as any).fetch = originalFetch
+
+      const verifiedBundle = await verifiedHealthCard.asBundle()
       expect(verifiedBundle).toBeDefined()
       expect(verifiedBundle).toEqual(validBundle)
     })

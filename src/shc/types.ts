@@ -30,6 +30,7 @@ export interface VerifiableCredential {
       /** The FHIR Bundle containing medical data. */
       fhirBundle: FHIRBundle
     }
+    rid?: string
   }
 }
 

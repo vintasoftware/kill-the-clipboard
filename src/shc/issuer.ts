@@ -5,7 +5,6 @@ import { JWSProcessor } from './jws/jws-processor.js'
 import { SHC } from './shc.js'
 import type {
   FHIRBundle,
-  Issuer,
   SHCConfig,
   SHCConfigParams,
   SHCJWT,
@@ -80,13 +79,9 @@ export class SHCIssuer {
    * });
    * ```
    */
-  async issue(
-    fhirBundle: FHIRBundle,
-    config: VerifiableCredentialParams = {},
-    issuerInfo: Issuer[] = []
-  ): Promise<SHC> {
+  async issue(fhirBundle: FHIRBundle, config: VerifiableCredentialParams = {}): Promise<SHC> {
     const jws = await this.createJWS(fhirBundle, config)
-    return new SHC(jws, fhirBundle, issuerInfo)
+    return new SHC(jws, fhirBundle)
   }
 
   /**

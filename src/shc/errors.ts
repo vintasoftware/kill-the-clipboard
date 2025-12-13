@@ -171,3 +171,10 @@ export class SHCReaderConfigError extends SHCError {
     this.name = 'SHCReaderConfigError'
   }
 }
+
+export class SHCRevokedError extends SHCError {
+  constructor(message: string) {
+    super(message, 'SHC_REVOKED')
+    this.name = 'SHCRevokedError'
+  }
+}

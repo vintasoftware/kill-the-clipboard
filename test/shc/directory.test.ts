@@ -4,7 +4,7 @@ import type { DirectoryJSON } from '../../src/shc/types'
 import { SAMPLE_DIRECTORY_JSON } from '../helpers'
 
 function assertDirectoryFromSampleJson(directory: Directory) {
-  const issuers = directory.getIssuerInfo()
+  const issuers = directory.getIssuers()
   expect(issuers).toHaveLength(4)
 
   const issuer1 = issuers[0]!
@@ -110,7 +110,7 @@ describe('Directory', () => {
     }
 
     const directory = Directory.fromJSON(directoryJson as DirectoryJSON)
-    const issuers = directory.getIssuerInfo()
+    const issuers = directory.getIssuers()
     expect(issuers).toHaveLength(3)
 
     const missing = issuers.find(i => i.iss === 'https://missing.example/issuer')!
@@ -169,7 +169,7 @@ describe('Directory', () => {
     const debugSpy = vi.spyOn(console, 'debug').mockImplementation(() => undefined)
 
     const directory = await Directory.fromURLs([ISS_URL])
-    const issuers = directory.getIssuerInfo()
+    const issuers = directory.getIssuers()
     expect(issuers).toHaveLength(1)
     const issuer = issuers[0]!
     expect(issuer.iss).toEqual(ISS_URL)
@@ -234,7 +234,7 @@ describe('Directory', () => {
     const debugSpy = vi.spyOn(console, 'debug').mockImplementation(() => undefined)
 
     const directory = await Directory.fromURLs([ISS_URL, ISS_URL2, ISS_URL3])
-    const issuers = directory.getIssuerInfo()
+    const issuers = directory.getIssuers()
     // issuer3 jwks fetch will throw and be caught; only issuer1 and issuer2 should be present
     expect(issuers).toHaveLength(2)
 
@@ -280,7 +280,7 @@ describe('Directory', () => {
     const debugSpy = vi.spyOn(console, 'debug').mockImplementation(() => undefined)
 
     const directory = await Directory.fromURLs([ISS_URL])
-    const issuers = directory.getIssuerInfo()
+    const issuers = directory.getIssuers()
     expect(issuers).toHaveLength(0)
 
     expect(debugSpy).toHaveBeenCalledTimes(1)
@@ -299,7 +299,7 @@ describe('Directory', () => {
     const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => undefined)
 
     const directory = await Directory.fromURLs([ISS_URL])
-    const issuers = directory.getIssuerInfo()
+    const issuers = directory.getIssuers()
     expect(issuers).toHaveLength(0)
 
     expect(errorSpy).toHaveBeenCalledTimes(1)

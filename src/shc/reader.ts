@@ -6,18 +6,14 @@ import {
   QRCodeError,
   SHCError,
   SHCReaderConfigError,
+  SHCRevokedError,
   VerificationError,
 } from './errors.js'
 import { FHIRBundleProcessor } from './fhir/bundle-processor.js'
 import { JWSProcessor } from './jws/jws-processor.js'
 import { QRCodeGenerator } from './qr/qr-code-generator.js'
 import { SHC } from './shc.js'
-import type {
-  Issuer,
-  SHCReaderConfig,
-  SHCReaderConfigParams,
-  VerifiableCredential,
-} from './types.js'
+import type { SHCReaderConfig, SHCReaderConfigParams, VerifiableCredential } from './types.js'
 import { VerifiableCredentialProcessor } from './vc.js'
 
 /**
@@ -168,16 +164,29 @@ export class SHCReader {
 
       // Step 4: Get the issuer info from a provided directory
       // or from the VCI snapshot
-      let issuerInfo: Issuer[] = []
+      let directory: Directory | null = null
       if (this.config.issuerDirectory) {
-        issuerInfo = this.config.issuerDirectory.getIssuerInfo()
+        directory = this.config.issuerDirectory
       } else if (this.config.useVciDirectory) {
-        const vciDirectory = await Directory.fromVCI()
-        issuerInfo = vciDirectory.getIssuerInfo()
+        directory = await Directory.fromVCI()
+      }
+
+      if (directory) {
+        const issuer = directory.getIssuerByIss(payload.iss)
+        const issuerCrls = issuer?.crls
+        const vcRid = payload.vc.rid
+        if (issuerCrls && vcRid) {
+          // TODO: we must also handle the case where the SHC is set to be revoked
+          issuerCrls.forEach(crl => {
+            if (crl.rids.includes(vcRid)) {
+              throw new SHCRevokedError('This SHC has been revoked')
+            }
+          })
+        }
       }
 
       // Step 5: Return the original FHIR Bundle
-      return new SHC(jws, originalBundle, issuerInfo)
+      return new SHC(jws, originalBundle)
     } catch (error) {
       if (error instanceof SHCError) {
         throw error

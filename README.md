@@ -165,47 +165,6 @@ const reader = new SHCReader({
   publicKey: publicKeySPKIString, // ES256 public key in SPKI format
   useVciDirectory: true,
 });
-
-// Create FHIR Bundle
-const fhirBundle = {
-  resourceType: 'Bundle',  
-  type: 'collection',
-  entry: [
-    {
-      fullUrl: 'https://example.org/fhir/Patient/123',
-      resource: {
-        resourceType: 'Patient',
-        id: '123', 
-        name: [{ family: 'Doe', given: ['John'] }],
-        birthDate: '1990-01-01',
-      },
-    },
-    {
-      fullUrl: 'https://example.org/fhir/Immunization/456',
-      resource: {
-        resourceType: 'Immunization',
-        id: '456',
-        status: 'completed',
-        vaccineCode: {
-          coding: [{
-            system: 'http://hl7.org/fhir/sid/cvx',
-            code: '207',
-            display: 'COVID-19 vaccine', 
-          }],
-        },
-        patient: { reference: 'Patient/123' },
-        occurrenceDateTime: '2023-01-15',
-      },
-    },
-  ],
-};
-
-// Issue a new SMART Health Card
-const healthCard = await issuer.issue(fhirBundle);
-
-// Verify and read the health card
-const verifiedHealthCard = await reader.fromJWS(healthCard.asJWS());
-console.log('VCI Directory issuers info:', verifiedHealthCard.getIssuerInfo())
 ```
 
 #### Usage with a generic Directory object
@@ -378,7 +337,7 @@ import { Directory } from 'kill-the-clipboard'
 // top-level async context or inside an async function
 try {
   const directory = await Directory.fromVCI()
-  const issuers = directory.getIssuerInfo()
+  const issuers = directory.getIssuers()
   console.log('Loaded issuers:', issuers.length)
 } catch (err) {
   console.error('Failed to load VCI Directory:', err)
