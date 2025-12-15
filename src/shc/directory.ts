@@ -1,4 +1,11 @@
-import type { DirectoryJSON, Issuer, IssuerCrlJSON, IssuerJSON, IssuerKey } from './types'
+import type {
+  DirectoryJSON,
+  Issuer,
+  IssuerCrl,
+  IssuerCrlJSON,
+  IssuerJSON,
+  IssuerKey,
+} from './types'
 
 /**
  * Directory is a lightweight representation of issuer metadata used by
@@ -75,16 +82,33 @@ export class Directory {
         return
       }
       const validKeys = Array.isArray(keys) ? keys : []
-      const validCrls = Array.isArray(crls)
-        ? crls.map(({ rids, ...crls }) => ({
-            ...crls,
-            rids: new Set(Array.isArray(rids) ? rids : []),
-          }))
-        : []
+
+      const crlsMap = new Map<string, IssuerCrl>()
+      if (Array.isArray(crls)) {
+        crls.forEach(({ rids, ...crl }) => {
+          const ridsSet = new Set<string>()
+          const ridsTimestamps = new Map<string, string>()
+          rids?.forEach(rid => {
+            const [rawRid, timestamp] = rid.split('.', 2)
+            if (rawRid) {
+              ridsSet.add(rawRid)
+              if (timestamp) {
+                ridsTimestamps.set(rawRid, timestamp)
+              }
+            }
+          })
+          const issuerCrl: IssuerCrl = {
+            ...crl,
+            rids: ridsSet,
+            ridsTimestamps,
+          }
+          crlsMap.set(crl.kid, issuerCrl)
+        })
+      }
       issuersMap.set(iss, {
         iss,
         keys: validKeys,
-        crls: validCrls,
+        crls: crlsMap,
       })
     })
     return new Directory(issuersMap)

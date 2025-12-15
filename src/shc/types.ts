@@ -339,6 +339,7 @@ export interface IssuerCrl {
   ctr: number
   /** List of revoked resource ids (rids). */
   rids: Set<string>
+  ridsTimestamps: Map<string, string>
 }
 
 /**
@@ -354,7 +355,7 @@ export interface Issuer {
   /** Array of known JWK descriptors for the issuer. */
   keys: IssuerKey[]
   /** Optional array of CRL entries for revoked resource ids. */
-  crls: IssuerCrl[]
+  crls: Map<string, IssuerCrl>
 }
 
 export interface IssuerCrlJSON extends Omit<IssuerCrl, 'rids'> {

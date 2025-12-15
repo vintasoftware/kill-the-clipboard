@@ -11,7 +11,7 @@ function assertDirectoryFromSampleJson(directory: Directory) {
   expect(issuer1.keys).toHaveLength(2)
   const crls1 = issuer1.crls!
   expect(crls1).toHaveLength(1)
-  expect(crls1[0]!.kid).toEqual('kid-2-simple')
+  expect(crls1.get('kid-2-simple')!.kid).toEqual('kid-2-simple')
 
   const issuer2 = directory.getIssuerByIss('https://example.com/issuer2')!
   expect(issuer2).toBeDefined()
@@ -121,13 +121,13 @@ describe('Directory', () => {
 
     const missing = directory.getIssuerByIss('https://missing.example/issuer')!
     expect(missing).toBeDefined()
-    expect(missing.keys).toEqual([])
-    expect(missing.crls).toEqual([])
+    expect(missing.keys).toHaveLength(0)
+    expect(missing.crls).toHaveLength(0)
 
     const invalid = directory.getIssuerByIss('https://invalid.example/issuer')!
     expect(invalid).toBeDefined()
-    expect(invalid.keys).toEqual([])
-    expect(invalid.crls).toEqual([])
+    expect(invalid.keys).toHaveLength(0)
+    expect(invalid.crls).toHaveLength(0)
 
     expect(debugSpy).toHaveBeenCalledTimes(2)
     expect(debugSpy).toHaveBeenCalledWith('Skipping issuer with missing "iss" field')
@@ -179,7 +179,7 @@ describe('Directory', () => {
     expect(issuer.iss).toEqual(ISS_URL)
     // Only one CRL should be collected (kid1 failed)
     expect(issuer.crls).toHaveLength(1)
-    expect(issuer.crls![0]!.kid).toEqual('kid2')
+    expect(issuer.crls.get('kid2')!.kid).toEqual('kid2')
     // Both keys should be present
     expect(issuer.keys).toHaveLength(2)
 

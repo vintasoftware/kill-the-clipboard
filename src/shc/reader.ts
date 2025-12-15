@@ -10,6 +10,7 @@ import {
   VerificationError,
 } from './errors.js'
 import { FHIRBundleProcessor } from './fhir/bundle-processor.js'
+import { deriveKidFromPublicKey } from './jws/helpers.js'
 import { JWSProcessor } from './jws/jws-processor.js'
 import { QRCodeGenerator } from './qr/qr-code-generator.js'
 import { SHC } from './shc.js'
@@ -173,15 +174,23 @@ export class SHCReader {
 
       if (directory) {
         const issuer = directory.getIssuerByIss(payload.iss)
-        const issuerCrls = issuer?.crls
         const vcRid = payload.vc.rid
-        if (issuerCrls && vcRid) {
-          // TODO: we must also handle the case where the SHC is set to be revoked
-          issuerCrls.forEach(crl => {
-            if (crl.rids.has(vcRid)) {
+        if (vcRid) {
+          const kid = await deriveKidFromPublicKey(publicKeyToUse)
+          const crl = issuer?.crls.get(kid)
+          if (crl && crl.rids.has(vcRid)) {
+            const revocationTimestamp = crl.ridsTimestamps.get(vcRid)
+            if (!revocationTimestamp) {
+              // If the rid is present but has no timestamp, consider it revoked
               throw new SHCRevokedError('This SHC has been revoked')
             }
-          })
+            // If the issuanceDate happened before the
+            // revocation timestamp, consider it revoked
+            const issuanceDateTimestamp = String(payload.nbf).split('.')[0]
+            if (BigInt(issuanceDateTimestamp!) <= BigInt(revocationTimestamp)) {
+              throw new SHCRevokedError('This SHC has been revoked')
+            }
+          }
         }
       }
 
