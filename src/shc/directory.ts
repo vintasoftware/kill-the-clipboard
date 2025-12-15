@@ -85,10 +85,17 @@ export class Directory {
 
       const crlsMap = new Map<string, IssuerCrl>()
       if (Array.isArray(crls)) {
+        // We need to process the raw CRLs data from the directory JSON
+        // to convert them into the apprpriate format that's used in the
+        // Directory class, as the former stores them as an Array and we
+        // store them internally as a Map in the latter.
         crls.forEach(({ rids, ...crl }) => {
           const ridsSet = new Set<string>()
           const ridsTimestamps = new Map<string, string>()
           rids?.forEach(rid => {
+            // The rid may be stored using a "[rid].[revocation_timestamp]"
+            // format in the CRL, so we need to split and store that data in
+            // order to validate if a SHC is revoked in a more performatic flow
             const [rawRid, timestamp] = rid.split('.', 2)
             if (rawRid) {
               ridsSet.add(rawRid)

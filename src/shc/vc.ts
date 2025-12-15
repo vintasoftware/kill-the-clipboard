@@ -32,6 +32,7 @@ export class VerifiableCredentialProcessor {
           fhirVersion: fhirVersion,
           fhirBundle: fhirBundle,
         },
+        rid: config.rid || null,
       },
     }
 

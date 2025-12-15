@@ -30,8 +30,8 @@ export interface VerifiableCredential {
       /** The FHIR Bundle containing medical data. */
       fhirBundle: FHIRBundle
     }
-    /** Optional revoked resource id */
-    rid?: string
+    /** Optional revocation identifier */
+    rid: string | null
   }
 }
 
@@ -199,6 +199,11 @@ export interface VerifiableCredentialParams {
    * - `https://smarthealth.cards#laboratory`
    */
   includeAdditionalTypes?: string[]
+
+  /**
+   * An optional revocation identifier to include in the credential
+   */
+  rid?: string
 }
 
 /**
@@ -339,6 +344,7 @@ export interface IssuerCrl {
   ctr: number
   /** List of revoked resource ids (rids). */
   rids: Set<string>
+  /** Map of revoked resource ids to their revocation timestamps. */
   ridsTimestamps: Map<string, string>
 }
 
@@ -358,11 +364,25 @@ export interface Issuer {
   crls: Map<string, IssuerCrl>
 }
 
-export interface IssuerCrlJSON extends Omit<IssuerCrl, 'rids'> {
+/**
+ * Public issuer CRL JSON shape used in published directory files.
+ *
+ * @public
+ * @group SHC
+ * @category Types
+ */
+export interface IssuerCrlJSON extends Omit<IssuerCrl, 'rids' | 'ridsTimestamps'> {
   /** List of revoked resource ids (rids). */
   rids: string[]
 }
 
+/**
+ * Public issuer metadata JSON shape used in published directory files.
+ *
+ * @public
+ * @group SHC
+ * @category Types
+ */
 export interface IssuerJSON {
   issuer: {
     /** Issuer base URL */

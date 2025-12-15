@@ -172,24 +172,29 @@ export class SHCReader {
         directory = await Directory.fromVCI()
       }
 
+      // If there's a directory, we can check if the SHC is revoked
+      // based on the issuer's CRLs.
       if (directory) {
         const issuer = directory.getIssuerByIss(payload.iss)
         const vcRid = payload.vc.rid
-        if (vcRid) {
+        if (issuer && vcRid) {
           const kid = await deriveKidFromPublicKey(publicKeyToUse)
-          const crl = issuer?.crls.get(kid)
+          const crl = issuer.crls.get(kid)
+          // If the CRL contains the rid, the SHC might
+          // have been revoked
           if (crl && crl.rids.has(vcRid)) {
             const revocationTimestamp = crl.ridsTimestamps.get(vcRid)
             if (!revocationTimestamp) {
-              // If the rid is present but has no timestamp, consider it revoked
+              // If the rid has no associated timestamp, it's revoked
               throw new SHCRevokedError('This SHC has been revoked')
             }
-            // If the issuanceDate happened before the
-            // revocation timestamp, consider it revoked
+            // If the SHC was issued before the revocation timestamp, it's revoked
             const issuanceDateTimestamp = String(payload.nbf).split('.')[0]
             if (BigInt(issuanceDateTimestamp!) <= BigInt(revocationTimestamp)) {
               throw new SHCRevokedError('This SHC has been revoked')
             }
+            // If it has been issued after the revocation timestamp,
+            // it's valid and no further action is required
           }
         }
       }

@@ -153,7 +153,7 @@ The library can optionally consult the VCI directory snapshot to obtain a canoni
 Example usage:
 
 ```typescript
-import { SHCIssuer, SHCReader } from 'kill-the-clipboard';
+import { SHCReader } from 'kill-the-clipboard';
 
 const reader = new SHCReader({
   useVciDirectory: true,

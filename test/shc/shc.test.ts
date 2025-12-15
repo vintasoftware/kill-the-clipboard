@@ -1,5 +1,5 @@
 // biome-ignore-all lint/suspicious/noExplicitAny: The test needs to use `any` to test error cases
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import {
   BundleValidationError,
   type FHIRBundle,
@@ -10,6 +10,7 @@ import {
   SHCReader,
   SHCReaderConfigError,
   type SHCReaderConfigParams,
+  SHCRevokedError,
   SignatureVerificationError,
 } from '@/index'
 import { Directory } from '@/shc/directory'
@@ -157,6 +158,10 @@ describe('SHC', () => {
   })
 
   describe('verification with SHCReader', () => {
+    afterEach(() => {
+      vi.useRealTimers()
+    })
+
     it('should verify a valid SMART Health Card', async () => {
       const healthCard = await issuer.issue(validBundle)
       const verifiedHealthCard = await reader.fromJWS(healthCard.asJWS())
@@ -253,6 +258,137 @@ describe('SHC', () => {
       ;(globalThis as any).fetch = fetchMock
       const verifiedHealthCard = await readerWithDirectory.fromJWS(jws)
       ;(globalThis as any).fetch = originalFetch
+
+      const verifiedBundle = await verifiedHealthCard.asBundle()
+      expect(verifiedBundle).toBeDefined()
+      expect(verifiedBundle).toEqual(validBundle)
+    })
+
+    it('should throw SHCRevokedError if the SHC is revoked without timestamp', async () => {
+      const { importSPKI, exportJWK, calculateJwkThumbprint } = await import('jose')
+      const keyObj = await importSPKI(testPublicKeySPKI, 'ES256')
+      const jwk = await exportJWK(keyObj)
+      const kid = await calculateJwkThumbprint(jwk)
+
+      const directory = Directory.fromJSON({
+        issuerInfo: [
+          {
+            issuer: {
+              iss: 'https://example.com/issuer',
+            },
+            keys: [
+              {
+                kty: 'EC',
+                kid,
+              },
+            ],
+            crls: [
+              {
+                kid,
+                method: 'rid',
+                ctr: 1,
+                rids: ['revoked-1'],
+              },
+            ],
+          },
+        ],
+      })
+      const readerWithDirectory = new SHCReader({
+        ...readerConfig,
+        issuerDirectory: directory,
+      })
+
+      const healthCard = await issuer.issue(validBundle, { rid: 'revoked-1' })
+      const jws = healthCard.asJWS()
+
+      await expect(readerWithDirectory.fromJWS(jws)).rejects.toThrow(SHCRevokedError)
+    })
+
+    it('should throw SHCRevokedError if the SHC is revoked through a timestamped rid', async () => {
+      vi.setSystemTime(new Date('2023-10-28T12:00:00Z'))
+
+      const { importSPKI, exportJWK, calculateJwkThumbprint } = await import('jose')
+      const keyObj = await importSPKI(testPublicKeySPKI, 'ES256')
+      const jwk = await exportJWK(keyObj)
+      const kid = await calculateJwkThumbprint(jwk)
+
+      const revocationTimestamp = new Date('2023-11-19T12:00:00Z').getTime() / 1000
+
+      const directory = Directory.fromJSON({
+        issuerInfo: [
+          {
+            issuer: {
+              iss: 'https://example.com/issuer',
+            },
+            keys: [
+              {
+                kty: 'EC',
+                kid,
+              },
+            ],
+            crls: [
+              {
+                kid,
+                method: 'rid',
+                ctr: 1,
+                rids: [`revoked-1.${revocationTimestamp}`],
+              },
+            ],
+          },
+        ],
+      })
+      const readerWithDirectory = new SHCReader({
+        ...readerConfig,
+        issuerDirectory: directory,
+      })
+
+      const healthCard = await issuer.issue(validBundle, { rid: 'revoked-1' })
+      const jws = healthCard.asJWS()
+
+      await expect(readerWithDirectory.fromJWS(jws)).rejects.toThrow(SHCRevokedError)
+    })
+
+    it('should not throw SHCRevokedError if the SHC was issued after the timestamped rid', async () => {
+      vi.setSystemTime(new Date('2023-10-28T12:00:00Z'))
+
+      const { importSPKI, exportJWK, calculateJwkThumbprint } = await import('jose')
+      const keyObj = await importSPKI(testPublicKeySPKI, 'ES256')
+      const jwk = await exportJWK(keyObj)
+      const kid = await calculateJwkThumbprint(jwk)
+
+      const revocationTimestamp = new Date('2023-10-14T12:00:00Z').getTime() / 1000
+
+      const directory = Directory.fromJSON({
+        issuerInfo: [
+          {
+            issuer: {
+              iss: 'https://example.com/issuer',
+            },
+            keys: [
+              {
+                kty: 'EC',
+                kid,
+              },
+            ],
+            crls: [
+              {
+                kid,
+                method: 'rid',
+                ctr: 1,
+                rids: [`revoked-1.${revocationTimestamp}`],
+              },
+            ],
+          },
+        ],
+      })
+      const readerWithDirectory = new SHCReader({
+        ...readerConfig,
+        issuerDirectory: directory,
+      })
+
+      const healthCard = await issuer.issue(validBundle, { rid: 'revoked-1' })
+      // Even through the rid matches, the SHC was issued after the revocation timestamp
+      const verifiedHealthCard = await readerWithDirectory.fromJWS(healthCard.asJWS())
 
       const verifiedBundle = await verifiedHealthCard.asBundle()
       expect(verifiedBundle).toBeDefined()
