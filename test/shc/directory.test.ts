@@ -7,22 +7,21 @@ function assertDirectoryFromSampleJson(directory: Directory) {
   const issuers = directory.getIssuers()
   expect(issuers).toHaveLength(4)
 
-  const issuer1 = issuers[0]!
-  expect(issuer1.iss).toEqual('https://example.com/issuer')
+  const issuer1 = directory.getIssuerByIss('https://example.com/issuer')!
   expect(issuer1.keys).toHaveLength(2)
   const crls1 = issuer1.crls!
   expect(crls1).toHaveLength(1)
   expect(crls1[0]!.kid).toEqual('kid-2-simple')
 
-  const issuer2 = issuers.find(i => i.iss === 'https://example.com/issuer2')!
+  const issuer2 = directory.getIssuerByIss('https://example.com/issuer2')!
   expect(issuer2).toBeDefined()
   expect(issuer2.keys).toHaveLength(1)
 
-  const issuer3 = issuers.find(i => i.iss === 'https://example.com/issuer3')!
+  const issuer3 = directory.getIssuerByIss('https://example.com/issuer3')!
   expect(issuer3).toBeDefined()
   expect(issuer3.keys).toHaveLength(1)
 
-  const issuer4 = issuers.find(i => i.iss === 'https://example.com/issuer4')!
+  const issuer4 = directory.getIssuerByIss('https://example.com/issuer4')!
   expect(issuer4).toBeDefined()
   expect(issuer4.keys).toHaveLength(1)
   const crls4 = issuer4.crls!
@@ -104,29 +103,34 @@ describe('Directory', () => {
             iss: 123 as any,
             name: 'NonString Issuer',
           },
-          // keys and crls omitted
+        },
+        {
+          issuer: {
+            iss: '',
+            name: 'EmptyString Issuer',
+          },
         },
       ],
     }
 
+    const debugSpy = vi.spyOn(console, 'warn').mockImplementation(() => undefined)
+
     const directory = Directory.fromJSON(directoryJson as DirectoryJSON)
     const issuers = directory.getIssuers()
-    expect(issuers).toHaveLength(3)
+    expect(issuers).toHaveLength(2)
 
-    const missing = issuers.find(i => i.iss === 'https://missing.example/issuer')!
+    const missing = directory.getIssuerByIss('https://missing.example/issuer')!
     expect(missing).toBeDefined()
     expect(missing.keys).toEqual([])
     expect(missing.crls).toEqual([])
 
-    const invalid = issuers.find(i => i.iss === 'https://invalid.example/issuer')!
+    const invalid = directory.getIssuerByIss('https://invalid.example/issuer')!
     expect(invalid).toBeDefined()
     expect(invalid.keys).toEqual([])
     expect(invalid.crls).toEqual([])
 
-    const nonstring = issuers.find(i => i.iss === '')!
-    expect(nonstring).toBeDefined()
-    expect(nonstring.keys).toEqual([])
-    expect(nonstring.crls).toEqual([])
+    expect(debugSpy).toHaveBeenCalledTimes(2)
+    expect(debugSpy).toHaveBeenCalledWith('Skipping issuer with missing "iss" field')
   })
 
   it('should create a directory from a list of issuer urls and fetch jwks and crls', async () => {
@@ -171,7 +175,7 @@ describe('Directory', () => {
     const directory = await Directory.fromURLs([ISS_URL])
     const issuers = directory.getIssuers()
     expect(issuers).toHaveLength(1)
-    const issuer = issuers[0]!
+    const issuer = [...issuers.values()][0]!
     expect(issuer.iss).toEqual(ISS_URL)
     // Only one CRL should be collected (kid1 failed)
     expect(issuer.crls).toHaveLength(1)
@@ -238,9 +242,9 @@ describe('Directory', () => {
     // issuer3 jwks fetch will throw and be caught; only issuer1 and issuer2 should be present
     expect(issuers).toHaveLength(2)
 
-    const issuer1 = issuers.find(i => i.iss === ISS_URL)!
-    const issuer2 = issuers.find(i => i.iss === ISS_URL2)!
-    const issuer3 = issuers.find(i => i.iss === ISS_URL3)
+    const issuer1 = directory.getIssuerByIss(ISS_URL)!
+    const issuer2 = directory.getIssuerByIss(ISS_URL2)!
+    const issuer3 = directory.getIssuerByIss(ISS_URL3)
 
     expect(issuer1).toBeDefined()
     expect(issuer1.keys).toHaveLength(2)

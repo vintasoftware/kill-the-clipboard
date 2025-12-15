@@ -219,9 +219,17 @@ describe('SHC', () => {
     it('should verify SHC when reader is created with the VCI snapshot directory', async () => {
       const healthCard = await issuer.issue(validBundle)
       const readerWithDirectory = new SHCReader({
-        ...readerConfig,
+        // As we are using the VCI snapshot, we don't
+        // need to provide the publicKey
         useVciDirectory: true,
       })
+      const jws = healthCard.asJWS()
+
+      const { importSPKI, exportJWK, calculateJwkThumbprint } = await import('jose')
+      const keyObj = await importSPKI(testPublicKeySPKI, 'ES256')
+      const jwk = await exportJWK(keyObj)
+      const kid = await calculateJwkThumbprint(jwk)
+      const jwks = { keys: [{ ...jwk, kid }] }
 
       const originalFetch = globalThis.fetch
       const fetchMock = vi.fn().mockImplementation((url: string) => {
@@ -232,11 +240,18 @@ describe('SHC', () => {
           })
         }
 
+        if (url.includes('/.well-known/jwks.json')) {
+          return Promise.resolve({
+            ok: true,
+            json: async () => jwks,
+          })
+        }
+
         return Promise.resolve({ ok: false, status: 404 })
       })
 
       ;(globalThis as any).fetch = fetchMock
-      const verifiedHealthCard = await readerWithDirectory.fromJWS(healthCard.asJWS())
+      const verifiedHealthCard = await readerWithDirectory.fromJWS(jws)
       ;(globalThis as any).fetch = originalFetch
 
       const verifiedBundle = await verifiedHealthCard.asBundle()

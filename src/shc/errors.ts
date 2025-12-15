@@ -172,6 +172,13 @@ export class SHCReaderConfigError extends SHCError {
   }
 }
 
+/**
+ * Error thrown when SHC that's being read has been revoked.
+ *
+ * @public
+ * @group SHC
+ * @category Errors
+ */
 export class SHCRevokedError extends SHCError {
   constructor(message: string) {
     super(message, 'SHC_REVOKED')

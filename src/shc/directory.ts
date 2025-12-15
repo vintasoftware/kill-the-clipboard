@@ -1,4 +1,4 @@
-import type { DirectoryJSON, Issuer, IssuerCrl, IssuerKey } from './types'
+import type { DirectoryJSON, Issuer, IssuerCrlJSON, IssuerJSON, IssuerKey } from './types'
 
 /**
  * Directory is a lightweight representation of issuer metadata used by
@@ -16,19 +16,19 @@ export class Directory {
    *
    * @param issuerInfo - Array of issuer entries (see {@link Issuer})
    */
-  constructor(private issuers: Issuer[]) {}
+  constructor(private issuers: Map<string, Issuer>) {}
 
   /**
    * Return the internal issuers array.
    *
    * @returns Array of `Issuer` objects
    */
-  getIssuers(): Issuer[] {
+  getIssuers(): Map<string, Issuer> {
     return this.issuers
   }
 
   getIssuerByIss(iss: string): Issuer | undefined {
-    return this.issuers.find(issuer => issuer.iss === iss)
+    return this.issuers.get(iss)
   }
 
   /**
@@ -61,27 +61,33 @@ export class Directory {
    * Build a Directory from a parsed JSON object matching the published
    * directory schema.
    *
-   * This method is defensive: if `issuer.iss` is missing or not a string it
-   * will be coerced to an empty string; if `keys` or `crls` are not arrays
-   * they will be treated as empty arrays.
-   *
    * @param directoryJson - The JSON object to convert into a Directory
    * @returns A new {@link Directory} instance
    * @example
    * const directory = Directory.fromJSON(parsedJson)
    */
   static fromJSON(directoryJson: DirectoryJSON): Directory {
-    const data: Issuer[] = directoryJson.issuerInfo.map(({ issuer, keys, crls }) => {
-      const iss = typeof issuer?.iss === 'string' ? issuer.iss : ''
+    const issuersMap = new Map<string, Issuer>()
+    directoryJson.issuerInfo.forEach(({ issuer, keys, crls }) => {
+      const iss = typeof issuer?.iss === 'string' ? issuer.iss : undefined
+      if (!iss) {
+        console.warn('Skipping issuer with missing "iss" field')
+        return
+      }
       const validKeys = Array.isArray(keys) ? keys : []
-      const validCrls = Array.isArray(crls) ? crls : []
-      return {
+      const validCrls = Array.isArray(crls)
+        ? crls.map(({ rids, ...crls }) => ({
+            ...crls,
+            rids: new Set(Array.isArray(rids) ? rids : []),
+          }))
+        : []
+      issuersMap.set(iss, {
         iss,
         keys: validKeys,
         crls: validCrls,
-      }
+      })
     })
-    return new Directory(data)
+    return new Directory(issuersMap)
   }
 
   /**
@@ -107,12 +113,12 @@ export class Directory {
 
     try {
       for (const issUrl of issUrls) {
-        const issuerInfo = {
+        const issuerInfo: IssuerJSON = {
           issuer: {
             iss: issUrl,
           },
           keys: [] as IssuerKey[],
-          crls: [] as IssuerCrl[],
+          crls: [] as IssuerCrlJSON[],
         }
 
         const jwksUrl = `${issUrl}/.well-known/jwks.json`
@@ -134,7 +140,7 @@ export class Directory {
             continue
           }
           const crl = await crlResponse.json()
-          if (crl) issuerInfo.crls.push(crl)
+          if (crl) issuerInfo.crls!.push(crl)
         }
 
         directoryJson.issuerInfo.push(issuerInfo)

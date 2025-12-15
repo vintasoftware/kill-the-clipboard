@@ -30,6 +30,7 @@ export interface VerifiableCredential {
       /** The FHIR Bundle containing medical data. */
       fhirBundle: FHIRBundle
     }
+    /** Optional revoked resource id */
     rid?: string
   }
 }
@@ -337,7 +338,7 @@ export interface IssuerCrl {
   /** Monotonic counter for CRL updates. */
   ctr: number
   /** List of revoked resource ids (rids). */
-  rids: string[]
+  rids: Set<string>
 }
 
 /**
@@ -353,7 +354,23 @@ export interface Issuer {
   /** Array of known JWK descriptors for the issuer. */
   keys: IssuerKey[]
   /** Optional array of CRL entries for revoked resource ids. */
-  crls?: IssuerCrl[]
+  crls: IssuerCrl[]
+}
+
+export interface IssuerCrlJSON extends Omit<IssuerCrl, 'rids'> {
+  /** List of revoked resource ids (rids). */
+  rids: string[]
+}
+
+export interface IssuerJSON {
+  issuer: {
+    /** Issuer base URL */
+    iss: string
+  }
+  /** Array of JWK descriptors returned from the issuer's JWKS endpoint. */
+  keys: IssuerKey[]
+  /** Optional CRL entries published alongside the directory. */
+  crls?: IssuerCrlJSON[]
 }
 
 /**
@@ -364,14 +381,5 @@ export interface Issuer {
  * @category Types
  */
 export interface DirectoryJSON {
-  issuerInfo: {
-    issuer: {
-      /** Issuer base URL */
-      iss: string
-    }
-    /** Array of JWK descriptors returned from the issuer's JWKS endpoint. */
-    keys: IssuerKey[]
-    /** Optional CRL entries published alongside the directory. */
-    crls?: IssuerCrl[]
-  }[]
+  issuerInfo: IssuerJSON[]
 }

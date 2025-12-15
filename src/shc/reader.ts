@@ -178,7 +178,7 @@ export class SHCReader {
         if (issuerCrls && vcRid) {
           // TODO: we must also handle the case where the SHC is set to be revoked
           issuerCrls.forEach(crl => {
-            if (crl.rids.includes(vcRid)) {
+            if (crl.rids.has(vcRid)) {
               throw new SHCRevokedError('This SHC has been revoked')
             }
           })
