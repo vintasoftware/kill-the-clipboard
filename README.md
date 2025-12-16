@@ -146,23 +146,65 @@ const healthCardFromQR = await reader.fromQRNumeric(qrNumericStrings);
 console.log('Bundle from QR:', await healthCardFromQR.asBundle());
 ```
 
+### Usage with Directories
+
+A `Directory` is a lightweight, serializable collection of issuer metadata used by this library: each entry contains an issuer URL, its JWK descriptors (public keys) and optional Card Revocation List (CRL) entries.
+
+It provides a local/cached source of JWKs + CRL data so verification and lookup code can resolve public keys and revocation information without hitting network endpoints repeatedly, and without requiring that information to be passed in the reader configuration.
+
+It can be built through the following methods:
+
+1. Build from a JSON manifest: `Directory.fromJSON`
+2. Build by fetching from issuer endpoints: `Directory.fromURLs`
+3. Build by loading the VCI snapshot: `Directory.fromVCI`
+
+The directory object can be passed down to the SHCReader, doing so will add another step to the health card verification process to check if the health card has been revoked.
+
+Example usage:
+
+```typescript
+import { SHCReader, Directory } from 'kill-the-clipboard';
+
+// This examples considers a SHC instance (healthCard) has already been issued
+
+// Build a directory instance
+const directory = await Directory.fromURLs(['https://your-healthcare-org.com'])
+
+// Configure reader for verification, providing the directory instance
+const reader = new SHCReader({
+  // No public key is required, as the directory will already have the necessary data
+  issuerDirectory: directory,
+});
+
+// Verify and read the health card
+const verifiedHealthCard = await reader.fromJWS(healthCard.asJWS());
+const verifiedBundle = await verifiedHealthCard.asBundle();
+console.log('Verified FHIR Bundle:', verifiedBundle);
+```
+
 #### Usage with the VCI Directory Snapshot
 
-The library can optionally consult the VCI directory snapshot to obtain a canonical collection of issuer metadata (JWKS and CRLs). This is useful when you want an authoritative, ready-made source of issuer keys without assembling or maintaining your own `Directory` object. In order to bundle it directly into your `SHCReader` object, you may provide the `useVciDirectory: true` parameter to its constructor. When using this, you don't need to provide a public key, as it'll also be fetched automatically.
+The VCI Directory Snapshot is a set of verifiable issuers data that can be used to validate a `SHC` without the necessity of providing a custom directory instance to the `SHCReader`. The VCI itself is a coalition of public and private organizations that provide those informations make it publicly available to be consumed.
+
+In order to use this, you should provide the `useVciDirectory` parameter when creating the reader instance. Since it'll also go through the directory usage flow from the previous section, it's also not necessary to provide a public key in the configuration.
 
 Example usage:
 
 ```typescript
 import { SHCReader } from 'kill-the-clipboard';
 
+// This examples considers a SHC instance (healthCard) has already been issued
+
 const reader = new SHCReader({
+  // No external directory or public key is required
   useVciDirectory: true,
 });
+
+// Verify and read the health card
+const verifiedHealthCard = await reader.fromJWS(healthCard.asJWS());
+const verifiedBundle = await verifiedHealthCard.asBundle();
+console.log('Verified FHIR Bundle:', verifiedBundle);
 ```
-
-#### Usage with a generic Directory object
-
-Optionally, you may also provide your own `Directory` object to the `SHCReader` constructor, through the `issuerDirectory` parameter. For more information on how to build a `Directory` instance, please check the [Directories section](#directories).
  
 ### SMART Health Links Quick Start
 
@@ -307,35 +349,6 @@ console.log('Resolved FHIR resources:', resolved.fhirResources);
 ```
 
 This example above demonstrates the complete lifecycle: SHL generation, content addition, manifest builder persistence in server-side database, manifest serving, and client-side resolution. In a real application, you would implement persistence for the manifest builder state and serve the manifest endpoint from your backend server.
-
-### Directories
-A `Directory` is a lightweight, serializable collection of issuer metadata used by this library: each entry contains an issuer URL, its JWK descriptors (public keys) and optional CRL entries (revoked resource ids).
-
-It provides a local/cached source of JWKS + CRL data so verification and lookup code can resolve public keys and revocation information without hitting network endpoints repeatedly.
-
-It can be built through the following methods:
-
-1. Build from a JSON manifest: `Directory.fromJSON`
-2. Build by fetching from issuer endpoints: `Directory.fromURLs`
-3. Build by loading the VCI snapshot: `Directory.fromVCI`
-
-#### Building a Directory from VCI Snapshot
-`Directory.fromVCI` is a convenience helper that fetches the VCI Directory snapshot published by The Commons Project and returns a Directory instance built from that snapshot.
-
-Use it when you want a quick, canonical directory of issuer metadata (JWKS + CRLs) without manually assembling or maintaining a directory JSON.
-
-```typescript
-import { Directory } from 'kill-the-clipboard'
-
-// top-level async context or inside an async function
-try {
-  const directory = await Directory.fromVCI()
-  const issuers = directory.getIssuers()
-  console.log('Loaded issuers:', issuers.length)
-} catch (err) {
-  console.error('Failed to load VCI Directory:', err)
-}
-```
 
 ### Error Handling
 
