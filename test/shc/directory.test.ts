@@ -408,4 +408,52 @@ describe('Directory', () => {
     const crl = issuer.crls.get('kid-2-simple')!
     expect(crl.ctr).toEqual(2)
   })
+
+  it('should merge data from duplicate issuers', async () => {
+    const directoryJson: DirectoryJSON = {
+      issuerInfo: [
+        {
+          issuer: {
+            iss: 'https://example.com/issuer',
+          },
+          keys: [
+            {
+              kty: 'EC',
+              kid: 'kid-1-simple',
+            },
+            {
+              kty: 'EC',
+              kid: 'kid-2-simple',
+              crlVersion: 2,
+            },
+          ],
+        },
+        {
+          issuer: {
+            iss: 'https://example.com/issuer',
+          },
+          keys: [
+            {
+              kty: 'EC',
+              kid: 'kid-2-simple',
+            },
+          ],
+          crls: [
+            {
+              kid: 'kid-2-simple',
+              method: 'rid',
+              ctr: 1,
+              rids: ['revoked-1'],
+            },
+          ],
+        },
+      ],
+    }
+    const directory = Directory.fromJSON(directoryJson)
+    expect(directory.getIssuers()).toHaveLength(1)
+    const issuer = directory.getIssuerByIss('https://example.com/issuer')!
+    expect(issuer.keys).toHaveLength(2)
+    expect(issuer.keys.get('kid-2-simple')!.crlVersion).toBe(2)
+    expect(issuer.crls).toHaveLength(1)
+  })
 })

@@ -325,6 +325,11 @@ export interface IssuerKey {
   kty?: string
   /** Key ID used to identify the key in JWKS responses. */
   kid: string
+  /**
+   * Version to identify duplicate keys. When a duplicate key is present,
+   * the one with the highest crlVersion will be used
+   */
+  crlVersion?: number
 }
 
 /**

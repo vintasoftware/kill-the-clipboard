@@ -71,7 +71,11 @@ export class Directory {
     const keysMap = new Map<string, IssuerKey>()
     if (Array.isArray(keys)) {
       keys.forEach(key => {
-        keysMap.set(key.kid, key)
+        // Check for duplicate keys and only keep the one with highest crlVersion
+        const existingKey = keysMap.get(key.kid)
+        if (!existingKey || (key.crlVersion || 0) > (existingKey.crlVersion || 0)) {
+          keysMap.set(key.kid, key)
+        }
       })
     }
     return keysMap
@@ -106,7 +110,7 @@ export class Directory {
         }
         // Check for duplicate CRL and only keep the one with highest ctr
         const existingCrl = crlsMap.get(crl.kid)
-        if (!existingCrl || crl.ctr > existingCrl.ctr) {
+        if (!existingCrl || (crl.ctr || 0) > (existingCrl.ctr || 0)) {
           crlsMap.set(crl.kid, issuerCrl)
         }
       })
@@ -124,18 +128,33 @@ export class Directory {
    * const directory = Directory.fromJSON(parsedJson)
    */
   static fromJSON(directoryJson: DirectoryJSON): Directory {
-    const issuersMap = new Map<string, Issuer>()
+    // Pre-process the directory in order to look for duplicate issuers
+    // and combine their keys and crls
+    const mergedDirectory = new Map<string, IssuerJSON>()
     directoryJson.issuerInfo.forEach(({ issuer, keys, crls }) => {
       const iss = typeof issuer?.iss === 'string' ? issuer.iss : undefined
       if (!iss) {
         console.warn('Skipping issuer with missing "iss" field')
         return
       }
+      if (mergedDirectory.has(iss)) {
+        mergedDirectory.get(iss)!.keys.push(...(keys || []))
+        mergedDirectory.get(iss)!.crls!.push(...(crls || []))
+      } else {
+        mergedDirectory.set(iss, {
+          issuer: { iss },
+          keys: keys || [],
+          crls: crls || [],
+        })
+      }
+    })
 
+    const issuersMap = new Map<string, Issuer>()
+    Array.from(mergedDirectory.entries()).forEach(([iss, { keys, crls }]) => {
       issuersMap.set(iss, {
         iss,
         keys: Directory.buildIssuerKeys(keys),
-        crls: Directory.buildIssuerCrls(crls || []),
+        crls: Directory.buildIssuerCrls(crls!),
       })
     })
     return new Directory(issuersMap)
