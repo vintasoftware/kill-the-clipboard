@@ -266,6 +266,64 @@ describe('Directory', () => {
     ;(globalThis as any).fetch = originalFetch
   })
 
+  it('should create a directory from duplicate issuer urls and fetch jwks and crls once per unique issuer', async () => {
+    const ISS_URL2 = 'https://example.org/issuer2'
+    const originalFetch = globalThis.fetch
+    const fetchMock = vi.fn().mockImplementation((url: string) => {
+      // issuer 1 jwks and crl
+      if (url === `${ISS_URL}/.well-known/jwks.json`) {
+        return Promise.resolve({
+          ok: true,
+          json: async () => ({
+            keys: [
+              { kid: 'kid1', kty: 'EC' },
+              { kid: 'kid2', kty: 'EC' },
+            ],
+          }),
+        })
+      }
+      if (url === `${ISS_URL}/.well-known/crl/kid2.json`) {
+        return Promise.resolve({ ok: true, json: async () => ({ kid: 'kid2' }) })
+      }
+
+      // issuer 2 jwks and crl
+      if (url === `${ISS_URL2}/.well-known/jwks.json`) {
+        return Promise.resolve({
+          ok: true,
+          json: async () => ({ keys: [{ kid: 'kidA', kty: 'EC' }] }),
+        })
+      }
+      if (url === `${ISS_URL2}/.well-known/crl/kidA.json`) {
+        return Promise.resolve({ ok: true, json: async () => ({ kid: 'kidA' }) })
+      }
+
+      return Promise.resolve({ ok: false, status: 404 })
+    })
+    ;(globalThis as any).fetch = fetchMock
+
+    const debugSpy = vi.spyOn(console, 'debug').mockImplementation(() => undefined)
+
+    const directory = await Directory.fromURLs([ISS_URL, ISS_URL2, ISS_URL])
+    const issuers = directory.getIssuers()
+    expect(issuers).toHaveLength(2)
+
+    const issuer1 = directory.getIssuerByIss(ISS_URL)!
+    const issuer2 = directory.getIssuerByIss(ISS_URL2)!
+
+    expect(issuer1.keys).toHaveLength(2)
+    expect(issuer1.crls).toHaveLength(1)
+
+    expect(issuer2.keys).toHaveLength(1)
+    expect(issuer2.crls).toHaveLength(1)
+
+    expect(debugSpy).toHaveBeenCalledTimes(1)
+    expect(debugSpy).toHaveBeenCalledWith(
+      `Failed to fetch crl at ${ISS_URL}/.well-known/crl/kid1.json with status 404, skipping key.`
+    )
+
+    ;(globalThis as any).fetch = originalFetch
+  })
+
   it('should handle jwks fetch failure gracefully and return empty directory', async () => {
     const originalFetch = globalThis.fetch
     const fetchMock = vi.fn().mockImplementation((url: string) => {
@@ -307,5 +365,47 @@ describe('Directory', () => {
     expect(errorSpy).toHaveBeenCalledTimes(1)
 
     ;(globalThis as any).fetch = originalFetch
+  })
+
+  it('should handle CRLs with duplicate kids and keep the one with highest ctr', async () => {
+    const directoryJson: DirectoryJSON = {
+      issuerInfo: [
+        {
+          issuer: {
+            iss: 'https://example.com/issuer',
+          },
+          keys: [
+            {
+              kty: 'EC',
+              kid: 'kid-1-simple',
+            },
+            {
+              kty: 'EC',
+              kid: 'kid-2-simple',
+            },
+          ],
+          crls: [
+            {
+              kid: 'kid-2-simple',
+              method: 'rid',
+              ctr: 2,
+              rids: [],
+            },
+            {
+              kid: 'kid-2-simple',
+              method: 'rid',
+              ctr: 1,
+              rids: ['revoked-1'],
+            },
+          ],
+        },
+      ],
+    }
+
+    const directory = Directory.fromJSON(directoryJson)
+    const issuer = directory.getIssuerByIss('https://example.com/issuer')!
+    expect(issuer.crls).toHaveLength(1)
+    const crl = issuer.crls.get('kid-2-simple')!
+    expect(crl.ctr).toEqual(2)
   })
 })
