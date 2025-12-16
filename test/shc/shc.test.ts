@@ -15,6 +15,7 @@ import {
 } from '@/index'
 import { Directory } from '@/shc/directory'
 import {
+  buildTestJwkData,
   createInvalidBundle,
   createValidFHIRBundle,
   decodeQRFromDataURL,
@@ -174,31 +175,27 @@ describe('SHC', () => {
     it('should verify SHC when reader created with a directory', async () => {
       const healthCard = await issuer.issue(validBundle)
 
+      const { jwk, kid } = await buildTestJwkData()
+      const jwks = { keys: [{ ...jwk, kid }] }
+
       const ISS_URL = 'https://example.com/issuer'
       const originalFetch = globalThis.fetch
       const fetchMock = vi.fn().mockImplementation((url: string) => {
         if (url === `${ISS_URL}/.well-known/jwks.json`) {
           return Promise.resolve({
             ok: true,
-            json: async () => ({
-              keys: [
-                {
-                  kid: 'kid1',
-                  kty: 'EC',
-                },
-              ],
-            }),
+            json: async () => jwks,
           })
         }
 
-        if (url === `${ISS_URL}/.well-known/crl/kid1.json`) {
+        if (url === `${ISS_URL}/.well-known/crl/${kid}.json`) {
           return Promise.resolve({
             ok: true,
             json: async () => ({
-              kid: 'kid1',
+              kid: kid,
               method: 'rid',
               ctr: 1,
-              rids: ['imrevoked'],
+              rids: [],
             }),
           })
         }
@@ -210,7 +207,6 @@ describe('SHC', () => {
       ;(globalThis as any).fetch = originalFetch
 
       const readerWithDirectory = new SHCReader({
-        ...readerConfig,
         issuerDirectory: directory,
       })
 
@@ -221,34 +217,97 @@ describe('SHC', () => {
       expect(verifiedBundle).toEqual(validBundle)
     })
 
+    it('should verify SHC using JWKS if directory public key fails', async () => {
+      const healthCard = await issuer.issue(validBundle)
+
+      const { jwk, kid } = await buildTestJwkData()
+      const jwks = { keys: [{ ...jwk, kid }] }
+
+      const ISS_URL = 'https://example.com/issuer'
+      const originalFetch = globalThis.fetch
+      const fetchMock = vi.fn().mockImplementation((url: string) => {
+        if (url === `${ISS_URL}/.well-known/jwks.json`) {
+          return Promise.resolve({
+            ok: true,
+            json: async () => jwks,
+          })
+        }
+
+        return Promise.resolve({ ok: false, status: 404, json: async () => ({}) })
+      })
+
+      const directory = Directory.fromJSON(SAMPLE_DIRECTORY_JSON)
+
+      const readerWithDirectory = new SHCReader({
+        issuerDirectory: directory,
+      })
+
+      const debugSpy = vi.spyOn(console, 'warn').mockImplementation(() => undefined)
+
+      const jws = healthCard.asJWS()
+      ;(globalThis as any).fetch = fetchMock
+      const verifiedHealthCard = await readerWithDirectory.fromJWS(jws)
+      ;(globalThis as any).fetch = originalFetch
+      const verifiedBundle = await verifiedHealthCard.asBundle()
+
+      expect(verifiedBundle).toBeDefined()
+      expect(verifiedBundle).toEqual(validBundle)
+
+      expect(debugSpy).toHaveBeenCalledTimes(1)
+    })
+
     it('should verify SHC when reader is created with the VCI snapshot directory', async () => {
       const healthCard = await issuer.issue(validBundle)
       const readerWithDirectory = new SHCReader({
-        // As we are using the VCI snapshot, we don't
-        // need to provide the publicKey
         useVciDirectory: true,
       })
       const jws = healthCard.asJWS()
 
-      const { importSPKI, exportJWK, calculateJwkThumbprint } = await import('jose')
-      const keyObj = await importSPKI(testPublicKeySPKI, 'ES256')
-      const jwk = await exportJWK(keyObj)
-      const kid = await calculateJwkThumbprint(jwk)
-      const jwks = { keys: [{ ...jwk, kid }] }
+      const { jwk, kid } = await buildTestJwkData()
 
       const originalFetch = globalThis.fetch
       const fetchMock = vi.fn().mockImplementation((url: string) => {
         if (url.includes('vci_snapshot.json')) {
           return Promise.resolve({
             ok: true,
-            json: async () => SAMPLE_DIRECTORY_JSON,
-          })
-        }
-
-        if (url.includes('/.well-known/jwks.json')) {
-          return Promise.resolve({
-            ok: true,
-            json: async () => jwks,
+            json: async () => ({
+              directory: 'https://example.com/keystore/directory.json',
+              issuerInfo: [
+                {
+                  issuer: {
+                    iss: 'https://example.com/issuer',
+                    name: 'Example Issuer 1',
+                  },
+                  keys: [
+                    { ...jwk, kid },
+                    {
+                      kty: 'EC',
+                      kid: 'kid-2-simple',
+                    },
+                  ],
+                  crls: [
+                    {
+                      kid: 'kid-2-simple',
+                      method: 'rid',
+                      ctr: 1,
+                      rids: ['revoked-1'],
+                    },
+                  ],
+                },
+                {
+                  issuer: {
+                    iss: 'https://example.com/issuer2',
+                    name: 'Example Issuer 2',
+                  },
+                  keys: [
+                    {
+                      kty: 'EC',
+                      kid: 'kid-A-simple',
+                    },
+                  ],
+                },
+              ],
+            }),
           })
         }
 
@@ -265,10 +324,7 @@ describe('SHC', () => {
     })
 
     it('should throw SHCRevokedError if the SHC is revoked without timestamp', async () => {
-      const { importSPKI, exportJWK, calculateJwkThumbprint } = await import('jose')
-      const keyObj = await importSPKI(testPublicKeySPKI, 'ES256')
-      const jwk = await exportJWK(keyObj)
-      const kid = await calculateJwkThumbprint(jwk)
+      const { jwk, kid } = await buildTestJwkData()
 
       const directory = Directory.fromJSON({
         issuerInfo: [
@@ -276,12 +332,7 @@ describe('SHC', () => {
             issuer: {
               iss: 'https://example.com/issuer',
             },
-            keys: [
-              {
-                kty: 'EC',
-                kid,
-              },
-            ],
+            keys: [{ ...jwk, kid }],
             crls: [
               {
                 kid,
@@ -294,7 +345,6 @@ describe('SHC', () => {
         ],
       })
       const readerWithDirectory = new SHCReader({
-        ...readerConfig,
         issuerDirectory: directory,
       })
 
@@ -307,10 +357,7 @@ describe('SHC', () => {
     it('should throw SHCRevokedError if the SHC is revoked through a timestamped rid', async () => {
       vi.setSystemTime(new Date('2023-10-28T12:00:00Z'))
 
-      const { importSPKI, exportJWK, calculateJwkThumbprint } = await import('jose')
-      const keyObj = await importSPKI(testPublicKeySPKI, 'ES256')
-      const jwk = await exportJWK(keyObj)
-      const kid = await calculateJwkThumbprint(jwk)
+      const { jwk, kid } = await buildTestJwkData()
 
       const revocationTimestamp = new Date('2023-11-19T12:00:00Z').getTime() / 1000
 
@@ -320,12 +367,7 @@ describe('SHC', () => {
             issuer: {
               iss: 'https://example.com/issuer',
             },
-            keys: [
-              {
-                kty: 'EC',
-                kid,
-              },
-            ],
+            keys: [{ ...jwk, kid }],
             crls: [
               {
                 kid,
@@ -338,7 +380,6 @@ describe('SHC', () => {
         ],
       })
       const readerWithDirectory = new SHCReader({
-        ...readerConfig,
         issuerDirectory: directory,
       })
 
@@ -351,10 +392,7 @@ describe('SHC', () => {
     it('should not throw SHCRevokedError if the SHC was issued after the timestamped rid', async () => {
       vi.setSystemTime(new Date('2023-10-28T12:00:00Z'))
 
-      const { importSPKI, exportJWK, calculateJwkThumbprint } = await import('jose')
-      const keyObj = await importSPKI(testPublicKeySPKI, 'ES256')
-      const jwk = await exportJWK(keyObj)
-      const kid = await calculateJwkThumbprint(jwk)
+      const { jwk, kid } = await buildTestJwkData()
 
       const revocationTimestamp = new Date('2023-10-14T12:00:00Z').getTime() / 1000
 
@@ -364,12 +402,7 @@ describe('SHC', () => {
             issuer: {
               iss: 'https://example.com/issuer',
             },
-            keys: [
-              {
-                kty: 'EC',
-                kid,
-              },
-            ],
+            keys: [{ ...jwk, kid }],
             crls: [
               {
                 kid,
@@ -382,7 +415,6 @@ describe('SHC', () => {
         ],
       })
       const readerWithDirectory = new SHCReader({
-        ...readerConfig,
         issuerDirectory: directory,
       })
 

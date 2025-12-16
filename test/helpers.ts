@@ -111,6 +111,14 @@ export function decodeQRFromDataURL(dataURL: string): string | null {
   }
 }
 
+export const buildTestJwkData = async () => {
+  const { importSPKI, exportJWK, calculateJwkThumbprint } = await import('jose')
+  const keyObj = await importSPKI(testPublicKeySPKI, 'ES256')
+  const jwk = await exportJWK(keyObj)
+  const kid = await calculateJwkThumbprint(jwk)
+  return { jwk, kid }
+}
+
 export const SAMPLE_DIRECTORY_JSON = {
   directory: 'https://example.com/keystore/directory.json',
   issuerInfo: [

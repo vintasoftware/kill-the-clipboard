@@ -246,11 +246,9 @@ describe('Directory', () => {
     const issuer2 = directory.getIssuerByIss(ISS_URL2)!
     const issuer3 = directory.getIssuerByIss(ISS_URL3)
 
-    expect(issuer1).toBeDefined()
     expect(issuer1.keys).toHaveLength(2)
     expect(issuer1.crls).toHaveLength(1)
 
-    expect(issuer2).toBeDefined()
     expect(issuer2.keys).toHaveLength(1)
     expect(issuer2.crls).toHaveLength(1)
 

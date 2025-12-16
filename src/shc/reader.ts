@@ -141,11 +141,33 @@ export class SHCReader {
    * @throws {@link CredentialValidationError} If verifiable credential validation fails
    * @throws {@link JWSError} If JWS processing fails
    * @throws {@link VerificationError} For unexpected errors during verification or JWKS resolution
+   * @throws {@link SHCRevokedError} If the SMART Health Card has been revoked
    */
   async fromJWS(jws: string): Promise<SHC> {
     try {
-      // Resolve public key if not provided via issuer JWKS based on JWS header/payload
+      // Check if a directory was provided to the reader
+      let directory: Directory | null = null
+      if (this.config.issuerDirectory) {
+        directory = this.config.issuerDirectory
+      } else if (this.config.useVciDirectory) {
+        directory = await Directory.fromVCI()
+      }
+
+      // First we try to get the public key from the config
       let publicKeyToUse = this.config.publicKey
+
+      // If there's no public key in the config, resolve it from the directory
+      if (!publicKeyToUse && directory) {
+        try {
+          publicKeyToUse = await this.resolvePublicKeyFromDirectory(jws, directory)
+        } catch (error) {
+          console.warn(
+            `Failed to resolve public key from directory, will try to resolve from JWKS: ${error}`
+          )
+        }
+      }
+
+      // If all else fails, resolve public key via issuer JWKS based on JWS header/payload
       if (!publicKeyToUse) {
         publicKeyToUse = await this.resolvePublicKeyFromJWKS(jws)
       }
@@ -163,17 +185,8 @@ export class SHCReader {
       const vc: VerifiableCredential = { vc: payload.vc }
       this.vcProcessor.validate(vc)
 
-      // Step 4: Get the issuer info from a provided directory
-      // or from the VCI snapshot
-      let directory: Directory | null = null
-      if (this.config.issuerDirectory) {
-        directory = this.config.issuerDirectory
-      } else if (this.config.useVciDirectory) {
-        directory = await Directory.fromVCI()
-      }
-
-      // If there's a directory, we can check if the SHC is revoked
-      // based on the issuer's CRLs.
+      // Step 4: If there's a directory, we can check if the SHC
+      // is revoked based on the issuer's CRLs.
       if (directory) {
         const issuer = directory.getIssuerByIss(payload.iss)
         const vcRid = payload.vc.rid
@@ -211,20 +224,53 @@ export class SHCReader {
   }
 
   /**
+   * Obtains the JWS header and payload without signature verification.
+   * @throws {@link VerificationError} when the key cannot be resolved
+   */
+  private async parseUnverifiedJWS(jws: string) {
+    // Decode without verification to obtain header.kid and payload.iss
+    const { header, payload } = await this.jwsProcessor.parseUnverified(jws)
+
+    if (!payload.iss || typeof payload.iss !== 'string') {
+      throw new VerificationError("Cannot resolve JWKS: missing 'iss' in payload")
+    }
+    if (!header.kid || typeof header.kid !== 'string') {
+      throw new VerificationError("Cannot resolve JWKS: missing 'kid' in JWS header")
+    }
+
+    return { header, payload }
+  }
+
+  /**
+   * Resolves the public key for a JWS using the information contained on a directory instance.
+   * @throws {@link VerificationError} when the key cannot be resolved
+   */
+  private async resolvePublicKeyFromDirectory(
+    jws: string,
+    directory: Directory
+  ): Promise<CryptoKey | Uint8Array | string> {
+    // Decode without verification to obtain header.kid and payload.iss
+    const { header, payload } = await this.parseUnverifiedJWS(jws)
+    const issuer = directory.getIssuerByIss(payload.iss)
+    if (!issuer) {
+      throw new VerificationError(`Issuer not found in directory for iss: ${payload.iss}`)
+    }
+    // From parseUnverifiedJWS we already ensured header.kid is present
+    const matching = issuer.keys.get(header.kid!)
+    if (!matching) {
+      throw new VerificationError(`No matching key found in issuer for kid '${header.kid}'`)
+    }
+    return await importJWK(matching as JsonWebKey, 'ES256')
+  }
+
+  /**
    * Resolves the public key for a JWS using the issuer's well-known JWKS endpoint when no key is provided.
    * @throws {@link VerificationError} when the key cannot be resolved
    */
   private async resolvePublicKeyFromJWKS(jws: string): Promise<CryptoKey | Uint8Array | string> {
     try {
       // Decode without verification to obtain header.kid and payload.iss
-      const { header, payload } = await this.jwsProcessor.parseUnverified(jws)
-
-      if (!payload.iss || typeof payload.iss !== 'string') {
-        throw new VerificationError("Cannot resolve JWKS: missing 'iss' in payload")
-      }
-      if (!header.kid || typeof header.kid !== 'string') {
-        throw new VerificationError("Cannot resolve JWKS: missing 'kid' in JWS header")
-      }
+      const { header, payload } = await this.parseUnverifiedJWS(jws)
 
       // Build JWKS URL from issuer origin
       const jwksUrl = `${payload.iss.replace(/\/$/, '')}/.well-known/jwks.json`

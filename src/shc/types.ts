@@ -322,7 +322,7 @@ export type QRCodeConfig = Required<QRCodeConfigParams>
  */
 export interface IssuerKey {
   /** Key type (e.g. 'EC' or 'RSA'). */
-  kty: string
+  kty?: string
   /** Key ID used to identify the key in JWKS responses. */
   kid: string
 }
@@ -358,9 +358,9 @@ export interface IssuerCrl {
 export interface Issuer {
   /** Issuer base URL (the `iss` claim value). */
   iss: string
-  /** Array of known JWK descriptors for the issuer. */
-  keys: IssuerKey[]
-  /** Optional array of CRL entries for revoked resource ids. */
+  /** JWK descriptors for the issuer. */
+  keys: Map<string, IssuerKey>
+  /** CRL entries for revoked resource ids. */
   crls: Map<string, IssuerCrl>
 }
 

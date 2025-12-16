@@ -12,6 +12,7 @@ import {
   VerifiableCredentialProcessor,
 } from '@/index'
 import {
+  buildTestJwkData,
   createValidFHIRBundle,
   testPrivateKeyJWK,
   testPrivateKeyPKCS8,
@@ -51,15 +52,11 @@ describe('JWSProcessor', () => {
       const parts = jws.split('.')
       expect(parts).toHaveLength(3)
 
-      const { decodeProtectedHeader, importSPKI, exportJWK, calculateJwkThumbprint } = await import(
-        'jose'
-      )
+      const { decodeProtectedHeader } = await import('jose')
       const header = decodeProtectedHeader(jws)
       expect(header.alg).toBe('ES256')
 
-      const keyObj = await importSPKI(testPublicKeySPKI, 'ES256')
-      const jwk = await exportJWK(keyObj)
-      const expectedKid = await calculateJwkThumbprint(jwk)
+      const { jwk, kid: expectedKid } = await buildTestJwkData()
       expect(header.kid).toBe(expectedKid)
       const verified = await processor.verify(jws, testPublicKeySPKI)
       expect(verified.iss).toBe(validJWTPayload.iss)

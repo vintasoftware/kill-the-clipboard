@@ -34,6 +34,9 @@ export class Directory {
     return this.issuers
   }
 
+  /**
+   * Get an issuer by its `iss` identifier.
+   */
   getIssuerByIss(iss: string): Issuer | undefined {
     return this.issuers.get(iss)
   }
@@ -81,7 +84,13 @@ export class Directory {
         console.warn('Skipping issuer with missing "iss" field')
         return
       }
-      const validKeys = Array.isArray(keys) ? keys : []
+
+      const keysMap = new Map<string, IssuerKey>()
+      if (Array.isArray(keys)) {
+        keys.forEach(key => {
+          keysMap.set(key.kid, key)
+        })
+      }
 
       const crlsMap = new Map<string, IssuerCrl>()
       if (Array.isArray(crls)) {
@@ -114,7 +123,7 @@ export class Directory {
       }
       issuersMap.set(iss, {
         iss,
-        keys: validKeys,
+        keys: keysMap,
         crls: crlsMap,
       })
     })

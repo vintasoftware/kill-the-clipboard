@@ -1,7 +1,12 @@
 // biome-ignore-all lint/suspicious/noExplicitAny: The test needs to use `any` to mock the fetch function
 import { describe, expect, it, vi } from 'vitest'
 import { SHCIssuer, SHCReader, VerificationError } from '@/index'
-import { createValidFHIRBundle, testPrivateKeyPKCS8, testPublicKeySPKI } from '../helpers'
+import {
+  buildTestJwkData,
+  createValidFHIRBundle,
+  testPrivateKeyPKCS8,
+  testPublicKeySPKI,
+} from '../helpers'
 
 describe('JWKS fetching for SHCReader', () => {
   it('fetches issuer JWKS and verifies using matching kid when publicKey is omitted', async () => {
@@ -17,10 +22,7 @@ describe('JWKS fetching for SHCReader', () => {
     const healthCard = await issuer.issue(createValidFHIRBundle())
     const jws = healthCard.asJWS()
 
-    const { importSPKI, exportJWK, calculateJwkThumbprint } = await import('jose')
-    const keyObj = await importSPKI(testPublicKeySPKI, 'ES256')
-    const jwk = await exportJWK(keyObj)
-    const kid = await calculateJwkThumbprint(jwk)
+    const { jwk, kid } = await buildTestJwkData()
     const jwks = { keys: [{ ...jwk, kid }] }
 
     const originalFetch = globalThis.fetch
