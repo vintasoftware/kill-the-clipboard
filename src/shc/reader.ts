@@ -162,12 +162,12 @@ export class SHCReader {
           publicKeyToUse = await this.resolvePublicKeyFromDirectory(jws, directory)
         } catch (error) {
           console.warn(
-            `Failed to resolve public key from directory, will try to resolve from JWKS: ${error}`
+            `Failed to resolve public key from directory, will try to resolve from from issuer JWKS URL: ${error}`
           )
         }
       }
 
-      // If all else fails, resolve public key via issuer JWKS based on JWS header/payload
+      // If all else fails, resolve public key via issuer JWKS URL, based on JWS header/payload
       if (!publicKeyToUse) {
         publicKeyToUse = await this.resolvePublicKeyFromJWKS(jws)
       }
@@ -232,10 +232,10 @@ export class SHCReader {
     const { header, payload } = await this.jwsProcessor.parseUnverified(jws)
 
     if (!payload.iss || typeof payload.iss !== 'string') {
-      throw new VerificationError("Cannot resolve JWKS: missing 'iss' in payload")
+      throw new VerificationError("Cannot resolve JWK: missing 'iss' in payload")
     }
     if (!header.kid || typeof header.kid !== 'string') {
-      throw new VerificationError("Cannot resolve JWKS: missing 'kid' in JWS header")
+      throw new VerificationError("Cannot resolve JWK: missing 'kid' in JWS header")
     }
 
     return { header, payload }
