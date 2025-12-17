@@ -1,4 +1,11 @@
-import type { DirectoryJSON, Issuer, IssuerCrl, IssuerKey } from './types'
+import type {
+  DirectoryJSON,
+  Issuer,
+  IssuerCrl,
+  IssuerCrlJSON,
+  IssuerJSON,
+  IssuerKey,
+} from './types'
 
 /**
  * Directory is a lightweight representation of issuer metadata used by
@@ -16,15 +23,22 @@ export class Directory {
    *
    * @param issuerInfo - Array of issuer entries (see {@link Issuer})
    */
-  constructor(private issuerInfo: Issuer[]) {}
+  constructor(private issuers: Map<string, Issuer>) {}
 
   /**
-   * Return the internal issuer info array.
+   * Return the internal issuers array.
    *
-   * @returns Array of issuer info objects
+   * @returns Array of `Issuer` objects
    */
-  getIssuerInfo(): Issuer[] {
-    return this.issuerInfo
+  getIssuers(): Map<string, Issuer> {
+    return this.issuers
+  }
+
+  /**
+   * Get an issuer by its `iss` identifier.
+   */
+  getIssuerByIss(iss: string): Issuer | undefined {
+    return this.issuers.get(iss)
   }
 
   /**
@@ -53,13 +67,60 @@ export class Directory {
     return Directory.fromJSON(vciDirectoryJson)
   }
 
+  private static buildIssuerKeys(keys: IssuerKey[]): Map<string, IssuerKey> {
+    const keysMap = new Map<string, IssuerKey>()
+    if (Array.isArray(keys)) {
+      keys.forEach(key => {
+        // Check for duplicate keys and only keep the one with highest crlVersion
+        const existingKey = keysMap.get(key.kid)
+        if (!existingKey || (key.crlVersion || 0) > (existingKey.crlVersion || 0)) {
+          keysMap.set(key.kid, key)
+        }
+      })
+    }
+    return keysMap
+  }
+
+  private static buildIssuerCrls(crls: IssuerCrlJSON[]): Map<string, IssuerCrl> {
+    const crlsMap = new Map<string, IssuerCrl>()
+    if (Array.isArray(crls)) {
+      // We need to process the raw CRLs data from the directory JSON
+      // to convert them into the apprpriate format that's used in the
+      // Directory class, as the former stores them as an Array and we
+      // store them internally as a Map in the latter.
+      crls.forEach(({ rids, ...crl }) => {
+        const ridsSet = new Set<string>()
+        const ridsTimestamps = new Map<string, string>()
+        rids?.forEach(rid => {
+          // The rid may be stored using a "[rid].[revocation_timestamp]"
+          // format in the CRL, so we need to split and store that data in
+          // order to validate if a SHC is revoked in a more performatic flow
+          const [rawRid, timestamp] = rid.split('.', 2)
+          if (rawRid) {
+            ridsSet.add(rawRid)
+            if (timestamp) {
+              ridsTimestamps.set(rawRid, timestamp)
+            }
+          }
+        })
+        const issuerCrl: IssuerCrl = {
+          ...crl,
+          rids: ridsSet,
+          ridsTimestamps,
+        }
+        // Check for duplicate CRL and only keep the one with highest ctr
+        const existingCrl = crlsMap.get(crl.kid)
+        if (!existingCrl || (crl.ctr || 0) > (existingCrl.ctr || 0)) {
+          crlsMap.set(crl.kid, issuerCrl)
+        }
+      })
+    }
+    return crlsMap
+  }
+
   /**
    * Build a Directory from a parsed JSON object matching the published
    * directory schema.
-   *
-   * This method is defensive: if `issuer.iss` is missing or not a string it
-   * will be coerced to an empty string; if `keys` or `crls` are not arrays
-   * they will be treated as empty arrays.
    *
    * @param directoryJson - The JSON object to convert into a Directory
    * @returns A new {@link Directory} instance
@@ -67,17 +128,36 @@ export class Directory {
    * const directory = Directory.fromJSON(parsedJson)
    */
   static fromJSON(directoryJson: DirectoryJSON): Directory {
-    const data: Issuer[] = directoryJson.issuerInfo.map(({ issuer, keys, crls }) => {
-      const iss = typeof issuer?.iss === 'string' ? issuer.iss : ''
-      const validKeys = Array.isArray(keys) ? keys : []
-      const validCrls = Array.isArray(crls) ? crls : []
-      return {
-        iss,
-        keys: validKeys,
-        crls: validCrls,
+    // Pre-process the directory in order to look for duplicate issuers
+    // and combine their keys and crls
+    const mergedDirectory = new Map<string, IssuerJSON>()
+    directoryJson.issuerInfo.forEach(({ issuer, keys, crls }) => {
+      const iss = typeof issuer?.iss === 'string' ? issuer.iss : undefined
+      if (!iss) {
+        console.warn('Skipping issuer with missing "iss" field')
+        return
+      }
+      if (mergedDirectory.has(iss)) {
+        mergedDirectory.get(iss)!.keys.push(...(keys || []))
+        mergedDirectory.get(iss)!.crls!.push(...(crls || []))
+      } else {
+        mergedDirectory.set(iss, {
+          issuer: { iss },
+          keys: keys || [],
+          crls: crls || [],
+        })
       }
     })
-    return new Directory(data)
+
+    const issuersMap = new Map<string, Issuer>()
+    Array.from(mergedDirectory.entries()).forEach(([iss, { keys, crls }]) => {
+      issuersMap.set(iss, {
+        iss,
+        keys: Directory.buildIssuerKeys(keys),
+        crls: Directory.buildIssuerCrls(crls!),
+      })
+    })
+    return new Directory(issuersMap)
   }
 
   /**
@@ -101,14 +181,17 @@ export class Directory {
       issuerInfo: [],
     }
 
+    // Ensure we only ignore duplicate issuer URLs
+    const uniqueIssUrls = new Set(issUrls)
+
     try {
-      for (const issUrl of issUrls) {
-        const issuerInfo = {
+      for (const issUrl of uniqueIssUrls) {
+        const issuerInfo: IssuerJSON = {
           issuer: {
             iss: issUrl,
           },
           keys: [] as IssuerKey[],
-          crls: [] as IssuerCrl[],
+          crls: [] as IssuerCrlJSON[],
         }
 
         const jwksUrl = `${issUrl}/.well-known/jwks.json`
@@ -130,7 +213,7 @@ export class Directory {
             continue
           }
           const crl = await crlResponse.json()
-          if (crl) issuerInfo.crls.push(crl)
+          if (crl) issuerInfo.crls!.push(crl)
         }
 
         directoryJson.issuerInfo.push(issuerInfo)

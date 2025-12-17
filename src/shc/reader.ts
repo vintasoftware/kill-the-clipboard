@@ -1,16 +1,20 @@
 // SHCReader class
 import { importJWK } from 'jose'
-import { FileFormatError, QRCodeError, SHCError, VerificationError } from './errors.js'
+import { Directory } from './directory.js'
+import {
+  FileFormatError,
+  QRCodeError,
+  SHCError,
+  SHCReaderConfigError,
+  SHCRevokedError,
+  VerificationError,
+} from './errors.js'
 import { FHIRBundleProcessor } from './fhir/bundle-processor.js'
+import { deriveKidFromPublicKey } from './jws/helpers.js'
 import { JWSProcessor } from './jws/jws-processor.js'
 import { QRCodeGenerator } from './qr/qr-code-generator.js'
 import { SHC } from './shc.js'
-import type {
-  Issuer,
-  SHCReaderConfig,
-  SHCReaderConfigParams,
-  VerifiableCredential,
-} from './types.js'
+import type { SHCReaderConfig, SHCReaderConfigParams, VerifiableCredential } from './types.js'
 import { VerifiableCredentialProcessor } from './vc.js'
 
 /**
@@ -50,12 +54,19 @@ export class SHCReader {
    * ```
    */
   constructor(config: SHCReaderConfigParams) {
+    if (config.issuerDirectory && config.useVciDirectory) {
+      throw new SHCReaderConfigError(
+        'SHCReader configuration error: Cannot specify both issuerDirectory and useVciDirectory'
+      )
+    }
+
     this.config = {
       ...config,
       enableQROptimization: config.enableQROptimization ?? true,
       strictReferences: config.strictReferences ?? true,
       verifyExpiration: config.verifyExpiration ?? true,
       issuerDirectory: config.issuerDirectory ?? null,
+      useVciDirectory: config.useVciDirectory ?? false,
     }
 
     this.bundleProcessor = new FHIRBundleProcessor()
@@ -130,11 +141,33 @@ export class SHCReader {
    * @throws {@link CredentialValidationError} If verifiable credential validation fails
    * @throws {@link JWSError} If JWS processing fails
    * @throws {@link VerificationError} For unexpected errors during verification or JWKS resolution
+   * @throws {@link SHCRevokedError} If the SMART Health Card has been revoked
    */
   async fromJWS(jws: string): Promise<SHC> {
     try {
-      // Resolve public key if not provided via issuer JWKS based on JWS header/payload
+      // Check if a directory was provided to the reader
+      let directory: Directory | null = null
+      if (this.config.issuerDirectory) {
+        directory = this.config.issuerDirectory
+      } else if (this.config.useVciDirectory) {
+        directory = await Directory.fromVCI()
+      }
+
+      // First we try to get the public key from the config
       let publicKeyToUse = this.config.publicKey
+
+      // If there's no public key in the config, resolve it from the directory
+      if (!publicKeyToUse && directory) {
+        try {
+          publicKeyToUse = await this.resolvePublicKeyFromDirectory(jws, directory)
+        } catch (error) {
+          console.warn(
+            `Failed to resolve public key from directory, will try to resolve from from issuer JWKS URL: ${error}`
+          )
+        }
+      }
+
+      // If all else fails, resolve public key via issuer JWKS URL, based on JWS header/payload
       if (!publicKeyToUse) {
         publicKeyToUse = await this.resolvePublicKeyFromJWKS(jws)
       }
@@ -152,12 +185,35 @@ export class SHCReader {
       const vc: VerifiableCredential = { vc: payload.vc }
       this.vcProcessor.validate(vc)
 
-      // Step 4: Return the original FHIR Bundle
-      let issuerInfo: Issuer[] = []
-      if (this.config.issuerDirectory) {
-        issuerInfo = this.config.issuerDirectory.getIssuerInfo()
+      // Step 4: If there's a directory, we can check if the SHC
+      // is revoked based on the issuer's CRLs.
+      if (directory) {
+        const issuer = directory.getIssuerByIss(payload.iss)
+        const vcRid = payload.vc.rid
+        if (issuer && vcRid) {
+          const kid = await deriveKidFromPublicKey(publicKeyToUse)
+          const crl = issuer.crls.get(kid)
+          // If the CRL contains the rid, the SHC might
+          // have been revoked
+          if (crl && crl.rids.has(vcRid)) {
+            const revocationTimestamp = crl.ridsTimestamps.get(vcRid)
+            if (!revocationTimestamp) {
+              // If the rid has no associated timestamp, it's revoked
+              throw new SHCRevokedError('This SHC has been revoked')
+            }
+            // If the SHC was issued before the revocation timestamp, it's revoked
+            const issuanceDateTimestamp = String(payload.nbf).split('.')[0]
+            if (BigInt(issuanceDateTimestamp!) <= BigInt(revocationTimestamp)) {
+              throw new SHCRevokedError('This SHC has been revoked')
+            }
+            // If it has been issued after the revocation timestamp,
+            // it's valid and no further action is required
+          }
+        }
       }
-      return new SHC(jws, originalBundle, issuerInfo)
+
+      // Step 5: Return the original FHIR Bundle
+      return new SHC(jws, originalBundle)
     } catch (error) {
       if (error instanceof SHCError) {
         throw error
@@ -168,20 +224,53 @@ export class SHCReader {
   }
 
   /**
+   * Obtains the JWS header and payload without signature verification.
+   * @throws {@link VerificationError} when the key cannot be resolved
+   */
+  private async parseUnverifiedJWS(jws: string) {
+    // Decode without verification to obtain header.kid and payload.iss
+    const { header, payload } = await this.jwsProcessor.parseUnverified(jws)
+
+    if (!payload.iss || typeof payload.iss !== 'string') {
+      throw new VerificationError("Cannot resolve JWK: missing 'iss' in payload")
+    }
+    if (!header.kid || typeof header.kid !== 'string') {
+      throw new VerificationError("Cannot resolve JWK: missing 'kid' in JWS header")
+    }
+
+    return { header, payload }
+  }
+
+  /**
+   * Resolves the public key for a JWS using the information contained on a directory instance.
+   * @throws {@link VerificationError} when the key cannot be resolved
+   */
+  private async resolvePublicKeyFromDirectory(
+    jws: string,
+    directory: Directory
+  ): Promise<CryptoKey | Uint8Array | string> {
+    // Decode without verification to obtain header.kid and payload.iss
+    const { header, payload } = await this.parseUnverifiedJWS(jws)
+    const issuer = directory.getIssuerByIss(payload.iss)
+    if (!issuer) {
+      throw new VerificationError(`Issuer not found in directory for iss: ${payload.iss}`)
+    }
+    // From parseUnverifiedJWS we already ensured header.kid is present
+    const matching = issuer.keys.get(header.kid!)
+    if (!matching) {
+      throw new VerificationError(`No matching key found in issuer for kid '${header.kid}'`)
+    }
+    return await importJWK(matching as JsonWebKey, 'ES256')
+  }
+
+  /**
    * Resolves the public key for a JWS using the issuer's well-known JWKS endpoint when no key is provided.
    * @throws {@link VerificationError} when the key cannot be resolved
    */
   private async resolvePublicKeyFromJWKS(jws: string): Promise<CryptoKey | Uint8Array | string> {
     try {
       // Decode without verification to obtain header.kid and payload.iss
-      const { header, payload } = await this.jwsProcessor.parseUnverified(jws)
-
-      if (!payload.iss || typeof payload.iss !== 'string') {
-        throw new VerificationError("Cannot resolve JWKS: missing 'iss' in payload")
-      }
-      if (!header.kid || typeof header.kid !== 'string') {
-        throw new VerificationError("Cannot resolve JWKS: missing 'kid' in JWS header")
-      }
+      const { header, payload } = await this.parseUnverifiedJWS(jws)
 
       // Build JWKS URL from issuer origin
       const jwksUrl = `${payload.iss.replace(/\/$/, '')}/.well-known/jwks.json`

@@ -30,6 +30,8 @@ export interface VerifiableCredential {
       /** The FHIR Bundle containing medical data. */
       fhirBundle: FHIRBundle
     }
+    /** Optional revocation identifier */
+    rid: string | null
   }
 }
 
@@ -150,6 +152,14 @@ export interface SHCReaderConfigParams {
    * @defaultValue `null`
    */
   issuerDirectory?: Directory | null
+
+  /**
+   * Whether to consult the VCI directory to resolve issuer metadata (JWKS and related information).
+   * When `true`, the reader will attempt to resolve keys from the VCI directory during verification.
+   * When `false`, no automatic VCI directory lookup will be performed.
+   * @defaultValue `false`
+   */
+  useVciDirectory?: boolean
 }
 
 /**
@@ -189,6 +199,11 @@ export interface VerifiableCredentialParams {
    * - `https://smarthealth.cards#laboratory`
    */
   includeAdditionalTypes?: string[]
+
+  /**
+   * An optional revocation identifier to include in the credential
+   */
+  rid?: string
 }
 
 /**
@@ -307,9 +322,14 @@ export type QRCodeConfig = Required<QRCodeConfigParams>
  */
 export interface IssuerKey {
   /** Key type (e.g. 'EC' or 'RSA'). */
-  kty: string
+  kty?: string
   /** Key ID used to identify the key in JWKS responses. */
   kid: string
+  /**
+   * Version to identify duplicate keys. When a duplicate key is present,
+   * the one with the highest crlVersion will be used
+   */
+  crlVersion?: number
 }
 
 /**
@@ -328,7 +348,9 @@ export interface IssuerCrl {
   /** Monotonic counter for CRL updates. */
   ctr: number
   /** List of revoked resource ids (rids). */
-  rids: string[]
+  rids: Set<string>
+  /** Map of revoked resource ids to their revocation timestamps. */
+  ridsTimestamps: Map<string, string>
 }
 
 /**
@@ -341,10 +363,40 @@ export interface IssuerCrl {
 export interface Issuer {
   /** Issuer base URL (the `iss` claim value). */
   iss: string
-  /** Array of known JWK descriptors for the issuer. */
+  /** JWK descriptors for the issuer. */
+  keys: Map<string, IssuerKey>
+  /** CRL entries for revoked resource ids. */
+  crls: Map<string, IssuerCrl>
+}
+
+/**
+ * Public issuer CRL JSON shape used in published directory files.
+ *
+ * @public
+ * @group SHC
+ * @category Types
+ */
+export interface IssuerCrlJSON extends Omit<IssuerCrl, 'rids' | 'ridsTimestamps'> {
+  /** List of revoked resource ids (rids). */
+  rids: string[]
+}
+
+/**
+ * Public issuer metadata JSON shape used in published directory files.
+ *
+ * @public
+ * @group SHC
+ * @category Types
+ */
+export interface IssuerJSON {
+  issuer: {
+    /** Issuer base URL */
+    iss: string
+  }
+  /** Array of JWK descriptors returned from the issuer's JWKS endpoint. */
   keys: IssuerKey[]
-  /** Optional array of CRL entries for revoked resource ids. */
-  crls?: IssuerCrl[]
+  /** Optional CRL entries published alongside the directory. */
+  crls?: IssuerCrlJSON[]
 }
 
 /**
@@ -355,14 +407,5 @@ export interface Issuer {
  * @category Types
  */
 export interface DirectoryJSON {
-  issuerInfo: {
-    issuer: {
-      /** Issuer base URL */
-      iss: string
-    }
-    /** Array of JWK descriptors returned from the issuer's JWKS endpoint. */
-    keys: IssuerKey[]
-    /** Optional CRL entries published alongside the directory. */
-    crls?: IssuerCrl[]
-  }[]
+  issuerInfo: IssuerJSON[]
 }

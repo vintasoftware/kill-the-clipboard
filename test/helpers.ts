@@ -110,3 +110,86 @@ export function decodeQRFromDataURL(dataURL: string): string | null {
     return null
   }
 }
+
+export const buildTestJwkData = async () => {
+  const { importSPKI, exportJWK, calculateJwkThumbprint } = await import('jose')
+  const keyObj = await importSPKI(testPublicKeySPKI, 'ES256')
+  const jwk = await exportJWK(keyObj)
+  const kid = await calculateJwkThumbprint(jwk)
+  return { jwk, kid }
+}
+
+export const SAMPLE_DIRECTORY_JSON = {
+  directory: 'https://example.com/keystore/directory.json',
+  issuerInfo: [
+    {
+      issuer: {
+        iss: 'https://example.com/issuer',
+        name: 'Example Issuer 1',
+      },
+      keys: [
+        {
+          kty: 'EC',
+          kid: 'kid-1-simple',
+        },
+        {
+          kty: 'EC',
+          kid: 'kid-2-simple',
+        },
+      ],
+      crls: [
+        {
+          kid: 'kid-2-simple',
+          method: 'rid',
+          ctr: 1,
+          rids: ['revoked-1'],
+        },
+      ],
+    },
+    {
+      issuer: {
+        iss: 'https://example.com/issuer2',
+        name: 'Example Issuer 2',
+      },
+      keys: [
+        {
+          kty: 'EC',
+          kid: 'kid-A-simple',
+        },
+      ],
+    },
+    {
+      issuer: {
+        iss: 'https://example.com/issuer3',
+        name: 'Example Issuer 3',
+      },
+      keys: [
+        {
+          kty: 'EC',
+          kid: 'kid-C-simple',
+        },
+      ],
+    },
+    {
+      issuer: {
+        iss: 'https://example.com/issuer4',
+        name: 'Example Issuer 4',
+        website: 'https://example.com/issuer4',
+      },
+      keys: [
+        {
+          kty: 'EC',
+          kid: 'kid-D-simple',
+        },
+      ],
+      crls: [
+        {
+          kid: 'kid-D-simple',
+          method: 'rid',
+          ctr: 1,
+          rids: ['revoked-2'],
+        },
+      ],
+    },
+  ],
+}

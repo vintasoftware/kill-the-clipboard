@@ -2,10 +2,8 @@
 import {
   base64url,
   CompactSign,
-  calculateJwkThumbprint,
   compactVerify,
   decodeProtectedHeader,
-  exportJWK,
   importJWK,
   importPKCS8,
   importSPKI,
@@ -19,6 +17,7 @@ import {
   SignatureVerificationError,
 } from '../errors.js'
 import type { SHCJWT } from '../types.js'
+import { deriveKidFromPublicKey } from './helpers.js'
 
 /**
  * Handles JWT/JWS signing and verification with ES256 algorithm.
@@ -51,7 +50,7 @@ export class JWSProcessor {
       this.validateJWTPayload(payload)
 
       // Derive kid from public key
-      const kid = await this.deriveKidFromPublicKey(publicKey)
+      const kid = await deriveKidFromPublicKey(publicKey)
 
       // Protected header per SMART Health Cards
       const header: { alg: 'ES256'; kid: string; zip?: 'DEF' } = {
@@ -92,28 +91,6 @@ export class JWSProcessor {
       const errorMessage = error instanceof Error ? error.message : String(error)
       throw new JWSError(`JWS signing failed: ${errorMessage}`)
     }
-  }
-
-  /**
-   * Derives RFC7638 JWK Thumbprint (base64url-encoded SHA-256) from a public key to use as kid
-   */
-  private async deriveKidFromPublicKey(
-    publicKey: CryptoKey | Uint8Array | string | JsonWebKey
-  ): Promise<string> {
-    let keyObj: CryptoKey | Uint8Array
-    if (typeof publicKey === 'string') {
-      keyObj = await importSPKI(publicKey, 'ES256')
-    } else if (publicKey && typeof publicKey === 'object' && 'kty' in publicKey) {
-      // JsonWebKey object
-      keyObj = await importJWK(publicKey, 'ES256')
-    } else {
-      keyObj = publicKey as CryptoKey | Uint8Array
-    }
-
-    const jwk = await exportJWK(keyObj)
-    // calculateJwkThumbprint defaults to SHA-256 and returns base64url string in jose v5
-    const kid = await calculateJwkThumbprint(jwk)
-    return kid
   }
 
   /**

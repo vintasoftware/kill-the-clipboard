@@ -1,5 +1,5 @@
 // biome-ignore-all lint/suspicious/noExplicitAny: The test needs to use `any` to test error cases
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import {
   BundleValidationError,
   type FHIRBundle,
@@ -8,14 +8,18 @@ import {
   type SHCConfig,
   SHCIssuer,
   SHCReader,
+  SHCReaderConfigError,
   type SHCReaderConfigParams,
+  SHCRevokedError,
   SignatureVerificationError,
 } from '@/index'
 import { Directory } from '@/shc/directory'
 import {
+  buildTestJwkData,
   createInvalidBundle,
   createValidFHIRBundle,
   decodeQRFromDataURL,
+  SAMPLE_DIRECTORY_JSON,
   testPrivateKeyJWK,
   testPrivateKeyPKCS8,
   testPublicKeyJWK,
@@ -58,69 +62,13 @@ describe('SHC', () => {
       expect(jws.split('.')).toHaveLength(3)
     })
 
-    it('should bundle issuerInfo into SHC when reader created with a directory', async () => {
-      const { importPKCS8, importSPKI } = await import('jose')
-
-      const privateKeyCrypto = await importPKCS8(testPrivateKeyPKCS8, 'ES256')
-      const publicKeyCrypto = await importSPKI(testPublicKeySPKI, 'ES256')
-
-      const configWithCryptoKeys: SHCConfig = {
-        issuer: 'https://example.com/issuer',
-        privateKey: privateKeyCrypto,
-        publicKey: publicKeyCrypto,
-        expirationTime: null,
-        enableQROptimization: false,
-        strictReferences: true,
-      }
-      const issuerWithCryptoKeys = new SHCIssuer(configWithCryptoKeys)
-
-      const healthCard = await issuerWithCryptoKeys.issue(validBundle)
-      const jws = healthCard.asJWS()
-
-      const ISS_URL = 'https://example.com/issuer'
-      const originalFetch = globalThis.fetch
-      const fetchMock = vi.fn().mockImplementation((url: string) => {
-        if (url === `${ISS_URL}/.well-known/jwks.json`) {
-          return Promise.resolve({
-            ok: true,
-            json: async () => ({
-              keys: [
-                {
-                  kid: 'kid1',
-                  kty: 'EC',
-                },
-              ],
-            }),
-          })
-        }
-
-        if (url === `${ISS_URL}/.well-known/crl/kid1.json`) {
-          return Promise.resolve({
-            ok: true,
-            json: async () => ({
-              kid: 'kid1',
-              method: 'rid',
-              ctr: 1,
-              rids: ['imrevoked'],
-            }),
-          })
-        }
-
-        return Promise.resolve({ ok: false, status: 404, json: async () => ({}) })
-      })
-      ;(globalThis as any).fetch = fetchMock
-      const directory = await Directory.fromURLs([ISS_URL])
-      ;(globalThis as any).fetch = originalFetch
-
-      const readerWithDirectory = new SHCReader({
-        publicKey: publicKeyCrypto,
-        enableQROptimization: false,
-        strictReferences: true,
-        issuerDirectory: directory,
-      })
-
-      const verifiedHealthCard = await readerWithDirectory.fromJWS(jws)
-      expect(verifiedHealthCard.getIssuerInfo()).toEqual(directory.getIssuerInfo())
+    it('should raise SHCReaderConfigError if both issuerDirectory and useVciDirectory are set', async () => {
+      expect(() => {
+        new SHCReader({
+          useVciDirectory: true,
+          issuerDirectory: Directory.fromJSON(SAMPLE_DIRECTORY_JSON),
+        })
+      }).toThrow(SHCReaderConfigError)
     })
 
     it('should issue SMART Health Card with CryptoKey objects', async () => {
@@ -211,11 +159,270 @@ describe('SHC', () => {
   })
 
   describe('verification with SHCReader', () => {
+    afterEach(() => {
+      vi.useRealTimers()
+    })
+
     it('should verify a valid SMART Health Card', async () => {
       const healthCard = await issuer.issue(validBundle)
       const verifiedHealthCard = await reader.fromJWS(healthCard.asJWS())
       const verifiedBundle = await verifiedHealthCard.asBundle()
 
+      expect(verifiedBundle).toBeDefined()
+      expect(verifiedBundle).toEqual(validBundle)
+    })
+
+    it('should verify SHC when reader created with a directory', async () => {
+      const healthCard = await issuer.issue(validBundle)
+
+      const { jwk, kid } = await buildTestJwkData()
+      const jwks = { keys: [{ ...jwk, kid }] }
+
+      const ISS_URL = 'https://example.com/issuer'
+      const originalFetch = globalThis.fetch
+      const fetchMock = vi.fn().mockImplementation((url: string) => {
+        if (url === `${ISS_URL}/.well-known/jwks.json`) {
+          return Promise.resolve({
+            ok: true,
+            json: async () => jwks,
+          })
+        }
+
+        if (url === `${ISS_URL}/.well-known/crl/${kid}.json`) {
+          return Promise.resolve({
+            ok: true,
+            json: async () => ({
+              kid: kid,
+              method: 'rid',
+              ctr: 1,
+              rids: [],
+            }),
+          })
+        }
+
+        return Promise.resolve({ ok: false, status: 404, json: async () => ({}) })
+      })
+      ;(globalThis as any).fetch = fetchMock
+      const directory = await Directory.fromURLs([ISS_URL])
+      ;(globalThis as any).fetch = originalFetch
+
+      const readerWithDirectory = new SHCReader({
+        issuerDirectory: directory,
+      })
+
+      const verifiedHealthCard = await readerWithDirectory.fromJWS(healthCard.asJWS())
+      const verifiedBundle = await verifiedHealthCard.asBundle()
+
+      expect(verifiedBundle).toBeDefined()
+      expect(verifiedBundle).toEqual(validBundle)
+    })
+
+    it('should verify SHC using JWKS if directory public key fails', async () => {
+      const healthCard = await issuer.issue(validBundle)
+
+      const { jwk, kid } = await buildTestJwkData()
+      const jwks = { keys: [{ ...jwk, kid }] }
+
+      const ISS_URL = 'https://example.com/issuer'
+      const originalFetch = globalThis.fetch
+      const fetchMock = vi.fn().mockImplementation((url: string) => {
+        if (url === `${ISS_URL}/.well-known/jwks.json`) {
+          return Promise.resolve({
+            ok: true,
+            json: async () => jwks,
+          })
+        }
+
+        return Promise.resolve({ ok: false, status: 404, json: async () => ({}) })
+      })
+
+      const directory = Directory.fromJSON(SAMPLE_DIRECTORY_JSON)
+
+      const readerWithDirectory = new SHCReader({
+        issuerDirectory: directory,
+      })
+
+      const debugSpy = vi.spyOn(console, 'warn').mockImplementation(() => undefined)
+
+      const jws = healthCard.asJWS()
+      ;(globalThis as any).fetch = fetchMock
+      const verifiedHealthCard = await readerWithDirectory.fromJWS(jws)
+      ;(globalThis as any).fetch = originalFetch
+      const verifiedBundle = await verifiedHealthCard.asBundle()
+
+      expect(verifiedBundle).toBeDefined()
+      expect(verifiedBundle).toEqual(validBundle)
+
+      expect(debugSpy).toHaveBeenCalledTimes(1)
+    })
+
+    it('should verify SHC when reader is created with the VCI snapshot directory', async () => {
+      const healthCard = await issuer.issue(validBundle)
+      const readerWithDirectory = new SHCReader({
+        useVciDirectory: true,
+      })
+      const jws = healthCard.asJWS()
+
+      const { jwk, kid } = await buildTestJwkData()
+
+      const originalFetch = globalThis.fetch
+      const fetchMock = vi.fn().mockImplementation((url: string) => {
+        if (url.includes('vci_snapshot.json')) {
+          return Promise.resolve({
+            ok: true,
+            json: async () => ({
+              directory: 'https://example.com/keystore/directory.json',
+              issuerInfo: [
+                {
+                  issuer: {
+                    iss: 'https://example.com/issuer',
+                    name: 'Example Issuer 1',
+                  },
+                  keys: [
+                    { ...jwk, kid },
+                    {
+                      kty: 'EC',
+                      kid: 'kid-2-simple',
+                    },
+                  ],
+                  crls: [
+                    {
+                      kid: 'kid-2-simple',
+                      method: 'rid',
+                      ctr: 1,
+                      rids: ['revoked-1'],
+                    },
+                  ],
+                },
+                {
+                  issuer: {
+                    iss: 'https://example.com/issuer2',
+                    name: 'Example Issuer 2',
+                  },
+                  keys: [
+                    {
+                      kty: 'EC',
+                      kid: 'kid-A-simple',
+                    },
+                  ],
+                },
+              ],
+            }),
+          })
+        }
+
+        return Promise.resolve({ ok: false, status: 404 })
+      })
+
+      ;(globalThis as any).fetch = fetchMock
+      const verifiedHealthCard = await readerWithDirectory.fromJWS(jws)
+      ;(globalThis as any).fetch = originalFetch
+
+      const verifiedBundle = await verifiedHealthCard.asBundle()
+      expect(verifiedBundle).toBeDefined()
+      expect(verifiedBundle).toEqual(validBundle)
+    })
+
+    it('should throw SHCRevokedError if the SHC is revoked without timestamp', async () => {
+      const { jwk, kid } = await buildTestJwkData()
+
+      const directory = Directory.fromJSON({
+        issuerInfo: [
+          {
+            issuer: {
+              iss: 'https://example.com/issuer',
+            },
+            keys: [{ ...jwk, kid }],
+            crls: [
+              {
+                kid,
+                method: 'rid',
+                ctr: 1,
+                rids: ['revoked-1'],
+              },
+            ],
+          },
+        ],
+      })
+      const readerWithDirectory = new SHCReader({
+        issuerDirectory: directory,
+      })
+
+      const healthCard = await issuer.issue(validBundle, { rid: 'revoked-1' })
+      const jws = healthCard.asJWS()
+
+      await expect(readerWithDirectory.fromJWS(jws)).rejects.toThrow(SHCRevokedError)
+    })
+
+    it('should throw SHCRevokedError if the SHC is revoked through a timestamped rid', async () => {
+      vi.setSystemTime(new Date('2023-10-28T12:00:00Z'))
+
+      const { jwk, kid } = await buildTestJwkData()
+
+      const revocationTimestamp = new Date('2023-11-19T12:00:00Z').getTime() / 1000
+
+      const directory = Directory.fromJSON({
+        issuerInfo: [
+          {
+            issuer: {
+              iss: 'https://example.com/issuer',
+            },
+            keys: [{ ...jwk, kid }],
+            crls: [
+              {
+                kid,
+                method: 'rid',
+                ctr: 1,
+                rids: [`revoked-1.${revocationTimestamp}`],
+              },
+            ],
+          },
+        ],
+      })
+      const readerWithDirectory = new SHCReader({
+        issuerDirectory: directory,
+      })
+
+      const healthCard = await issuer.issue(validBundle, { rid: 'revoked-1' })
+      const jws = healthCard.asJWS()
+
+      await expect(readerWithDirectory.fromJWS(jws)).rejects.toThrow(SHCRevokedError)
+    })
+
+    it('should not throw SHCRevokedError if the SHC was issued after the timestamped rid', async () => {
+      vi.setSystemTime(new Date('2023-10-28T12:00:00Z'))
+
+      const { jwk, kid } = await buildTestJwkData()
+
+      const revocationTimestamp = new Date('2023-10-14T12:00:00Z').getTime() / 1000
+
+      const directory = Directory.fromJSON({
+        issuerInfo: [
+          {
+            issuer: {
+              iss: 'https://example.com/issuer',
+            },
+            keys: [{ ...jwk, kid }],
+            crls: [
+              {
+                kid,
+                method: 'rid',
+                ctr: 1,
+                rids: [`revoked-1.${revocationTimestamp}`],
+              },
+            ],
+          },
+        ],
+      })
+      const readerWithDirectory = new SHCReader({
+        issuerDirectory: directory,
+      })
+
+      const healthCard = await issuer.issue(validBundle, { rid: 'revoked-1' })
+      // Even through the rid matches, the SHC was issued after the revocation timestamp
+      const verifiedHealthCard = await readerWithDirectory.fromJWS(healthCard.asJWS())
+
+      const verifiedBundle = await verifiedHealthCard.asBundle()
       expect(verifiedBundle).toBeDefined()
       expect(verifiedBundle).toEqual(validBundle)
     })
