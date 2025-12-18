@@ -9,8 +9,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
-- **Directories support**: `SHC` validation using `SHCReader` now supports the usage of directories for public key resolution and for revocation status check
-- **Revocation identifier support**: `SHCIssuer` can now issue `SHC` with a `rid` (revocation identifier) value, which can be used to determine if that Smart Health Card has been revoked
+- **[VCI Directory](https://github.com/the-commons-project/vci-directory) support**: `SHC` validation using `SHCReader` now supports the usage of public directories for public key resolution and for revocation status check
+- **Revocation identifier support**: `SHCIssuer` can now issue `SHC` with a `rid` (revocation identifier) value, which can be used to determine if that SMART Health Card has been revoked
 
 ## [1.0.2]
 
