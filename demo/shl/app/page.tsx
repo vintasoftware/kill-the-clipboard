@@ -1,9 +1,10 @@
 'use client';
-import { Container, Title, Text, Stack, Button, Group } from '@mantine/core';
+import { Container, Stack, Button, Group } from '@mantine/core';
 import { Suspense, useState } from 'react';
 import { CreateSHLForm } from '@/components/CreateSHLForm';
 import { SHLDisplay } from '@/components/SHLDisplay';
 import { PatientDataControl } from '@/components/PatientDataControl';
+import { PaperlessIntakeBanner } from '@/components/PaperlessIntakeBanner';
 
 export default function HomePage() {
   const [isCreating, setIsCreating] = useState(false);
@@ -31,18 +32,7 @@ export default function HomePage() {
   return (
     <Container size="lg" py="xl">
       <Stack gap="xl">
-        <div>
-          <Title order={1} mb="md">
-            SMART Health Links Demo
-          </Title>
-          <Text size="lg" c="dimmed">
-            Create and share your health information using SMART Health Links. Built with the library{' '}
-            <a href="https://github.com/vintasoftware/kill-the-clipboard" target="_blank">
-              kill-the-clipboard
-            </a>
-            .
-          </Text>
-        </div>
+        <PaperlessIntakeBanner />
 
         <Suspense fallback={<div>Loading...</div>}>
           {!isCreating && !createdSHL && (

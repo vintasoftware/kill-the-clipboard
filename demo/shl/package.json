@@ -34,6 +34,7 @@
     "kill-the-clipboard": "workspace:../..",
     "next": "15.5.7",
     "react": "19.1.1",
+    "react-calendly": "^4.4.0",
     "react-dom": "19.1.1",
     "uuid": "^11.1.0"
   },
